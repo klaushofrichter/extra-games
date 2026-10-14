@@ -110,6 +110,20 @@ def main():
             time.sleep(0.6)
             shot(board, "board-opening")
 
+            # The rules on the smallest phone (games-service D-099): title, this table's settings, the illustration.
+            small = decks[2]
+            small.locator("[data-rules]").click()
+            small.locator(".rules-modal .rules-head h2", has_text="Liar's Dice").wait_for()
+            assert small.locator(".rules-settings tr").count() == 4, "the four settings at this table"
+            img = small.locator(".rules-modal .md img")
+            img.scroll_into_view_if_needed()
+            wait(lambda: img.evaluate("i => i.complete && i.naturalWidth > 0"), 10, "the rules illustration")
+            shot(small, "rules-illustration")
+            small.locator(".rules-modal .rules-body").evaluate("b => b.scrollTop = 0")
+            shot(small, "rules")
+            small.locator(".rules-modal .rules-close").click()
+            small.wait_for_selector(".rules-modal", state="detached")
+
             # Privacy while bidding: the board has no cup, each phone shows exactly its own dice.
             assert board.locator(".ld-cup").count() == 0, "the board shows cups while bidding"
             for d in decks:

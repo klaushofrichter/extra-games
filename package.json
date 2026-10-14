@@ -10,8 +10,7 @@
     "setup": "scripts/games-service.sh",
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json",
-    "soak": "node scripts/soak.ts",
-    "check-bundle": "node scripts/check-bundle.ts"
+    "soak": "node scripts/soak.ts"
   },
   "devDependencies": {
     "@types/node": "^26.6.5",
