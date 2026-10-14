@@ -110,6 +110,22 @@ def main():
             time.sleep(0.6)
             shot(board, "board-opening")
 
+            # The rules on the smallest phone (games-service D-099): title, this table's settings, the illustration.
+            small = decks[2]
+            small.locator("[data-rules]").click()
+            # The sheet shows the game's name at once and the rules when they have loaded: wait for the rules.
+            small.locator(".rules-modal .md h3").first.wait_for()
+            assert "Liar's Dice" in small.inner_text(".rules-modal .rules-head h2")
+            assert small.locator(".rules-settings tr").count() == 4, "the four settings at this table"
+            img = small.locator(".rules-modal .md img")
+            img.scroll_into_view_if_needed()
+            wait(lambda: img.evaluate("i => i.complete && i.naturalWidth > 0"), 10, "the rules illustration")
+            shot(small, "rules-illustration")
+            small.locator(".rules-modal .rules-body").evaluate("b => b.scrollTop = 0")
+            shot(small, "rules")
+            small.locator(".rules-modal .rules-close").click()
+            small.wait_for_selector(".rules-modal", state="detached")
+
             # Privacy while bidding: the board has no cup, each phone shows exactly its own dice.
             assert board.locator(".ld-cup").count() == 0, "the board shows cups while bidding"
             for d in decks:
@@ -173,4 +189,10 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as e:
+        # On GitHub, an annotation carries the reason to the PR page, where the job log may not be at hand.
+        if os.environ.get("GITHUB_ACTIONS"):
+            print(f"::error file=scripts/e2e/liars_dice.py::{type(e).__name__}: {str(e)[:900]}".replace("\n", " "))
+        raise

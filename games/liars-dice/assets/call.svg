@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 250" width="360" height="250" font-family="Georgia, serif">
+  <rect x="2" y="2" width="356" height="246" rx="16" fill="#0f2a24" stroke="#1f4a40" stroke-width="2"/>
+  <text x="180" y="30" text-anchor="middle" font-size="15" fill="#d6a94a" letter-spacing="2">THE BID: FOUR FIVES</text>
+  <g font-size="14" fill="#f3eee2">
+    <text x="18" y="70">Ann</text>
+    <text x="18" y="122">Ben</text>
+    <text x="18" y="174">Cleo</text>
+  </g>
+  <defs>
+    <g id="d"><rect x="0" y="0" width="36" height="36" rx="7" fill="#f7f2e6"/></g>
+    <g id="hl"><rect x="-3" y="-3" width="42" height="42" rx="9" fill="none" stroke="#e7b84d" stroke-width="3"/></g>
+  </defs>
+  <!-- Ann: 5 2 1(wild) -->
+  <g transform="translate(80,46)"><use href="#d"/><use href="#hl"/>
+    <circle cx="9" cy="9" r="3.6" fill="#1d1b17"/><circle cx="27" cy="9" r="3.6" fill="#1d1b17"/><circle cx="18" cy="18" r="3.6" fill="#1d1b17"/><circle cx="9" cy="27" r="3.6" fill="#1d1b17"/><circle cx="27" cy="27" r="3.6" fill="#1d1b17"/></g>
+  <g transform="translate(128,46)" opacity="0.35"><use href="#d"/>
+    <circle cx="10" cy="10" r="3.6" fill="#1d1b17"/><circle cx="26" cy="26" r="3.6" fill="#1d1b17"/></g>
+  <g transform="translate(176,46)"><use href="#d"/><use href="#hl"/>
+    <circle cx="18" cy="18" r="5" fill="#b8322a"/><text x="33" y="9" font-size="11" fill="#e7b84d" text-anchor="middle">★</text></g>
+  <!-- Ben: 3 6 -->
+  <g transform="translate(80,98)" opacity="0.35"><use href="#d"/>
+    <circle cx="9" cy="9" r="3.6" fill="#1d1b17"/><circle cx="18" cy="18" r="3.6" fill="#1d1b17"/><circle cx="27" cy="27" r="3.6" fill="#1d1b17"/></g>
+  <g transform="translate(128,98)" opacity="0.35"><use href="#d"/>
+    <circle cx="10" cy="8" r="3.4" fill="#1d1b17"/><circle cx="26" cy="8" r="3.4" fill="#1d1b17"/><circle cx="10" cy="18" r="3.4" fill="#1d1b17"/><circle cx="26" cy="18" r="3.4" fill="#1d1b17"/><circle cx="10" cy="28" r="3.4" fill="#1d1b17"/><circle cx="26" cy="28" r="3.4" fill="#1d1b17"/></g>
+  <!-- Cleo: 5 4 -->
+  <g transform="translate(80,150)"><use href="#d"/><use href="#hl"/>
+    <circle cx="9" cy="9" r="3.6" fill="#1d1b17"/><circle cx="27" cy="9" r="3.6" fill="#1d1b17"/><circle cx="18" cy="18" r="3.6" fill="#1d1b17"/><circle cx="9" cy="27" r="3.6" fill="#1d1b17"/><circle cx="27" cy="27" r="3.6" fill="#1d1b17"/></g>
+  <g transform="translate(128,150)" opacity="0.35"><use href="#d"/>
+    <circle cx="10" cy="10" r="3.6" fill="#1d1b17"/><circle cx="26" cy="10" r="3.6" fill="#1d1b17"/><circle cx="10" cy="26" r="3.6" fill="#1d1b17"/><circle cx="26" cy="26" r="3.6" fill="#1d1b17"/></g>
+  <g font-size="13" fill="#b9b3a3">
+    <text x="236" y="62">five</text><text x="236" y="78">+ wild one</text>
+    <text x="236" y="122">none</text>
+    <text x="236" y="174">five</text>
+  </g>
+  <line x1="18" y1="200" x2="342" y2="200" stroke="#1f4a40" stroke-width="2"/>
+  <text x="180" y="230" text-anchor="middle" font-size="16" fill="#f3eee2">3 count, the bid said 4: <tspan fill="#d2574a">a lie</tspan></text>
+</svg>

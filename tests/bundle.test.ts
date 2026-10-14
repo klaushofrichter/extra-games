@@ -9,6 +9,7 @@ import { packRepoTarball } from "../.games-service/apps/cloud/src/game-repos.ts"
 import { decodeBundle, safeBundlePath, BUNDLE_LIMITS } from "../.games-service/packages/protocol/src/bundle.ts";
 import { loadGames } from "../.games-service/apps/table-host/src/games.ts";
 import { githubTarball } from "../.games-service/tests/tar.ts";
+import { renderRules } from "../.games-service/apps/table-host/public/shared/markdown.js";
 import { GAMES_DIR, ROOT, manifestSchema } from "./harness.ts";
 
 async function walk(dir: string): Promise<string[]> {
@@ -27,6 +28,43 @@ async function repoFiles() {
   for (const p of await walk(GAMES_DIR)) files[relative(ROOT, p)] = await readFile(p);
   return files;
 }
+
+describe("rules for players (games-service D-099)", () => {
+  it("every game ships how-to-play.md that renders with a title, its images, and every setting's label", async () => {
+    const ids = (await readdir(GAMES_DIR, { withFileTypes: true })).filter((d) => d.isDirectory()).map((d) => d.name);
+    for (const id of ids) {
+      const md = await readFile(join(GAMES_DIR, id, "how-to-play.md"), "utf8");
+      const m = JSON.parse(await readFile(join(GAMES_DIR, id, "manifest.json"), "utf8"));
+      const { title, html } = renderRules(md, `/games/${id}/`);
+      expect(title, id).toBe(m.name.replaceAll("'", "&#39;"));
+      expect(html, id).not.toMatch(/!\[/); // every image was accepted
+      const imgs = [...html.matchAll(/<img src="\/games\/[^/]+\/([^"]+)"/g)].map((x) => x[1]);
+      expect(imgs.length, id).toBeGreaterThan(0);
+      for (const src of imgs) await stat(join(GAMES_DIR, id, src));
+      for (const s of m.settings) expect(md, `${id}: ${s.label}`).toContain(s.label);
+    }
+  });
+
+  it("every game's rules start with short instructions: an In short section of two to five bullets (D-100)", async () => {
+    const ids = (await readdir(GAMES_DIR, { withFileTypes: true })).filter((d) => d.isDirectory()).map((d) => d.name);
+    for (const id of ids) {
+      const sections = (await readFile(join(GAMES_DIR, id, "how-to-play.md"), "utf8")).split(/^## /m);
+      expect(sections[1]?.startsWith("In short\n"), id).toBe(true);
+      const bullets = sections[1].split("\n").filter((l) => l.startsWith("- ")).length;
+      expect(bullets, id).toBeGreaterThanOrEqual(2);
+      expect(bullets, id).toBeLessThanOrEqual(5);
+      expect(sections[1].split(/\s+/).length, id).toBeLessThanOrEqual(90);
+    }
+  });
+
+  it("illustrations are well-formed SVG with no script or outside references", async () => {
+    for (const p of (await walk(GAMES_DIR)).filter((f) => f.endsWith(".svg"))) {
+      const svg = await readFile(p, "utf8");
+      expect(svg, p).toMatch(/^\s*<svg[\s>]/);
+      for (const bad of [/<script/i, /<foreignObject/i, /\son\w+=/i, /href="(?!#)/i, /<image/i]) expect(svg, `${p} ${bad}`).not.toMatch(bad);
+    }
+  });
+});
 
 describe("as a bundle", () => {
   it("every file under games/ has a name a bundle accepts, and the whole stays within the limits", async () => {
