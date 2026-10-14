@@ -113,7 +113,9 @@ def main():
             # The rules on the smallest phone (games-service D-099): title, this table's settings, the illustration.
             small = decks[2]
             small.locator("[data-rules]").click()
-            small.locator(".rules-modal .rules-head h2", has_text="Liar's Dice").wait_for()
+            # The sheet shows the game's name at once and the rules when they have loaded: wait for the rules.
+            small.locator(".rules-modal .md h3").first.wait_for()
+            assert "Liar's Dice" in small.inner_text(".rules-modal .rules-head h2")
             assert small.locator(".rules-settings tr").count() == 4, "the four settings at this table"
             img = small.locator(".rules-modal .md img")
             img.scroll_into_view_if_needed()
