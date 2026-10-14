@@ -2,6 +2,13 @@
 
 Be the last player with dice. Everyone rolls in secret; you bid on what is under *all* the cups together, or call the last bid a lie.
 
+## In short
+
+- Your dice are on your phone; nobody else can see them.
+- On your turn, raise the bid (more dice, or as many of a higher face) or call **Liar!**
+- A call opens every cup. If at least that many dice match (ones are wild), the caller loses a die; otherwise the bidder does.
+- The last player with dice wins.
+
 ## What you see
 
 - **Your phone** shows your own dice and nobody else's. On your turn it has the bid builder and the **Liar!** button.

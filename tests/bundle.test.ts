@@ -45,6 +45,18 @@ describe("rules for players (games-service D-099)", () => {
     }
   });
 
+  it("every game's rules start with short instructions: an In short section of two to five bullets (D-100)", async () => {
+    const ids = (await readdir(GAMES_DIR, { withFileTypes: true })).filter((d) => d.isDirectory()).map((d) => d.name);
+    for (const id of ids) {
+      const sections = (await readFile(join(GAMES_DIR, id, "how-to-play.md"), "utf8")).split(/^## /m);
+      expect(sections[1]?.startsWith("In short\n"), id).toBe(true);
+      const bullets = sections[1].split("\n").filter((l) => l.startsWith("- ")).length;
+      expect(bullets, id).toBeGreaterThanOrEqual(2);
+      expect(bullets, id).toBeLessThanOrEqual(5);
+      expect(sections[1].split(/\s+/).length, id).toBeLessThanOrEqual(90);
+    }
+  });
+
   it("illustrations are well-formed SVG with no script or outside references", async () => {
     for (const p of (await walk(GAMES_DIR)).filter((f) => f.endsWith(".svg"))) {
       const svg = await readFile(p, "utf8");
