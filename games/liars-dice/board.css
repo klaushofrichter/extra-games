@@ -1,0 +1,22 @@
+/* Liar's Dice board: a dark felt round in the middle of the 1920 × 1080 surface, the bid and the reveal on it. */
+.ld-board { position: absolute; inset: 0; }
+.ld-felt { position: absolute; left: 50%; top: 50%; width: 1260px; height: 760px; transform: translate(-50%, -50%); border-radius: 380px;
+  background: radial-gradient(ellipse at 50% 40%, #1d5a49, #0f3a2f 70%, #0b2b23); box-shadow: inset 0 0 0 14px #3b2a1a, inset 0 0 0 18px #5a3f26, 0 30px 80px rgba(0,0,0,.5); }
+.ld-center { position: absolute; left: 50%; top: 50%; width: 1000px; transform: translate(-50%, -50%); text-align: center; transition: transform .5s; }
+.ld-round { font-size: 20px; }
+.ld-bid { margin-top: 18px; min-height: 170px; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 18px; }
+.ld-q { font-family: var(--display); font-size: 110px; line-height: 1; color: var(--ink); }
+.ld-by { flex-basis: 100%; font-size: 26px; }
+.ld-turn { font-family: var(--display); font-size: 40px; margin-top: 8px; min-height: 52px; }
+.ld-clock { display: flex; align-items: center; justify-content: center; gap: 14px; min-height: 36px; font-family: var(--mono); font-size: 26px; }
+.ld-bar { width: 360px; height: 8px; border-radius: 4px; background: rgba(255,255,255,.12); overflow: hidden; }
+.ld-bar > div { height: 100%; transition: width .25s linear; }
+.ld-history { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 12px; min-height: 40px; font-size: 20px; }
+.ld-verdict { font-size: 28px; margin-top: 6px; }
+.ld-verdict.held { color: var(--jade, #7fd18b); }
+.ld-verdict.lie { color: var(--ruby, #e8735f); }
+.ld-cups { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 40px; margin-top: 16px; text-align: left; }
+.ld-cup { display: flex; align-items: center; gap: 14px; font-size: 22px; }
+.ld-cup > span:first-child { width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ld-dice { display: flex; gap: 6px; }
+.ld-pips { color: var(--brass); letter-spacing: 2px; }

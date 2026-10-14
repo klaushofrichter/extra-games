@@ -1,0 +1,21 @@
+{
+  "name": "extra-games",
+  "private": true,
+  "description": "Private and early-release games for Game Table, installed on tables through the games-service console",
+  "type": "module",
+  "engines": {
+    "node": ">=26"
+  },
+  "scripts": {
+    "setup": "scripts/games-service.sh",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json",
+    "soak": "node scripts/soak.ts",
+    "check-bundle": "node scripts/check-bundle.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.5",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.4"
+  }
+}

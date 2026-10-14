@@ -1,0 +1,7 @@
+node_modules/
+.games-service
+out/
+e2e-out/
+*.log
+.env
+__pycache__/

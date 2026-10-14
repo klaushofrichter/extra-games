@@ -1,0 +1,97 @@
+# PR checks: test, e2e, codeql (kube-setup docs/repository-baseline.md, requirements 3 and 5b).
+# Tables get these games from the `production` branch (the console lists klaushofrichter/extra-games@production), so
+# that is the branch to protect with these three contexts. Triggers on PRs to main too, so Dependabot's PRs are checked.
+# Weekly, the same checks run against games-service `main` instead of the pinned ref in games-service.ref: a platform
+# change that would break these games shows up here before it reaches a table.
+name: PR checks
+on:
+  pull_request:
+    branches: [main, production]
+  push:
+    branches: [production]
+  schedule:
+    - cron: "17 11 * * 1" # Mondays, after Dependabot's 06:00 America/Chicago run
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  GAMES_SERVICE_REF: ${{ github.event_name == 'schedule' && 'main' || '' }}
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          cache: npm
+      - run: npm ci
+      # games-service (public): the runtime, host and SDK the games are tested against.
+      - run: scripts/games-service.sh
+      - run: npm test
+      # noEmit over games, tests and scripts: vitest strips types, so nothing else checks them.
+      - run: npm run typecheck
+      # Many AI-only games per player count and style, through the host's own simulation loop and import hook.
+      - run: npm run soak -- 200
+      # Dependabot notices a vulnerable dependency; noticing is not blocking. `high`, so a moderate advisory whose
+      # only fix is a major upgrade cannot wedge unrelated merges.
+      - run: npm audit --audit-level=high
+
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          cache: npm
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+      - run: npm ci
+      - run: scripts/games-service.sh
+      - run: pip install -r scripts/e2e/requirements.txt
+      - run: python -m playwright install --with-deps chromium
+      - run: scripts/e2e/run-all.sh e2e-out
+      - if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: e2e-screenshots
+          path: e2e-out
+          retention-days: 14
+
+  codeql-scan:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+      actions: read # codeql-action reads the run's own metadata; without it: "Resource not accessible by integration"
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [javascript-typescript, python, actions]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: github/codeql-action/init@v4
+        with:
+          languages: ${{ matrix.language }}
+      - uses: github/codeql-action/analyze@v4
+        with:
+          # Private repo without Advanced Security: no upload; keep the SARIF and gate on it below.
+          upload: never
+          output: sarif-results
+      # The analyze action never fails the job on findings; this does. Accepted ones: .github/codeql-accepted.tsv.
+      - run: .github/scripts/codeql-gate.sh sarif-results
+
+  # One context named `codeql` for the whole matrix, which is what branch protection requires.
+  codeql:
+    if: always()
+    needs: codeql-scan
+    runs-on: ubuntu-latest
+    steps:
+      - env:
+          RESULT: ${{ needs.codeql-scan.result }}
+        run: '[ "$RESULT" = "success" ] || { echo "::error::CodeQL: $RESULT"; exit 1; }'
