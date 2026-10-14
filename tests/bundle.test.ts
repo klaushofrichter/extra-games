@@ -36,7 +36,7 @@ describe("rules for players (games-service D-099)", () => {
       const md = await readFile(join(GAMES_DIR, id, "how-to-play.md"), "utf8");
       const m = JSON.parse(await readFile(join(GAMES_DIR, id, "manifest.json"), "utf8"));
       const { title, html } = renderRules(md, `/games/${id}/`);
-      expect(title, id).toBe(m.name.replace("'", "&#39;"));
+      expect(title, id).toBe(m.name.replaceAll("'", "&#39;"));
       expect(html, id).not.toMatch(/!\[/); // every image was accepted
       const imgs = [...html.matchAll(/<img src="\/games\/[^/]+\/([^"]+)"/g)].map((x) => x[1]);
       expect(imgs.length, id).toBeGreaterThan(0);
