@@ -62,7 +62,10 @@ export function mount(root) {
           r.bidHeld ? `The bid holds. ${esc(name(r.loser))} loses a die.` : `A lie! ${esc(name(r.loser))} loses a die.`
         }</div>
         <div class="ld-cups">${Object.entries(r.cups).map(([seat, cup]) => `<div class="ld-cup"><span style="color:${playerColor(info, Number(seat))}">${esc(name(Number(seat)))}</span>
-          <span class="ld-dice">${cup.map((d) => die(d, { size: 44, hl: counts(d, r.bid.face, v.onesWild), dim: !counts(d, r.bid.face, v.onesWild), wild: v.onesWild && d === 1 && r.bid.face !== 1 })).join("")}</span></div>`).join("")}</div>`
+          <span class="ld-dice">${cup.map((d) => {
+            const lit = counts(d, r.bid.face, v.onesWild);
+            return die(d, { size: 44, hl: lit, dim: !lit, wild: v.onesWild && d === 1 && r.bid.face !== 1 });
+          }).join("")}</span></div>`).join("")}</div>`
       : "";
     clock();
 

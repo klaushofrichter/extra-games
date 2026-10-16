@@ -47,7 +47,7 @@ export function mount(root, ctx) {
   /** Start the builder at the cheapest raise on the face this player holds most (ties: the higher face). */
   function preset(v) {
     const best = faces(v.onesWild).reduce((a, f) => (counted(v.myDice, f, v.onesWild) >= counted(v.myDice, a, v.onesWild) ? f : a));
-    pick = { face: best, quantity: Math.max(minFor(v.bid, best), 1) };
+    pick = { face: best, quantity: minFor(v.bid, best) };
   }
 
   function drawBuilder() {
@@ -138,7 +138,7 @@ export function mount(root, ctx) {
       const res = $(".ld-result");
       res.hidden = !r;
       if (r) {
-        const me = r.loser === v.seat ? "You lose a die." : r.loser === undefined ? "" : `${esc(name(r.loser))} loses a die.`;
+        const me = r.loser === v.seat ? "You lose a die." : `${esc(name(r.loser))} loses a die.`;
         res.innerHTML = `<div class="eyebrow">${esc(name(r.caller))} called ${esc(bidText(r.bid))}</div>
           <div style="margin-top:4px;font-size:1.1em">${r.matched} on the table: ${r.bidHeld ? "the bid holds" : "it was a lie"}.</div><div class="muted">${me}</div>`;
       }
