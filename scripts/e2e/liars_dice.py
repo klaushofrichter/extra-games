@@ -112,6 +112,8 @@ def main():
 
             # The rules on the smallest phone (games-service D-099): title, this table's settings, the illustration.
             small = decks[2]
+            if small.locator("#tab-table").count():
+                small.locator("#tab-table").click()  # during a game Rules sit on the player's own tab (games-service D-123)
             small.locator("[data-rules]").click()
             # The sheet shows the game's name at once and the rules when they have loaded: wait for the rules.
             small.locator(".rules-modal .md h3").first.wait_for()
@@ -125,6 +127,8 @@ def main():
             shot(small, "rules")
             small.locator(".rules-modal .rules-close").click()
             small.wait_for_selector(".rules-modal", state="detached")
+            if small.locator("#tab-game").count():
+                small.locator("#tab-game").click()
 
             # Privacy while bidding: the board has no cup, each phone shows exactly its own dice.
             assert board.locator(".ld-cup").count() == 0, "the board shows cups while bidding"
