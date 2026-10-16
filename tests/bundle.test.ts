@@ -29,9 +29,14 @@ async function repoFiles() {
   return files;
 }
 
+/** The game folders under games/. */
+async function gameIds() {
+  return (await readdir(GAMES_DIR, { withFileTypes: true })).filter((d) => d.isDirectory()).map((d) => d.name);
+}
+
 describe("rules for players (games-service D-099)", () => {
   it("every game ships how-to-play.md that renders with a title, its images, and every setting's label", async () => {
-    const ids = (await readdir(GAMES_DIR, { withFileTypes: true })).filter((d) => d.isDirectory()).map((d) => d.name);
+    const ids = await gameIds();
     for (const id of ids) {
       const md = await readFile(join(GAMES_DIR, id, "how-to-play.md"), "utf8");
       const m = JSON.parse(await readFile(join(GAMES_DIR, id, "manifest.json"), "utf8"));
@@ -46,7 +51,7 @@ describe("rules for players (games-service D-099)", () => {
   });
 
   it("every game's rules start with short instructions: an In short section of two to five bullets (D-100)", async () => {
-    const ids = (await readdir(GAMES_DIR, { withFileTypes: true })).filter((d) => d.isDirectory()).map((d) => d.name);
+    const ids = await gameIds();
     for (const id of ids) {
       const sections = (await readFile(join(GAMES_DIR, id, "how-to-play.md"), "utf8")).split(/^## /m);
       expect(sections[1]?.startsWith("In short\n"), id).toBe(true);
@@ -80,7 +85,7 @@ describe("as a bundle", () => {
   });
 
   it("every game folder has a valid manifest whose id is the folder name, rules, and a board and phone UI", async () => {
-    const ids = (await readdir(GAMES_DIR, { withFileTypes: true })).filter((d) => d.isDirectory()).map((d) => d.name);
+    const ids = await gameIds();
     expect(ids.length).toBeGreaterThan(0);
     for (const id of ids) {
       const m = manifestSchema.parse(JSON.parse(await readFile(join(GAMES_DIR, id, "manifest.json"), "utf8")));
@@ -116,7 +121,8 @@ describe("as a bundle", () => {
 
   it("nothing outside games/ goes into the bundle", async () => {
     const tar = githubTarball("o/r", "1", { ...(await repoFiles()), "README.md": "x", "tests/x.test.ts": "x", ".github/workflows/x.yml": "x" });
-    const files = Object.keys(decodeBundle(packRepoTarball(tar, "o/r", "main").payload, packRepoTarball(tar, "o/r", "main").hash).files);
+    const packed = packRepoTarball(tar, "o/r", "main");
+    const files = Object.keys(decodeBundle(packed.payload, packed.hash).files);
     expect(files.every((f) => f.startsWith("games/"))).toBe(true);
   });
 });
