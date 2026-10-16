@@ -249,7 +249,6 @@ export default defineGame<State>({
     }
     // Mid-round, the round starts over with fresh cups: the bids so far counted the leaver's dice.
     if (s.phase === "bidding") {
-      ctx.clearTimer("turn");
       next = { ...next, round: s.round - 1 };
       const starter = s.turn === seat ? nextActive(s, seat) : s.turn;
       return { state: newRound(next, starter, ctx), events: [{ name: "restarted", data: { left: seat } }] };
