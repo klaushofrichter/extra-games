@@ -3,7 +3,8 @@ supported size, 320 x 568) play a short game by tapping pieces on the board.
 
 Checks on the way:
   - no browser console error or uncaught exception, on the board or either phone;
-  - the board shows 32 pieces, White's first rank toward White's seat (south), Black's pieces turned to the north;
+  - the board shows 32 pieces, White's first rank toward White's seat (south), every piece facing the board's front;
+  - the turn-around button turns every piece to face north;
   - tapping a piece shows its moves, tapping a target moves it, and only the player to move can pick up pieces;
   - the phones show both clocks (the running one counting down), the moves, a draw offer and its answer, and Resign
     asking for a second tap;
@@ -109,8 +110,8 @@ def main():
             e1 = board.locator('.ch-pc[data-sq="e1"]').bounding_box()
             e8 = board.locator('.ch-pc[data-sq="e8"]').bounding_box()
             assert e1["y"] > e8["y"], "White's king is not toward the south seat"
-            turned = board.locator('.ch-pc[data-sq="e8"] > div').evaluate("e => e.style.transform")
-            assert "180" in turned, f"Black's pieces should face north, got {turned!r}"
+            facing = {board.locator(f'.ch-pc[data-sq="{sq}"] > div').evaluate("e => e.style.transform") for sq in ("e1", "e8", "a2", "h7")}
+            assert facing == {"rotate(0deg)"}, f"every piece should face the board's front edge (south), got {facing!r}"
             assert board.locator('.ch-pc[data-sq="e7"].movable').count() == 0, "Black's pieces answer while White is to move"
 
             # Phones: who plays what, both clocks, the hint.
@@ -166,6 +167,13 @@ def main():
             ben.wait_for_selector(".rules-modal", state="detached")
             if ben.locator("#tab-game").count():
                 ben.locator("#tab-game").click()
+
+            # The turn-around button turns every piece toward the north edge, and back.
+            board.locator("#flip-button").click()
+            wait(lambda: {board.locator(f'.ch-pc[data-sq="{sq}"] > div').evaluate("e => e.style.transform") for sq in ("e1", "f6")} == {"rotate(180deg)"}, 10, "pieces facing north")
+            shot(board, "board-turned")
+            board.locator("#flip-button").click()
+            wait(lambda: board.locator('.ch-pc[data-sq="e1"] > div').evaluate("e => e.style.transform") == "rotate(0deg)", 10, "pieces facing south again")
 
             # Scholar's mate.
             board.wait_for_selector('.ch-pc.movable[data-sq="h5"]')

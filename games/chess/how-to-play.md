@@ -47,7 +47,7 @@ A king under attack is in **check**: you must get it out of check. No way out is
 
 ## Seats and colours
 
-**White plays from** decides who gets white: the south seat, the north seat, or chance. The board is turned so that White's first rank is in front of White, and each side's pieces stand up for their own player.
+**White plays from** decides who gets white: the south seat (the default), the north seat, or chance. The board is turned so that White's first rank is in front of White. All pieces stand the same way, toward the edge the board faces; the board's turn-around button turns them for the other side of the table.
 
 ## AI players and players who leave
 
