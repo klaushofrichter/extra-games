@@ -103,6 +103,21 @@ describe("chess on a table host", () => {
     expect((await c.request("game", "intent", { name: "move", payload: { uci: "e7e6" } })).type).toBe("ack");
   }, 30000);
 
+  it("against an AI, a phone that goes away is replaced by the stand-in after the waiting time (E-010)", async () => {
+    const a = await t.joinDeck("Klaus");
+    await t.ok("POST", "/ai", {});
+    await begin([a], { timeControl: "10+5", whiteSeat: "south", standInElo: 400 });
+    expect((await a.request("game", "intent", { name: "move", payload: { uci: "e2e4" } })).type).toBe("ack");
+    await until(() => state().sans.length === 2);
+    a.close(); // the phone sleeps; the waiting time here is 300 ms
+    await until(() => state().standIn.length === 1);
+    expect(t.host.table.phase).toBe("active");
+    await until(() => state().sans.length >= 4, 15000); // the stand-in and the AI play on
+    // Someone joining takes White back from the stand-in.
+    const b = await t.joinDeck("Zoe");
+    await b.waitView((x) => x.view.color === 0 && x.view.standIn.length === 0);
+  }, 30000);
+
   it("runs AI-only simulations at different strengths, every game finishing and replaying exactly", async () => {
     const game = await loadGame("chess");
     const r = await t.ok("POST", "/simulation", { gameId: "chess", players: 2, games: 3, seed: 5, settings: { timeControl: "no clock" }, aiOptions: [{ elo: 400 }, { elo: 600 }] });

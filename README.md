@@ -64,6 +64,10 @@ import { count, defineGame } from "@game-table/sdk";        // cards: "@game-tab
 The table host maps that name to its own SDK when it loads the rules, and `tsconfig.json` and `vitest.config.ts` map it
 to `.games-service/` here.
 
+A game's `version` is a calendar version, `YYYY.MM.DD.N`, that changes when, and only when, something in its folder
+changes (games-service D-127, here E-008). Set it in the same pull request as the change, or let
+`node .games-service/scripts/check-game-versions.ts --fix` do it; the PR checks enforce it.
+
 Every game ships rules for players as `how-to-play.md`, with illustrations in `assets/` (games-service D-099): the phones
 show them in a modal from a **Rules** button, with the settings chosen at the table on top. Use the Markdown subset
 described in games-service's README (*Writing a game*), and name every setting by its manifest label;

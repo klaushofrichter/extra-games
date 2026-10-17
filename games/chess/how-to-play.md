@@ -34,8 +34,8 @@ A piece takes an opponent's piece by moving onto its square. Only the knight jum
 
 A king under attack is in **check**: you must get it out of check. No way out is **checkmate**, and the game is lost. The game is also over when:
 
-- a player **resigns** (on the phone, tap Resign twice),
-- both agree to a **draw** (offer it on your phone; making a move declines an offer),
+- a player **resigns** (on the phone: Resign, then confirm),
+- both agree to a **draw** (offer it on your phone and confirm; making a move declines an offer),
 - the side to move has no legal move but is not in check (**stalemate**: a draw),
 - the same position comes up for the third time, or fifty moves go by without a capture or pawn move (a draw),
 - neither side has enough pieces to mate (a draw),
@@ -53,6 +53,6 @@ A king under attack is in **check**: you must get it out of check. No way out is
 
 An AI player's strength is set as an approximate Elo rating (400 for a beginner, 2200 for a strong club player) in its settings on the board.
 
-If a player leaves during the game, the **stand-in** plays on for them in their colour, at the **Stand-in strength (Elo) for a player who leaves**. Someone who sits down in the empty seat takes over from it. A phone that drops out gets a minute to come back before the stand-in takes over; their clock keeps running meanwhile.
+If a player leaves during the game, the **stand-in** plays on for them in their colour, at the **Stand-in strength (Elo) for a player who leaves**. Someone who sits down in the empty seat takes over from it. A phone that drops out gets a minute to come back before the stand-in takes over; their clock keeps running meanwhile. This also holds against an AI player: the game then plays on by itself, and joining with the QR code puts you back in the empty seat.
 
 > Tip: tap a picked-up piece again to put it back, or tap another of your pieces instead.

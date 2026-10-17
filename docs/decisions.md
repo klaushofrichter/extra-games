@@ -65,3 +65,18 @@ Format: **E-nnn · date · decided by** — decision. *Why:* reason.
   (about 1470), 1800 scored 9/20 against 1600 (about 1560), 2200 scored 17/20 against 2000 (about 2300). With 20 games
   each estimate is good to about ±150, so the levels stay as they are; their labels are approximate, as the setting
   says.
+- **E-008 · 2026-10-17 · Klaus** — Game versions follow games-service D-127: `YYYY.MM.DD.N` in each game's manifest,
+  changed when, and only when, something in the game's folder changes, never by a platform change. Liar's Dice and
+  Chess switch to `2026.10.17.1`. *Implementation (Claude):* the `test` check runs games-service's
+  `scripts/check-game-versions.ts` from `.games-service` against the branch a pull request goes into;
+  `node .games-service/scripts/check-game-versions.ts --fix` sets the version of every changed game.
+- **E-009 · 2026-10-17 · Klaus** — Chess: offering a draw and resigning on the phone each ask for confirmation in a
+  dialog first (Cancel, tapping beside it or Escape changes nothing). Replaces the second tap for Resign (E-006).
+  Accepting or declining an offer the other player made stays one tap. The dialog closes by itself when the game ends.
+- **E-010 · 2026-10-17 · Klaus** — Chess: the stand-in takes the seat of a player who leaves also when the other side is
+  an AI player; the game no longer ends because no person is left. The game plays on by itself to its end, and anyone
+  who joins sits in the empty seat and takes the side back. *Why:* a phone put to sleep during a game against the
+  computer (to take a photo) ended the game after the waiting time, and the board kept showing "Your move" beside
+  *Show result*. Refines E-006. *Also:* when the table ends a game itself (a player removed, *End game*), the board's
+  panels and the phones say "The game has ended" instead of whose move it is, and the clocks stop; the opponent's panel
+  names the stand-in while it moves.

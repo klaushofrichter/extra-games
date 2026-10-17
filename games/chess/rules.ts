@@ -363,8 +363,8 @@ export default defineGame<State>({
 
   onSeatLeft(s, seat, ctx) {
     if (s.result || colorOf(s, seat) === null) return { state: s };
-    // Nobody left to play against: the stand-in would only play itself (or an AI).
-    if (!ctx.seats.some((x) => x.kind === "human")) return { end: { text: `${seatName(s, seat)} left and nobody is left to play: the game ends after ${count(Math.ceil(s.sans.length / 2), "move")}.` } };
+    // The stand-in takes the seat whoever is left, also against an AI player (E-010): the game plays on to its end on the
+    // board, and anyone who sits down in the empty seat takes the side back.
     const next: State = { ...s, standIn: [...s.standIn.filter((x) => x !== seat), seat], drawOffer: s.drawOffer === seat ? null : s.drawOffer };
     scheduleStandIn(next, ctx);
     return { state: next, events: [{ name: "standIn", data: { seat } }] };
