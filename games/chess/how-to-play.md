@@ -43,11 +43,11 @@ A king under attack is in **check**: you must get it out of check. No way out is
 
 ## Clocks
 
-**Time control (minutes + seconds per move)** sets the clocks: "10+5" gives each player ten minutes, and five seconds come back after each of your moves. "no clock" plays without. The settings offer bullet (1+0), blitz (3+2, 5+3), rapid (10+0, 10+5) and classical (15+10, 30+0). A pause on the table stops both clocks.
+**Time control (minutes + seconds per move)** sets the clocks: "10+5" gives each player ten minutes, and five seconds come back after each of your moves. "no clock" (the default) plays without. The settings offer bullet (1+0), blitz (3+2, 5+3), rapid (10+0, 10+5) and classical (15+10, 30+0). A pause on the table stops both clocks.
 
 ## Seats and colours
 
-**White plays from** decides who gets white: the south seat (the default), the north seat, or chance. The board is turned so that White's first rank is in front of White. All pieces stand the same way, toward the edge the board faces; the board's turn-around button turns them for the other side of the table.
+With one player at the table and the other remote or an AI, the player at the table sits south, facing the board the right way; a remote player's board turns to them by itself. **White plays from** decides who gets white: the south seat (the default), the north seat, or chance. The board is turned so that White's first rank is in front of White. All pieces stand the same way, toward the edge the board faces; the board's turn-around button turns them for the other side of the table.
 
 ## AI players and players who leave
 

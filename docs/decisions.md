@@ -80,3 +80,8 @@ Format: **E-nnn · date · decided by** — decision. *Why:* reason.
   *Show result*. Refines E-006. *Also:* when the table ends a game itself (a player removed, *End game*), the board's
   panels and the phones say "The game has ended" instead of whose move it is, and the clocks stop; the opponent's panel
   names the stand-in while it moves.
+- **E-011 · 2026-10-17 · Klaus** — Chess: with one player at the table and the other remote or AI, the player at the
+  table sits south (games-service D-128, `"localSeat": "south"`), and the default time control is "no clock" (was
+  10+5). *Why:* the table's board doesn't turn for a remote player, so the one person at it must sit on the side the
+  board is drawn for; remote boards already turn to their player (D-059). On a table without D-128 the field is
+  ignored and seats stay as chosen.
