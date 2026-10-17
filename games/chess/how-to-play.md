@@ -53,6 +53,6 @@ A king under attack is in **check**: you must get it out of check. No way out is
 
 An AI player's strength is set as an approximate Elo rating (400 for a beginner, 2200 for a strong club player) in its settings on the board.
 
-If a player leaves during the game, the **stand-in** plays on for them in their colour, at the **Stand-in strength (Elo) for a player who leaves**. Someone who sits down in the empty seat takes over from it. A phone that drops out gets a minute to come back before the stand-in takes over; their clock keeps running meanwhile.
+If a player leaves during the game, the **stand-in** plays on for them in their colour, at the **Stand-in strength (Elo) for a player who leaves**. Someone who sits down in the empty seat takes over from it. A phone that drops out gets a minute to come back before the stand-in takes over; their clock keeps running meanwhile. This also holds against an AI player: the game then plays on by itself, and joining with the QR code puts you back in the empty seat.
 
 > Tip: tap a picked-up piece again to put it back, or tap another of your pieces instead.
