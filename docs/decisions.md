@@ -56,3 +56,12 @@ Format: **E-nnn · date · decided by** — decision. *Why:* reason.
     the AI's levels, replays), `tests/chess-host.test.ts` (board and phone moves on a real host, an AI in its worker,
     the stand-in and taking the seat back, simulations), `scripts/e2e/chess.py` (a game by tapping the board, clocks and
     a draw offer on two phones, the rules on a 320 px phone), and the soak run.
+- **E-007 · 2026-10-17 · Klaus** — Chess: all pieces stand the same way, toward the edge the board faces, and the
+  board's turn-around button (games-service D-101) turns them; White plays from the south seat by default. *Why:* on
+  the table, pieces facing their own players were hard to read for both. *Implementation (Claude):* pieces rotate by
+  `info.rotation`, so on a remote board they face the remote player; the clock panels still face their players, the
+  promotion choice faces the player who promotes. Chess 0.2.0. *Strength check (Claude):* 20 games each against
+  Stockfish 19 limited to an Elo (`scripts/chess-ladder.ts`, 200 ms a move): level 1400 scored 14/20 against 1320
+  (about 1470), 1800 scored 9/20 against 1600 (about 1560), 2200 scored 17/20 against 2000 (about 2300). With 20 games
+  each estimate is good to about ±150, so the levels stay as they are; their labels are approximate, as the setting
+  says.

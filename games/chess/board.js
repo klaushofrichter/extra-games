@@ -1,5 +1,5 @@
-// Chess board: the 8 × 8 board in the middle of the table, White's first rank toward White's seat, each side's pieces
-// standing up for their own player. At each player's right hand a panel faces them: their clock, what they have
+// Chess board: the 8 × 8 board in the middle of the table, White's first rank toward White's seat, all pieces standing
+// up toward the edge the board faces (the turn-around button turns them). At each player's right hand a panel faces them: their clock, what they have
 // captured, the last moves and what is going on (check, a draw offer, the stand-in). Moves are made here: tap a piece of
 // yours, then its square; a promotion asks which piece. The phones only show clocks and moves and offer a draw or
 // resignation.
@@ -46,6 +46,9 @@ export function mount(root, ctx) {
     return whiteAtSouth() ? { x: LEFT + f * S, y: TOP + (7 - r) * S } : { x: LEFT + (7 - f) * S, y: TOP + r * S };
   }
   const faceOf = (color) => ROT[edgeOf(color)] ?? 0;
+  // All pieces stand the same way: toward the edge the board faces (the turn-around button flips it; a remote
+  // player's copy faces them).
+  const pieceFacing = () => info?.rotation ?? 0;
   const colorOfPiece = (ch) => (ch === ch.toUpperCase() ? 0 : 1);
 
   function drawSquares() {
@@ -88,7 +91,7 @@ export function mount(root, ctx) {
         const c = colorOfPiece(ch);
         const movable = mySeatToMove() && c === view.turn && targetsFrom(sq).length > 0;
         return `<div class="ch-pc ${movable ? "movable" : ""} ${sq === selected ? "lifted" : ""}" data-sq="${sq}" style="left:${x}px;top:${y}px;width:${S}px;height:${S}px">
-          <div style="transform:rotate(${faceOf(c)}deg)">${pieceSvg(ch, S - 10)}</div></div>`;
+          <div style="transform:rotate(${pieceFacing()}deg)">${pieceSvg(ch, S - 10)}</div></div>`;
       })
       .join(""));
   }

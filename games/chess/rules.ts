@@ -278,7 +278,7 @@ export default defineGame<State>({
     const seats = [...ctx.seats].sort((a, b) => a.seat - b.seat);
     const south = seats.find((x) => x.edge === "south") ?? seats[0];
     const north = seats.find((x) => x !== south) ?? seats[1] ?? seats[0];
-    const choice = String(settings.whiteSeat ?? "random");
+    const choice = String(settings.whiteSeat ?? "south");
     const whiteFirst = choice === "south" ? true : choice === "north" ? false : ctx.random() < 0.5;
     const white = whiteFirst ? south : north;
     const black = whiteFirst ? north : south;
