@@ -7,7 +7,7 @@ Checks on the way:
   - the turn-around button turns every piece to face north;
   - tapping a piece shows its moves, tapping a target moves it, and only the player to move can pick up pieces;
   - the phones show both clocks (the running one counting down), the moves, a draw offer and its answer, and Resign
-    asking for a second tap;
+    both asking for confirmation first;
   - the phone layout rules of games-service (D-065) on both phones;
   - the rules on the smallest phone: this table's three settings and the illustration;
   - checkmate ends the game with a summary.
@@ -135,15 +135,30 @@ def main():
             wait(lambda: len(moves()) == 1, 10, "e4")
             play(board, "e7", "e5", 2)
             # A draw offer and its answer on the phones.
-            ann.locator("[data-act=offerDraw]").click()
+            # Offering a draw asks first: Cancel sends nothing, the confirmation sends the offer.
+            ann.locator("[data-ask=offerDraw]").click()
+            ann.wait_for_selector(".ch-confirm:not([hidden])")
+            check(ann, "Ann's draw confirmation")
+            shot(ann, "deck-confirm-draw")
+            ann.locator("[data-confirm=no]").click()
+            time.sleep(0.4)
+            assert a("GET", "/game/board")["view"]["drawOffer"] is None, "Cancel sent a draw offer"
+            ann.locator("[data-ask=offerDraw]").click()
+            ann.locator("[data-confirm=yes]").click()
             ben.wait_for_selector("[data-act=acceptDraw]")
             check(ben, "Ben with a draw offer")
             shot(ben, "deck-draw-offer")
             ben.locator("[data-act=declineDraw]").click()
-            ann.wait_for_selector("[data-act=offerDraw]:not([disabled])")
-            # Resign asks twice.
+            ann.wait_for_selector("[data-ask=offerDraw]:not([disabled])")
+            # Resign asks first; Escape cancels it and the game goes on.
             ben.locator(".ch-resign").click()
-            assert "Tap again" in ben.inner_text(".ch-resign")
+            ben.wait_for_selector(".ch-confirm:not([hidden])")
+            assert "Resign the game?" in ben.inner_text(".ch-confirm h3")
+            check(ben, "Ben's resign confirmation")
+            shot(ben, "deck-confirm-resign")
+            ben.keyboard.press("Escape")
+            ben.wait_for_selector(".ch-confirm", state="hidden")
+            assert a("GET", "/state")["phase"] == "active", "Escape resigned the game"
             play(board, "f1", "c4", 3)
             play(board, "b8", "c6", 4)
             play(board, "d1", "h5", 5)

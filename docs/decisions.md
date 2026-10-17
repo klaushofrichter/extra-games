@@ -70,3 +70,6 @@ Format: **E-nnn · date · decided by** — decision. *Why:* reason.
   Chess switch to `2026.10.17.1`. *Implementation (Claude):* the `test` check runs games-service's
   `scripts/check-game-versions.ts` from `.games-service` against the branch a pull request goes into;
   `node .games-service/scripts/check-game-versions.ts --fix` sets the version of every changed game.
+- **E-009 · 2026-10-17 · Klaus** — Chess: offering a draw and resigning on the phone each ask for confirmation in a
+  dialog first (Cancel, tapping beside it or Escape changes nothing). Replaces the second tap for Resign (E-006).
+  Accepting or declining an offer the other player made stays one tap. The dialog closes by itself when the game ends.
