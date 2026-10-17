@@ -303,7 +303,7 @@ describe("the AI", () => {
   const ctx = () => ({ random: Math.random, randomInt: (a: number, b: number) => a, signal: new AbortController().signal, deadline: Date.now() + 20_000 });
 
   it("takes a mate in one at every level, and plays only legal moves", async () => {
-    for (const elo of [400, 1200, 2200]) {
+    for (const elo of [400, 400, 400, 400, 400, 1200, 2200]) {
       const v = view("6k1/5ppp/8/8/8/8/5PPP/R5K1 w - - 0 1");
       expect(await game.def.ai!(v, 0, ctx(), { elo }), String(elo)).toEqual({ name: "move", payload: { uci: "a1a8" } });
     }
@@ -347,7 +347,8 @@ describe("the AI", () => {
     for (let g = 0; g < 4; g++) {
       const p = Position.fromFen(START_FEN);
       const seen: string[] = [];
-      let r = Math.random;
+      let seed = 1000 + g;
+      const r = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
       for (let ply = 0; ply < 200; ply++) {
         const legal = p.legal();
         if (!legal.length || p.halfmove >= 100 || p.insufficientMaterial() || p.repetitions() >= 2) break;

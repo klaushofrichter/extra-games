@@ -566,7 +566,8 @@ export function pickMove(p: Position, o: PickOptions): { move: number; score: nu
   const r = engine.search(p, { depth: lv.depth, nodes, until: o.until, signal: o.signal }, exact);
   if (!exact || !r.root) return r;
   const order = new Map(legal.map((m, i) => [m, i]));
-  if (roll < lv.blunder) {
+  // A lapse never throws away a mate the search found.
+  if (roll < lv.blunder && r.root[0].score < MATE - 500) {
     // A lapse: one of the worse half of the moves, but never one that walks into a forced mate.
     const pool = r.root.slice(Math.floor(r.root.length / 2)).filter((x) => x.score > -MATE + 500);
     const from = pool.length ? pool : r.root;
