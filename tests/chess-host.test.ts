@@ -118,6 +118,21 @@ describe("chess on a table host", () => {
     await b.waitView((x) => x.view.color === 0 && x.view.standIn.length === 0);
   }, 30000);
 
+  it("the one player at the table sits south against a remote player, and plays without a clock by default (E-011)", async () => {
+    await t.ok("POST", "/game/select", { gameId: "chess" });
+    const rita = t.host.table.joinRemote("Rita", "sess-rita"); // takes the first seat: south
+    const a = await t.joinDeck("Klaus");
+    const edge = (name: string) => t.host.table.state().seatEdges[t.host.table.state().players.find((p) => p.name === name)!.seat!];
+    expect(edge("Klaus")).toBe("north");
+    t.host.table.setReady(rita.playerId, true);
+    await a.request("lobby", "ready", { ready: true });
+    await t.ok("POST", "/game/start");
+    expect(edge("Klaus")).toBe("south");
+    expect(edge("Rita")).toBe("north");
+    expect(state()).toMatchObject({ clock: null, timeControl: "no clock" });
+    expect(state().seats[0]).toBe(t.host.table.state().players.find((p) => p.name === "Klaus")!.seat); // White from south
+  });
+
   it("runs AI-only simulations at different strengths, every game finishing and replaying exactly", async () => {
     const game = await loadGame("chess");
     const r = await t.ok("POST", "/simulation", { gameId: "chess", players: 2, games: 3, seed: 5, settings: { timeControl: "no clock" }, aiOptions: [{ elo: 400 }, { elo: 600 }] });
