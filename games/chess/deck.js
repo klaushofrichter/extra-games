@@ -53,7 +53,7 @@ export function mount(root, ctx) {
   function clockHtml(color, big) {
     const left = clockLeft(view, info, color, remainingMs);
     if (left === null) return "";
-    const run = view.clock.running === color;
+    const run = view.clock.running === color && !info?.over;
     return `<span class="ch-clk ${big ? "big" : ""} ${run ? "run" : ""} ${left < 20_000 ? "low" : ""}" data-clock="${color}">${clockText(left)}</span>`;
   }
 
@@ -76,8 +76,8 @@ export function mount(root, ctx) {
   function drawActions() {
     const v = view;
     const box = $(".ch-acts");
-    $(".ch-actcard").hidden = v.result || v.color === null;
-    if (v.result || v.color === null) return;
+    $(".ch-actcard").hidden = !!(v.result || info?.over || v.color === null);
+    if (v.result || info?.over || v.color === null) return;
     const opp = v.seats[v.color ^ 1];
     const offered = v.drawOffer === opp;
     const mine = v.drawOffer === v.seat;
@@ -107,7 +107,8 @@ export function mount(root, ctx) {
       if (v.result) {
         const won = v.result.winner === v.color;
         s.innerHTML = v.result.winner === null ? "Draw" : won ? `<span style="color:var(--brass)">You win!</span>` : "You lose";
-      } else if (v.myTurn) s.innerHTML = `<span style="color:var(--brass)">${v.check ? "Check! " : ""}Your move</span>`;
+      } else if (info.over) s.textContent = "The game has ended";
+      else if (v.myTurn) s.innerHTML = `<span style="color:var(--brass)">${v.check ? "Check! " : ""}Your move</span>`;
       else {
         const ai = (info.players ?? []).find((p) => p.seat === v.turnSeat)?.kind === "ai" || v.standIn.includes(v.turnSeat);
         s.textContent = ai ? `${nameOf(v.turnSeat)} is thinking…` : `${nameOf(v.turnSeat)} to move`;
@@ -176,7 +177,7 @@ export function mount(root, ctx) {
   });
 
   const tick = setInterval(() => {
-    if (!view?.clock || view.result) return;
+    if (!view?.clock || view.result || info?.over) return;
     for (const el of root.querySelectorAll("[data-clock]")) {
       const c = Number(el.dataset.clock);
       const left = clockLeft(view, info, c, remainingMs);
@@ -192,7 +193,7 @@ export function mount(root, ctx) {
       info = i;
       draw();
       // The question no longer applies once the game is over (or a draw was already agreed).
-      if (confirming && (v.result || (confirming === "offerDraw" && v.drawOffer === v.seat))) closeDialog();
+      if (confirming && (v.result || i.over || (confirming === "offerDraw" && v.drawOffer === v.seat))) closeDialog();
       if (v.myTurn && !wasMyTurn) ctx.vibrate?.(60);
       if (events.some((e) => e.name === "drawOffered" && e.data.by !== v.seat)) ctx.vibrate?.([80, 60, 80]);
     },

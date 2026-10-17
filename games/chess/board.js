@@ -78,7 +78,7 @@ export function mount(root, ctx) {
   }
 
   function mySeatToMove() {
-    if (!view || view.result || view.turnSeat === null || !ctx?.act) return false;
+    if (!view || view.result || info?.over || view.turnSeat === null || !ctx?.act) return false;
     return (info.controlSeats ?? []).includes(view.turnSeat);
   }
 
@@ -129,14 +129,18 @@ export function mount(root, ctx) {
     const ai = (info.players ?? []).find((p) => p.seat === seat)?.kind === "ai";
     const thinking = ai || (info.aiThinking ?? []).some((a) => a.seat === seat);
     const left = clockLeft(v, info, color, remainingMs);
-    const running = v.clock && v.clock.running === color;
+    const running = v.clock && v.clock.running === color && !info.over;
     const low = left !== null && left < 20_000;
     const edge = materialEdge(v.captured, color);
     const took = (color === 0 ? v.captured.black : v.captured.white).split("").map((ch) => pieceSvg(ch, 30)).join("");
     let status = "";
     if (v.result) status = `<b>${esc(v.result.text)}</b>`;
+    else if (info.over) status = "<b>The game has ended</b>"; // ended by the table, e.g. a player left (the result says why)
     else if (v.turn === color) status = v.check ? `<b class="ch-alert">Check!</b> ${away ? "The stand-in" : "You"} to move` : away ? "The stand-in is moving…" : thinking ? "Thinking…" : "Your move";
-    else status = `<span class="muted">${esc(v.names[v.seats[color ^ 1]] ?? "")} to move</span>`;
+    else {
+      const mover = v.seats[color ^ 1];
+      status = `<span class="muted">${v.standIn.includes(mover) ? `The stand-in for ${esc(v.names[mover] ?? "")}` : esc(v.names[mover] ?? "")} to move</span>`;
+    }
     const offer = v.drawOffer === null || v.result ? "" : v.drawOffer === seat ? `<div class="ch-offer">You offered a draw</div>` : `<div class="ch-offer">${esc(v.names[v.drawOffer] ?? "")} offers a draw: answer on your phone</div>`;
     const pairs = movePairs(v.sans).slice(-4);
     const moves = pairs.length
@@ -168,14 +172,14 @@ export function mount(root, ctx) {
   function drawPanels() {
     for (const el of box.querySelectorAll(".ch-panel")) {
       const color = Number(el.dataset.color);
-      el.classList.toggle("active", !view.result && view.turn === color);
+      el.classList.toggle("active", !view.result && !info.over && view.turn === color);
       put(el, panelHtml(color));
     }
   }
 
   // Only the clocks change between messages: redraw them often, the rest on updates.
   const tick = setInterval(() => {
-    if (!view?.clock || view.result) return;
+    if (!view?.clock || view.result || info?.over) return;
     for (const el of box.querySelectorAll(".ch-panel")) {
       const color = Number(el.dataset.color);
       const left = clockLeft(view, info, color, remainingMs);
@@ -196,7 +200,7 @@ export function mount(root, ctx) {
       const c = view.seats.indexOf(seat);
       if (c < 0) return "watching";
       return c ? "Black" : "White";
-    }, { active: view.result ? undefined : view.turnSeat });
+    }, { active: view.result || info.over ? undefined : view.turnSeat });
   }
 
   // ----- moving by touch -----

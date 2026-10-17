@@ -258,12 +258,15 @@ describe("a player who leaves", () => {
     expect(g.mv("d2d4").ok).toBe(true);
   });
 
-  it("ends the game when nobody is left to play", () => {
+  it("against an AI player too, the stand-in takes the seat and the game plays on (E-010)", () => {
     const g = begin({}, { seats: [{ seat: 0, playerId: "a", name: "Ann", kind: "human", edge: "south" }, { seat: 1, playerId: "b", name: "Mia (AI)", kind: "ai", edge: "north" }] });
-    g.line("e2e4");
+    g.line("e2e4 e7e5");
     g.rt.seatLeft(0);
-    expect(g.rt.over).toBe(true);
-    expect(g.rt.summary!.text).toBe("Ann left and nobody is left to play: the game ends after one move.");
+    expect(g.rt.over).toBe(false);
+    expect(g.s().standIn).toEqual([0]);
+    g.rt.fireTimer("standin");
+    expect(g.s().sans).toHaveLength(3);
+    expect(endHash(game, g.rt)).toBe(true);
   });
 
   it("the Game Viewer describes moves, the stand-in's moves and the end", () => {

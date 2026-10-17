@@ -49,7 +49,7 @@ export function clockText(ms) {
 /** The time on a colour's clock now: the running one counts down from the host's flag timer. */
 export function clockLeft(view, info, color, remainingMs) {
   if (!view.clock) return null;
-  if (view.clock.running === color) {
+  if (view.clock.running === color && !info?.over) {
     const ms = remainingMs(info, "flag");
     return ms === null ? view.clock.left[color] : ms;
   }

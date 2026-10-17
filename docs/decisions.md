@@ -73,3 +73,10 @@ Format: **E-nnn · date · decided by** — decision. *Why:* reason.
 - **E-009 · 2026-10-17 · Klaus** — Chess: offering a draw and resigning on the phone each ask for confirmation in a
   dialog first (Cancel, tapping beside it or Escape changes nothing). Replaces the second tap for Resign (E-006).
   Accepting or declining an offer the other player made stays one tap. The dialog closes by itself when the game ends.
+- **E-010 · 2026-10-17 · Klaus** — Chess: the stand-in takes the seat of a player who leaves also when the other side is
+  an AI player; the game no longer ends because no person is left. The game plays on by itself to its end, and anyone
+  who joins sits in the empty seat and takes the side back. *Why:* a phone put to sleep during a game against the
+  computer (to take a photo) ended the game after the waiting time, and the board kept showing "Your move" beside
+  *Show result*. Refines E-006. *Also:* when the table ends a game itself (a player removed, *End game*), the board's
+  panels and the phones say "The game has ended" instead of whose move it is, and the clocks stop; the opponent's panel
+  names the stand-in while it moves.
