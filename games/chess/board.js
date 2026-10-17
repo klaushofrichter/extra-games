@@ -1,0 +1,301 @@
+// Chess board: the 8 × 8 board in the middle of the table, White's first rank toward White's seat, each side's pieces
+// standing up for their own player. At each player's right hand a panel faces them: their clock, what they have
+// captured, the last moves and what is going on (check, a draw offer, the stand-in). Moves are made here: tap a piece of
+// yours, then its square; a promotion asks which piece. The phones only show clocks and moves and offer a draw or
+// resignation.
+import { W, H, ROT, esc, html, ping, playerColor, playSound, remainingMs, seatPlates, useStyles } from "/shared/board-kit.js";
+import { clockLeft, clockText, materialEdge, movePairs, moveSound, pieceSvg } from "/games/chess/assets/pieces.js";
+
+const S = 92; // square size
+const LEFT = (W - 8 * S) / 2;
+const TOP = (H - 8 * S) / 2;
+const FILES = "abcdefgh";
+
+export function mount(root, ctx) {
+  useStyles("/games/chess/board.css");
+  const box = html(`<div class="ch-board">
+    <div class="ch-frame" style="left:${LEFT - 22}px;top:${TOP - 22}px;width:${8 * S + 44}px;height:${8 * S + 44}px"></div>
+    <div class="ch-squares"></div><div class="ch-marks"></div><div class="ch-coords"></div><div class="ch-pieces"></div>
+    <div class="ch-panel" data-color="0"></div><div class="ch-panel" data-color="1"></div>
+    <div class="ch-promo" hidden></div></div>`);
+  root.appendChild(box);
+  const squares = box.querySelector(".ch-squares");
+  const pieces = box.querySelector(".ch-pieces");
+  const marks = box.querySelector(".ch-marks");
+  const coords = box.querySelector(".ch-coords");
+  const promo = box.querySelector(".ch-promo");
+  let info = null;
+  let view = null;
+  let selected = null; // square name of the picked-up piece
+  let sending = false;
+  let gone = false;
+  // Layers are redrawn only when their markup changes, so a move's animation isn't cut short by the next update.
+  const drawn = new Map();
+  const put = (el, markup) => {
+    if (drawn.get(el) === markup) return;
+    drawn.set(el, markup);
+    el.innerHTML = markup;
+  };
+
+  // ----- geometry: where a square sits on the table, which way each colour's pieces face -----
+  const edgeOf = (color) => info?.seatEdges?.[view?.seats?.[color]] ?? (color === 0 ? "south" : "north");
+  const whiteAtSouth = () => edgeOf(0) !== "north";
+  function sqXY(name) {
+    const f = FILES.indexOf(name[0]);
+    const r = Number(name[1]) - 1;
+    return whiteAtSouth() ? { x: LEFT + f * S, y: TOP + (7 - r) * S } : { x: LEFT + (7 - f) * S, y: TOP + r * S };
+  }
+  const faceOf = (color) => ROT[edgeOf(color)] ?? 0;
+  const colorOfPiece = (ch) => (ch === ch.toUpperCase() ? 0 : 1);
+
+  function drawSquares() {
+    let sq = "";
+    for (let r = 1; r <= 8; r++)
+      for (let f = 0; f < 8; f++) {
+        const name = FILES[f] + r;
+        const { x, y } = sqXY(name);
+        sq += `<div class="ch-sq ${(f + r) % 2 ? "dark" : "light"}" data-sq="${name}" style="left:${x}px;top:${y}px;width:${S}px;height:${S}px"></div>`;
+      }
+    put(squares, sq);
+    // File letters along both long edges, rank numbers along both short ones, each facing the nearer player.
+    let c = "";
+    for (let f = 0; f < 8; f++) {
+      const bottom = sqXY(FILES[f] + (whiteAtSouth() ? 1 : 8));
+      const top = sqXY(FILES[f] + (whiteAtSouth() ? 8 : 1));
+      c += `<span style="left:${bottom.x + S / 2}px;top:${TOP + 8 * S + 11}px">${FILES[f]}</span>`;
+      c += `<span style="left:${top.x + S / 2}px;top:${TOP - 11}px;transform:translate(-50%,-50%) rotate(180deg)">${FILES[f]}</span>`;
+    }
+    for (let r = 1; r <= 8; r++) {
+      const at = sqXY(`a${r}`);
+      const h = sqXY(`h${r}`);
+      c += `<span style="left:${Math.min(at.x, h.x) - 11}px;top:${at.y + S / 2}px">${r}</span>`;
+      c += `<span style="left:${Math.max(at.x, h.x) + S + 11}px;top:${at.y + S / 2}px;transform:translate(-50%,-50%) rotate(180deg)">${r}</span>`;
+    }
+    put(coords, c);
+  }
+
+  function mySeatToMove() {
+    if (!view || view.result || view.turnSeat === null || !ctx?.act) return false;
+    return (info.controlSeats ?? []).includes(view.turnSeat);
+  }
+
+  const targetsFrom = (from) => view.legal.filter((u) => u.startsWith(from));
+
+  function drawPieces() {
+    put(pieces, Object.entries(view.pieces)
+      .map(([sq, ch]) => {
+        const { x, y } = sqXY(sq);
+        const c = colorOfPiece(ch);
+        const movable = mySeatToMove() && c === view.turn && targetsFrom(sq).length > 0;
+        return `<div class="ch-pc ${movable ? "movable" : ""} ${sq === selected ? "lifted" : ""}" data-sq="${sq}" style="left:${x}px;top:${y}px;width:${S}px;height:${S}px">
+          <div style="transform:rotate(${faceOf(c)}deg)">${pieceSvg(ch, S - 10)}</div></div>`;
+      })
+      .join(""));
+  }
+
+  function drawMarks() {
+    let m = "";
+    const mark = (sq, cls) => {
+      const { x, y } = sqXY(sq);
+      m += `<div class="ch-mark ${cls}" data-sq="${sq}" style="left:${x}px;top:${y}px;width:${S}px;height:${S}px"></div>`;
+    };
+    if (view.last) {
+      mark(view.last.from, "last");
+      mark(view.last.to, "last");
+    }
+    if (view.check) mark(view.check, "check");
+    if (selected) {
+      mark(selected, "sel");
+      const seen = new Set();
+      for (const u of targetsFrom(selected)) {
+        const to = u.slice(2, 4);
+        if (seen.has(to)) continue;
+        seen.add(to);
+        mark(to, view.pieces[to] ? "target take" : "target");
+      }
+    }
+    put(marks, m);
+  }
+
+  // ----- the panels: one per colour, at that player's right hand, facing them -----
+  function panelHtml(color) {
+    const v = view;
+    const seat = v.seats[color];
+    const name = v.names[seat] ?? (color ? "Black" : "White");
+    const away = v.standIn.includes(seat);
+    const ai = (info.players ?? []).find((p) => p.seat === seat)?.kind === "ai";
+    const thinking = ai || (info.aiThinking ?? []).some((a) => a.seat === seat);
+    const left = clockLeft(v, info, color, remainingMs);
+    const running = v.clock && v.clock.running === color;
+    const low = left !== null && left < 20_000;
+    const edge = materialEdge(v.captured, color);
+    const took = (color === 0 ? v.captured.black : v.captured.white).split("").map((ch) => pieceSvg(ch, 30)).join("");
+    let status = "";
+    if (v.result) status = `<b>${esc(v.result.text)}</b>`;
+    else if (v.turn === color) status = v.check ? `<b class="ch-alert">Check!</b> ${away ? "The stand-in" : "You"} to move` : away ? "The stand-in is moving…" : thinking ? "Thinking…" : "Your move";
+    else status = `<span class="muted">${esc(v.names[v.seats[color ^ 1]] ?? "")} to move</span>`;
+    const offer = v.drawOffer === null || v.result ? "" : v.drawOffer === seat ? `<div class="ch-offer">You offered a draw</div>` : `<div class="ch-offer">${esc(v.names[v.drawOffer] ?? "")} offers a draw: answer on your phone</div>`;
+    const pairs = movePairs(v.sans).slice(-4);
+    const moves = pairs.length
+      ? pairs.map((p) => `<span class="n">${p.n}.</span><span>${esc(p.w)}</span><span>${esc(p.b)}</span>`).join("")
+      : `<span class="muted" style="grid-column:1/-1">No moves yet</span>`;
+    return `<div class="ch-who"><span class="ch-dot" style="background:${playerColor(info, seat)}"></span>
+        <span class="ch-name">${esc(name)}</span><span class="ch-color ${color ? "b" : "w"}">${color ? "Black" : "White"}</span></div>
+      ${away ? `<div class="ch-standin">Stand-in (Elo ${esc(v.standInElo ?? "")}) plays for ${esc(name)}</div>` : ""}
+      <div class="ch-clock ${running ? "running" : ""} ${low ? "low" : ""}">${left === null ? (v.clockMissing ? "<small>no clock on this table</small>" : "<small>no clock</small>") : clockText(left)}</div>
+      <div class="ch-status">${status}</div>${offer}
+      <div class="ch-took">${took}${edge > 0 ? `<span class="ch-edge">+${edge}</span>` : ""}</div>
+      <div class="ch-moves">${moves}</div>`;
+  }
+
+  function placePanels() {
+    for (const el of box.querySelectorAll(".ch-panel")) {
+      const color = Number(el.dataset.color);
+      const edge = edgeOf(color);
+      // South: bottom right of the table; north: top left, turned to face north.
+      const south = edge !== "north";
+      const cx = south ? W - 270 : 270;
+      const cy = south ? H - 300 : 300;
+      el.style.left = `${cx}px`;
+      el.style.top = `${cy}px`;
+      el.style.transform = `translate(-50%,-50%) rotate(${south ? 0 : 180}deg)`;
+    }
+  }
+
+  function drawPanels() {
+    for (const el of box.querySelectorAll(".ch-panel")) {
+      const color = Number(el.dataset.color);
+      el.classList.toggle("active", !view.result && view.turn === color);
+      put(el, panelHtml(color));
+    }
+  }
+
+  // Only the clocks change between messages: redraw them often, the rest on updates.
+  const tick = setInterval(() => {
+    if (!view?.clock || view.result) return;
+    for (const el of box.querySelectorAll(".ch-panel")) {
+      const color = Number(el.dataset.color);
+      const left = clockLeft(view, info, color, remainingMs);
+      const c = el.querySelector(".ch-clock");
+      if (!c || left === null) continue;
+      c.textContent = clockText(left);
+      c.classList.toggle("low", left < 20_000);
+    }
+  }, 100);
+
+  function draw() {
+    drawSquares();
+    drawPieces();
+    drawMarks();
+    placePanels();
+    drawPanels();
+    seatPlates(root, info, (seat) => {
+      const c = view.seats.indexOf(seat);
+      if (c < 0) return "watching";
+      return c ? "Black" : "White";
+    }, { active: view.result ? undefined : view.turnSeat });
+  }
+
+  // ----- moving by touch -----
+  function showPromotion(from, to) {
+    const color = view.turn;
+    const { x, y } = sqXY(to);
+    const letters = ["q", "r", "b", "n"].map((t) => (color === 0 ? t.toUpperCase() : t));
+    promo.innerHTML = letters.map((ch) => `<button type="button" data-promo="${ch.toLowerCase()}" aria-label="Promote to ${ch}">${pieceSvg(ch, 70)}</button>`).join("");
+    promo.hidden = false;
+    // Over the promotion square, facing the player who moves.
+    promo.style.left = `${x + S / 2}px`;
+    promo.style.top = `${y + S / 2}px`;
+    promo.style.transform = `translate(-50%,-50%) rotate(${faceOf(color)}deg)`;
+    promo.dataset.from = from;
+    promo.dataset.to = to;
+  }
+
+  async function send(u) {
+    sending = true;
+    selected = null;
+    promo.hidden = true;
+    const r = await ctx.act(view.turnSeat, "move", { uci: u });
+    sending = false;
+    if (gone || !view) return;
+    if (!r.ok) draw();
+  }
+
+  box.addEventListener("pointerdown", (e) => {
+    if (sending || !view) return;
+    const pb = e.target.closest("[data-promo]");
+    if (pb) {
+      e.preventDefault();
+      return void send(promo.dataset.from + promo.dataset.to + pb.dataset.promo);
+    }
+    if (!promo.hidden) {
+      promo.hidden = true; // tapping beside the choice cancels it
+      selected = null;
+      return void draw();
+    }
+    if (!mySeatToMove()) return;
+    const el = e.target.closest("[data-sq]");
+    if (!el) {
+      if (selected) {
+        selected = null;
+        drawPieces();
+        drawMarks();
+      }
+      return;
+    }
+    const sq = el.dataset.sq;
+    const ch = view.pieces[sq];
+    if (selected && sq !== selected) {
+      const options = targetsFrom(selected).filter((u) => u.slice(2, 4) === sq);
+      if (options.length === 1) return void send(options[0]);
+      if (options.length > 1) return void showPromotion(selected, sq);
+    }
+    if (ch && colorOfPiece(ch) === view.turn && targetsFrom(sq).length) selected = sq === selected ? null : sq;
+    else selected = null;
+    drawPieces();
+    drawMarks();
+  });
+
+  // ----- animation and sound for a move -----
+  function animate(ev) {
+    const el = pieces.querySelector(`.ch-pc[data-sq="${ev.to}"]`);
+    if (!el) return;
+    const a = sqXY(ev.from);
+    const b = sqXY(ev.to);
+    el.animate([{ transform: `translate(${a.x - b.x}px,${a.y - b.y}px)` }, { transform: "none" }], { duration: 260, easing: "cubic-bezier(.3,.7,.3,1)" });
+    if (ev.castle) {
+      const rank = ev.to[1];
+      const [rf, rt] = ev.to[0] === "g" ? ["h", "f"] : ["a", "d"];
+      const rook = pieces.querySelector(`.ch-pc[data-sq="${rt}${rank}"]`);
+      const ra = sqXY(rf + rank);
+      const rb = sqXY(rt + rank);
+      rook?.animate([{ transform: `translate(${ra.x - rb.x}px,${ra.y - rb.y}px)` }, { transform: "none" }], { duration: 260, delay: 120, easing: "ease-out", fill: "backwards" });
+    }
+  }
+
+  return {
+    update(v, events, i) {
+      info = i;
+      if (view && v.moveCount !== view.moveCount) {
+        selected = null;
+        promo.hidden = true;
+      }
+      view = v;
+      if (selected && !targetsFrom(selected).length) selected = null;
+      draw();
+      for (const e of events) {
+        if (e.name === "moved") {
+          animate(e.data);
+          playSound(info, "ch-move", moveSound(!!e.data.capture));
+          if (e.data.check || e.data.mate) playSound(info, "ch-check", (c, t, o) => ping(c, o, t + 0.12, { freq: 1500, gain: 0.18, decay: 0.3 }));
+        }
+        if (e.name === "over") playSound(info, "ch-over", (c, t, o) => [0, 0.16, 0.32].forEach((d, k) => ping(c, o, t + 0.3 + d, { freq: [880, 1100, 1320][k], gain: 0.2, decay: 0.6 })));
+        if (e.name === "drawOffered") playSound(info, "ch-offer", (c, t, o) => ping(c, o, t, { freq: 1200, gain: 0.15, decay: 0.3 }));
+      }
+    },
+    destroy() {
+      gone = true;
+      clearInterval(tick);
+    },
+  };
+}

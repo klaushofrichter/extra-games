@@ -1,6 +1,7 @@
 // Soak: many AI-only games per game, player count and play style, through games-service's own simulation loop and
 // with `@game-table/sdk` resolved by the host's import hook, exactly as on a table. Checks that every game finishes,
-// replays to the same state, and (Liar's Dice) loses exactly one die per round.
+// replays to the same state, and (Liar's Dice) loses exactly one die per round. A number option (Chess's Elo) plays its
+// two weakest levels against each other, which are quick, and a few games between club levels.
 // Usage: node scripts/soak.ts [gamesPerConfig]
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -24,12 +25,18 @@ let failures = 0;
 for (const g of games.values()) {
   if (!g.manifest.simulation.supported) continue;
   const option = g.manifest.ai.options[0];
-  const styles = option?.values ?? [undefined];
-  for (const players of allowedPlayerCounts(g.manifest)) {
+  const numeric = option && option.values === undefined && typeof option.min === "number";
+  const runs: { styles: (string | number | undefined)[]; games: number }[] = numeric
+    ? [
+        { styles: [option.min!, option.min! + 2 * (option.step ?? 100)], games: perConfig },
+        { styles: [1200, 1600], games: Math.max(1, Math.ceil(perConfig / 50)) },
+      ]
+    : [{ styles: option?.values ?? [undefined], games: perConfig }];
+  for (const [players, { styles, games: count }] of allowedPlayerCounts(g.manifest).flatMap((n) => runs.map((run) => [n, run] as const))) {
     const t0 = Date.now();
     // Seats alternate through the styles, so every style plays against every other.
-    const aiOptions = Array.from({ length: players }, (_, i) => (styles[i % styles.length] ? { [option.key]: styles[i % styles.length] } : {}));
-    const r = await runSimulation(g, { players, games: perConfig, seed: players * 1000 + 7, aiOptions }, logs, "soak");
+    const aiOptions = Array.from({ length: players }, (_, i) => (styles[i % styles.length] !== undefined ? { [option.key]: styles[i % styles.length] } : {}));
+    const r = await runSimulation(g, { players, games: count, seed: players * 1000 + 7, aiOptions }, logs, "soak");
     const { games: recs } = await LogStore.unzip((await logs.read(r.logId))!);
     let bad = 0;
     const wins: Record<string, number> = {};
@@ -48,12 +55,19 @@ for (const g of games.values()) {
         const style = aiOptions[seat]?.[option.key] ?? "default";
         wins[style] = (wins[style] ?? 0) + 1;
       }
+      if (g.manifest.id === "chess") {
+        const h = end.summary?.highlights ?? {};
+        const reasons = ["checkmate", "stalemate", "repetition", "fifty", "material"];
+        if (!reasons.includes(h.reason)) bad++;
+        const key = h.winner === null || h.winner === undefined ? "draw" : String(aiOptions[h.winner]?.[option.key]);
+        wins[key] = (wins[key] ?? 0) + 1;
+      }
     });
     failures += bad;
     const steps = r.games.reduce((a, x) => a + x.steps, 0);
-    console.log(`${g.manifest.id.padEnd(11)} ${players} players  ${perConfig} games  ${String(steps).padStart(6)} steps  ${String(Date.now() - t0).padStart(5)} ms  ${bad ? `FAILED ${bad}` : "ok"}  wins ${JSON.stringify(wins)}`);
+    console.log(`${g.manifest.id.padEnd(11)} ${players} players  ${String(count).padStart(3)} games  ${String(steps).padStart(6)} steps  ${String(Date.now() - t0).padStart(5)} ms  ${bad ? `FAILED ${bad}` : "ok"}  wins ${JSON.stringify(wins)}`);
   }
 }
 await rm(tmp, { recursive: true, force: true });
-console.log(failures ? `\n${failures} problems` : "\nall games finished, replayed exactly and lost one die per round");
+console.log(failures ? `\n${failures} problems` : "\nall games finished and replayed exactly (Liar's Dice: one die lost per round; Chess: a known ending)");
 process.exit(failures ? 1 : 0);
