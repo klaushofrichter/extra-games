@@ -2,6 +2,8 @@
 supported size, 320 x 568) play a short game by tapping pieces on the board.
 
 Checks on the way:
+  - the board's settings window lists all eight time controls in a pulldown inside the window, and picking 3+2 there
+    sets it (games-service D-129);
   - no browser console error or uncaught exception, on the board or either phone;
   - the board shows 32 pieces, White's first rank toward White's seat (south), every piece facing the board's front;
   - the turn-around button turns every piece to face north;
@@ -94,7 +96,24 @@ def main():
             pick_game(board, "chess")
             board.locator(".dialog [data-x=yes]").click()
             time.sleep(0.4)
-            a("POST", "/game/settings", {"settings": {"timeControl": "3+2", "whiteSeat": "south"}})
+            # The time control from the board's settings window (games-service D-129): all eight in a pulldown inside the
+            # window, picked there like at the table.
+            board.click("#settings-button")
+            tc = board.locator(".game-rules select[data-setting-select=timeControl]")
+            tc.wait_for()
+            labels = tc.locator("option").all_inner_texts()
+            assert labels == ["no clock", "1+0", "3+2", "5+3", "10+0", "10+5", "15+10", "30+0"], labels
+            assert tc.input_value() == "no clock", "no clock is the default (E-011)"
+            out = board.evaluate("""() => {
+              const panel = document.querySelector('.overlay.settings .panel').getBoundingClientRect();
+              return [...document.querySelectorAll('.game-rules .row > *')].filter((e) => { const r = e.getBoundingClientRect(); return r.right > panel.right + 1 || r.left < panel.left - 1; }).length;
+            }""")
+            assert out == 0, f"{out} Chess settings stick out of the settings window"
+            shot(board, "settings")
+            tc.select_option("3+2")
+            wait(lambda: a("GET", "/state")["game"]["settings"]["timeControl"] == "3+2", 5, "the time control to become 3+2")
+            board.locator(".overlay.settings [data-close-overlay]").click()
+            a("POST", "/game/settings", {"settings": {"whiteSeat": "south"}})
             for d in (ann, ben):
                 d.click("#ready")
             time.sleep(0.4)
