@@ -1,0 +1,37 @@
+{
+  "id": "chess",
+  "name": "Chess",
+  "version": "0.1.0",
+  "sdk": "^0.1",
+  "description": "Classic chess for two, played on the board: tap a piece, then its square. Chess clocks from bullet to classical, or none. AI players at a strength you choose, and an AI that takes over the seat of a player who leaves.",
+  "players": [2],
+  "turnModel": "sequential",
+  "seatLayouts": [2],
+  "edges": ["north", "south"],
+  "seatConstraints": null,
+  "dynamicPlayers": true,
+  "saveGame": false,
+  "settings": [
+    { "key": "timeControl", "type": "enum", "values": ["no clock", "1+0", "3+2", "5+3", "10+0", "10+5", "15+10", "30+0"], "default": "10+5", "label": "Time control (minutes + seconds per move)" },
+    { "key": "whiteSeat", "type": "enum", "values": ["random", "south", "north"], "default": "random", "label": "White plays from" },
+    { "key": "standInElo", "type": "int", "min": 400, "max": 2200, "step": 100, "default": 1200, "label": "Stand-in strength (Elo) for a player who leaves" }
+  ],
+  "ai": {
+    "supported": true,
+    "options": [
+      { "key": "elo", "type": "int", "min": 400, "max": 2200, "step": 100, "default": 1200, "label": "Strength (Elo, approximate)" }
+    ],
+    "hostConfig": [],
+    "timeoutSeconds": 30,
+    "worker": true
+  },
+  "simulation": {
+    "supported": true,
+    "headless": true
+  },
+  "remoteBoardControl": true,
+  "boardIntents": ["move"],
+  "lobbyButton": "top-right",
+  "viewer": { "columns": [{ "key": "san", "label": "Move" }, { "key": "clock", "label": "Clock after" }] },
+  "permissions": []
+}
