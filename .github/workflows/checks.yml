@@ -24,6 +24,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # the game-version check compares with the branch the PR goes into
       - uses: actions/setup-node@v7
         with:
           node-version: 26
@@ -31,6 +33,10 @@ jobs:
       - run: npm ci
       # games-service (public): the runtime, host and SDK the games are tested against.
       - run: scripts/games-service.sh
+      # A game's version changes exactly when its folder does (games-service D-127, E-008).
+      - name: Game versions
+        if: github.event_name == 'pull_request'
+        run: node .games-service/scripts/check-game-versions.ts --base "origin/${{ github.base_ref }}"
       - run: npm test
       # noEmit over games, tests and scripts: vitest strips types, so nothing else checks them.
       - run: npm run typecheck

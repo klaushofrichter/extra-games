@@ -65,3 +65,8 @@ Format: **E-nnn · date · decided by** — decision. *Why:* reason.
   (about 1470), 1800 scored 9/20 against 1600 (about 1560), 2200 scored 17/20 against 2000 (about 2300). With 20 games
   each estimate is good to about ±150, so the levels stay as they are; their labels are approximate, as the setting
   says.
+- **E-008 · 2026-10-17 · Klaus** — Game versions follow games-service D-127: `YYYY.MM.DD.N` in each game's manifest,
+  changed when, and only when, something in the game's folder changes, never by a platform change. Liar's Dice and
+  Chess switch to `2026.10.17.1`. *Implementation (Claude):* the `test` check runs games-service's
+  `scripts/check-game-versions.ts` from `.games-service` against the branch a pull request goes into;
+  `node .games-service/scripts/check-game-versions.ts --fix` sets the version of every changed game.
