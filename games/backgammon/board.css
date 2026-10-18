@@ -42,7 +42,8 @@
 }
 .bg-roll { pointer-events: auto; display: grid; grid-template-columns: auto auto; gap: 12px; padding: 14px 18px 10px; border-radius: 16px;
   background: rgba(8, 22, 19, .55); border: 2px dashed rgba(214, 169, 74, .7); cursor: pointer; }
-.bg-roll .bg-die { opacity: .8; }
+/* Before the roll the dice show no numbers, so nothing on the board looks like a roll that has not happened yet. */
+.bg-roll .bg-die.blank { opacity: .4; }
 .bg-roll span { grid-column: 1 / -1; font: 600 20px var(--text); color: var(--brass); }
 .bg-wait, .bg-opening { font: 600 19px var(--text); color: #e7dcc4; background: rgba(8, 22, 19, .6); padding: 4px 12px; border-radius: 10px; }
 
