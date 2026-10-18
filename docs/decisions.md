@@ -128,3 +128,7 @@ Format: **E-nnn · date · decided by** — decision. *Why:* reason.
 - **E-014 · 2026-10-18 · Klaus** — Backgammon: before a roll, the dice on the board's *Tap to roll* button show no
   numbers and are dimmer (40 %, was 80 % with a 5 and a 2). *Why:* sample numbers on the waiting dice could be taken for
   a roll that had not happened yet. Backgammon 2026.10.18.2.
+- **E-015 · 2026-10-18 · Klaus** — Backgammon: *Points to win the match* goes up to 100 (was 15); − and + still step by
+  two, a typed number can be any from 1 to 100. A number out of range is now said in the settings window itself
+  (games-service D-146). Backgammon and Chess: the side panel of the player to move is framed in that player's lobby
+  colour, as their seat plate is, instead of the board's brass. Backgammon 2026.10.18.3, Chess 2026.10.18.2.

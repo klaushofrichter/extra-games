@@ -28,7 +28,7 @@
 
 .ch-panel { position: absolute; width: 440px; padding: 18px 22px; border-radius: 18px; box-sizing: border-box;
   background: rgba(8, 22, 19, .78); border: 2px solid rgba(214, 169, 74, .25); transition: border-color .3s, box-shadow .3s; }
-.ch-panel.active { border-color: var(--brass); box-shadow: 0 0 30px rgba(214, 169, 74, .25); }
+.ch-panel.active { border-color: var(--pc, var(--brass)); box-shadow: 0 0 30px color-mix(in srgb, var(--pc, #d6a94a) 35%, transparent); }
 .ch-who { display: flex; align-items: center; gap: 10px; font-family: var(--display); font-size: 28px; }
 .ch-dot { width: 16px; height: 16px; border-radius: 50%; box-shadow: 0 0 0 2px rgba(0, 0, 0, .4); flex: none; }
 .ch-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

@@ -22,7 +22,7 @@ Games here:
   seat of a player who leaves). Its clocks need games-service with game time (`ctx.now()`, D-126); on an older table
   it plays without a clock and says so.
 - **Backgammon** (2 players, checkers moved on the board by tapping, rolls, doubles and Done on the phones too, matches
-  to 1–15 points with the doubling cube and the Crawford rule, an optional time per turn, AI players at three
+  to 1–100 points with the doubling cube and the Crawford rule, an optional time per turn, AI players at three
   strengths, and a stand-in that plays on for a player who leaves).
 
 ## How a game gets onto a table
