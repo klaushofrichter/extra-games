@@ -246,7 +246,7 @@ export function mount(root, ctx) {
     let inner;
     if (v.phase === "roll" || v.phase === "double") {
       inner = rollHere
-        ? `<button type="button" class="bg-roll" data-roll aria-label="Roll the dice">${dieHtml(5, { size: 56 })}${dieHtml(2, { size: 56 })}<span>Tap to roll</span></button>`
+        ? `<button type="button" class="bg-roll" data-roll aria-label="Roll the dice">${dieHtml(0, { size: 56, cls: "blank" })}${dieHtml(0, { size: 56, cls: "blank" })}<span>Tap to roll</span></button>`
         : `<div class="bg-wait">${v.phase === "double" ? "" : `${esc(nameOf(v.turn))} to roll`}</div>`;
     } else {
       const ds = diceState(v.dice, v.remaining, v.phase);
