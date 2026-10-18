@@ -386,7 +386,11 @@ describe("on the runtime", () => {
     expect(Math.max(...st.match.score)).toBe(3);
     // Every turn of the last game is in the list, in notation.
     expect(st.plays.length).toBeGreaterThan(5);
-    for (const p of st.plays) expect(p.text).toMatch(/^(\(no move\)|((bar|\d+)(\/(\d+|off)\*?)+(\(\d\))? ?)+)$/);
+    // One token per checker path ("13/8*", "6/off(2)"); token by token, so the pattern cannot backtrack (CodeQL js/redos).
+    for (const p of st.plays) {
+      if (p.text === "(no move)") continue;
+      for (const tok of p.text.split(" ")) expect(tok).toMatch(/^(bar|\d+)(\/(\d+|off)\*?)+(\(\d\))?$/);
+    }
   });
 
   it("describes steps for the Game Viewer", () => {
