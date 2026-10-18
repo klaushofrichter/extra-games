@@ -593,7 +593,8 @@ export default defineGame<State>({
     const w = s.result.winner;
     const rows = ([0, 1] as Color[]).map((c) => {
       const st = s.stats[c];
-      return [seatName(s, c), COLOR_NAME[c], s.match.score[c], st.gamesWon, st.gammons, st.hits, st.doubles, st.pipsRolled];
+      // Four columns fit a 320 px phone (its headers don't wrap); gammons, doubles and pips rolled are awards instead.
+      return [seatName(s, c), s.match.score[c], st.gamesWon, st.hits];
     });
     const awards = [
       most("hitman", "🎯", "Hitman", "Hit the most checkers.", s, (x) => x.hits, (n) => count(n, "hit")),
@@ -606,7 +607,7 @@ export default defineGame<State>({
     return {
       text: resultText(s),
       highlights: { winner: s.seats[w], score: s.match.score, games: s.games.length, length: s.match.length, kinds: s.games.map((g) => g.kind) },
-      table: { columns: ["Player", "Colour", "Points", "Games won", "Gammons", "Hits", "Doubles rolled", "Pips rolled"], rows },
+      table: { columns: ["Player", "Points", "Games", "Hits"], rows },
       awards,
     };
   },

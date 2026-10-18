@@ -117,8 +117,11 @@ Format: **E-nnn · date · decided by** — decision. *Why:* reason.
   - **Seconds per turn** (0–180, default none): when it runs out, the table plays the turn for the player and takes a
     double for them. A player who leaves is replaced by the stand-in, as Chess's E-010, until someone takes the seat;
     the player at the table sits south (`"localSeat": "south"`, E-011).
-  - **Statistics** (games-service D-136): a table per player and awards *Hitman*, *Doublets*, *High Roller*, *Back
-    from the Bar*, *Gammon Maker* and *Cube Handler*, the award helper kept in the game as Chess does.
+  - **Statistics** (games-service D-136): a table of points, games won and hits per player, and awards *Hitman*,
+    *Doublets*, *High Roller*, *Back from the Bar*, *Gammon Maker* and *Cube Handler*, the award helper kept in the game
+    as Chess does. The table has four columns because the phones' result card (games-service `deck.css`,
+    `.summary-table`) neither scrolls nor wraps single-word headers: eight columns made a 320 px phone 486 px wide.
+    Chess's eight-column table has the same exposure; a scrolling wrapper in games-service would fix it for every game.
   - **Checks**: `tests/backgammon.test.ts` (move generation and the forced-play rules, the cube, Crawford, the match,
     timers, the stand-in, the AI, replays), `tests/backgammon-host.test.ts` (a real host with fake phones),
     `scripts/e2e/backgammon.py` (board and two phones, one at 320 px), and the soak run.

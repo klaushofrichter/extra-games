@@ -298,7 +298,9 @@ describe("the doubling cube and the match", () => {
     expect(r.events.map((e) => e.name)).toEqual(["moved", "gameWon", "matchWon"]);
     const sum = def.isOver(r.s)!;
     expect(sum.text).toBe("Ann wins the match 3–1 after one game.");
-    expect(sum.table!.rows[0]).toEqual(["Ann", "White", 3, 3, 0, 3, 2, 303]);
+    // Four columns, so the table fits the phones' summary at 320 px.
+    expect(sum.table!.columns).toEqual(["Player", "Points", "Games", "Hits"]);
+    expect(sum.table!.rows[0]).toEqual(["Ann", 3, 3, 3]);
     const ids = (sum as { awards: { id: string; seats: number[] }[] }).awards.map((a) => a.id);
     expect(ids).toContain("hitman");
     expect(ids).toContain("comeback");

@@ -59,9 +59,9 @@ for (const g of games.values()) {
       if (g.manifest.id === "backgammon") {
         // The winner reached the match length, the score adds up from the games, and every game counts 1–3 × the cube.
         const h = end.summary?.highlights ?? {};
-        const rows = end.summary?.table?.rows as [string, string, number, number][];
+        const rows = end.summary?.table?.rows as [string, number, number, number][];
         const len = (log[0] as any).settings.matchLength as number;
-        if (Math.max(...h.score) !== len || rows[0][2] + rows[1][2] !== h.score[0] + h.score[1]) bad++;
+        if (Math.max(...h.score) !== len || rows[0][1] + rows[1][1] !== h.score[0] + h.score[1]) bad++;
         const seat = (log[0] as any).seats.find((x: any) => x.seat === h.winner)?.seat;
         const style = aiOptions[seat]?.[option.key] ?? "default";
         wins[style] = (wins[style] ?? 0) + 1;
