@@ -99,11 +99,13 @@ describe("chess on a table host", () => {
     expect(cv.standIn).toEqual([]);
     expect(cv.names[ben.seat!]).toBe("Cleo");
     expect((await a.request("game", "intent", { name: "move", payload: { uci: "c2c4" } })).type).toBe("ack");
-    await c.waitView((x) => x.view.myTurn);
-    expect((await c.request("game", "intent", { name: "move", payload: { uci: "e7e6" } })).type).toBe("ack");
+    // A legal move from Cleo's own view: the stand-in's reply to d4 was random, so a fixed move (e7e6) could be taken.
+    const cl = (await c.waitView((x) => x.view.myTurn)).view;
+    expect((await c.request("game", "intent", { name: "move", payload: { uci: cl.legal[0] } })).type).toBe("ack");
   }, 30000);
 
   it("against an AI, a phone that goes away is replaced by the stand-in after the waiting time (E-010)", async () => {
+    await t.ok("POST", "/play", { awayTimeout: true }); // the waiting time is a table setting, off by default (D-144)
     const a = await t.joinDeck("Klaus");
     await t.ok("POST", "/ai", {});
     await begin([a], { timeControl: "10+5", whiteSeat: "south", standInElo: 400 });

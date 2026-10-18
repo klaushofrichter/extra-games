@@ -125,3 +125,6 @@ Format: **E-nnn · date · decided by** — decision. *Why:* reason.
   - **Checks**: `tests/backgammon.test.ts` (move generation and the forced-play rules, the cube, Crawford, the match,
     timers, the stand-in, the AI, replays), `tests/backgammon-host.test.ts` (a real host with fake phones),
     `scripts/e2e/backgammon.py` (board and two phones, one at 320 px), and the soak run.
+- **E-014 · 2026-10-18 · Klaus** — Backgammon: before a roll, the dice on the board's *Tap to roll* button show no
+  numbers and are dimmer (40 %, was 80 % with a 5 and a 2). *Why:* sample numbers on the waiting dice could be taken for
+  a roll that had not happened yet. Backgammon 2026.10.18.2.

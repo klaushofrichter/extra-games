@@ -65,7 +65,10 @@ describe("on a table host", () => {
     const state = t.host.table.runtime!.state as any;
     expect(va.myDice).toEqual(state.players[va.seat].dice);
     expect(vb.myDice).toEqual(state.players[vb.seat].dice);
-    expect(before).not.toContain(`"myDice":${JSON.stringify(vb.myDice)}`);
+    // Every cup in Ann's messages is her own. (Not "Ben's cup is absent": two cups can be the same dice, and did once in CI.)
+    const cups = [...before.matchAll(/"myDice":(\[[\d,]*\])/g)].map((m) => m[1]);
+    expect(cups.length).toBeGreaterThan(0);
+    for (const cup of cups) expect(cup).toBe(JSON.stringify(va.myDice));
     const first = va.myTurn ? a : b;
     const second = first === a ? b : a;
     expect((await first.request("game", "intent", { name: "bid", payload: { quantity: 1, face: 2 } })).type).toBe("ack");
