@@ -115,7 +115,8 @@ describe("a game", () => {
     // Score, clock, then the statistics window's counts (D-136): captures, material, pawn moves, checks.
     expect(g.rt.summary!.table!.rows).toEqual([["Ann", "White", "0", "–", 0, 0, 2, 0], ["Ben", "Black", "1", "–", 0, 0, 1, 1]]);
     // Fool's mate: White pushed more pawns; Black's queen gave the one check.
-    expect(g.rt.summary!.awards!.map((a) => [a.id, a.seats])).toEqual([["pawn-rush", [g.rt.state.seats[0]]], ["marathon", [g.rt.state.seats[1]]], ["check", [g.rt.state.seats[1]]]]);
+    const [white, black] = (g.rt.state as { seats: [number, number] }).seats;
+    expect(g.rt.summary!.awards!.map((a) => [a.id, a.seats])).toEqual([["pawn-rush", [white]], ["marathon", [black]], ["check", [black]]]);
     expect(endHash(game, g.rt)).toBe(true);
   });
 
