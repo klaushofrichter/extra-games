@@ -8,6 +8,7 @@
 import { count, defineGame, type GameContext, type StepInfo } from "@game-table/sdk";
 import { BLACK, F_CAPTURE, F_CASTLE, Position, WHITE, moveFlags, moveFrom, movePromo, moveTo, sqName, uci } from "./chess.ts";
 import { ELO_MAX, ELO_MIN, Engine, level, pickMove } from "./engine.ts";
+import { chessAwards } from "./stats.ts";
 
 export const TIME_CONTROLS = ["no clock", "1+0", "3+2", "5+3", "10+0", "10+5", "15+10", "30+0"] as const;
 /** How long the stand-in waits before moving, so a move on the board can be followed. */
@@ -392,11 +393,23 @@ export default defineGame<State>({
     if (!s.result) return null;
     const r = s.result;
     const moves = Math.ceil(s.sans.length / 2);
-    const rows = s.seats.map((seat, c) => [seatName(s, seat), COLOR_NAME[c], r.winner === null ? "½" : r.winner === c ? "1" : "0", s.clock ? clockText(s.clock.left[c]) : "–"]);
+    // The statistics window (games-service D-136): awards and counts read from the moves.
+    const { awards, sides } = chessAwards(s.ucis, s.sans, s.seats);
+    const rows = s.seats.map((seat, c) => [
+      seatName(s, seat),
+      COLOR_NAME[c],
+      r.winner === null ? "½" : r.winner === c ? "1" : "0",
+      s.clock ? clockText(s.clock.left[c]) : "–",
+      sides[c].captures,
+      sides[c].material,
+      sides[c].pawnMoves,
+      sides[c].checks,
+    ]);
     return {
       text: resultText(s),
       highlights: { winner: r.winner === null ? null : s.seats[r.winner], reason: r.reason, moves, pgnMoves: s.sans.join(" ") },
-      table: { columns: ["Player", "Colour", "Score", "Clock"], rows },
+      table: { columns: ["Player", "Colour", "Score", "Clock", "Captures", "Material", "Pawn moves", "Checks"], rows },
+      awards,
     };
   },
 
