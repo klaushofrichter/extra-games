@@ -85,3 +85,11 @@ Format: **E-nnn · date · decided by** — decision. *Why:* reason.
   10+5). *Why:* the table's board doesn't turn for a remote player, so the one person at it must sit on the side the
   board is drawn for; remote boards already turn to their player (D-059). On a table without D-128 the field is
   ignored and seats stay as chosen.
+- **E-012 · 2026-10-18 · Klaus** — Chess sends awards for the statistics window (games-service D-136): *Killer* (most
+  pieces taken), *Pawn Rush* (most pawn moves), *Marathon* (the owner of the piece that travelled farthest),
+  *Frequenter* (the owner of the piece that moved most often), *Treasure Hunter* (most material taken), *Check!* (most
+  checks), *Crowning* (most promotions) and *Homebody* (the side whose king never moved). *Implementation (Claude):*
+  `games/chess/stats.ts` follows every piece from its starting square through the moves at the end of the game (castling
+  moves the rook, en passant takes the pawn beside, a promoted pawn keeps its history); distance is in king steps (a
+  knight's move is 2). Nothing is kept in the state. The table adds captures, material, pawn moves and checks. The award
+  helper is kept in the game, not taken from the SDK, so Chess still runs on tables before D-136.

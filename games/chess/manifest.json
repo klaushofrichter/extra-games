@@ -1,7 +1,7 @@
 {
   "id": "chess",
   "name": "Chess",
-  "version": "2026.10.17.4",
+  "version": "2026.10.18.1",
   "sdk": "^0.1",
   "description": "Classic chess for two, played on the board: tap a piece, then its square. Chess clocks from bullet to classical, or none. AI players at a strength you choose, and an AI that takes over the seat of a player who leaves.",
   "players": [2],
