@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 400" width="640" height="400" font-family="system-ui, sans-serif">
+  <rect x="0" y="0" width="640" height="400" rx="18" fill="#3d2816"/>
+  <rect x="14" y="14" width="252" height="372" fill="#1f5244"/>
+  <rect x="292" y="14" width="252" height="372" fill="#1f5244"/>
+  <rect x="266" y="14" width="26" height="372" fill="#2c1d10"/>
+  <rect x="550" y="14" width="76" height="372" rx="6" fill="#173b31"/>
+  <g fill="#d9c08f">
+    <polygon points="14,386 56,386 35,236"/><polygon points="98,386 140,386 119,236"/><polygon points="182,386 224,386 203,236"/>
+    <polygon points="292,386 334,386 313,236"/><polygon points="376,386 418,386 397,236"/><polygon points="460,386 502,386 481,236"/>
+    <polygon points="56,14 98,14 77,164"/><polygon points="140,14 182,14 161,164"/><polygon points="224,14 266,14 245,164"/>
+    <polygon points="334,14 376,14 355,164"/><polygon points="418,14 460,14 439,164"/><polygon points="502,14 544,14 523,164"/>
+  </g>
+  <g fill="#9c4a33">
+    <polygon points="56,386 98,386 77,236"/><polygon points="140,386 182,386 161,236"/><polygon points="224,386 266,386 245,236"/>
+    <polygon points="334,386 376,386 355,236"/><polygon points="418,386 460,386 439,236"/><polygon points="502,386 544,386 523,236"/>
+    <polygon points="14,14 56,14 35,164"/><polygon points="98,14 140,14 119,164"/><polygon points="182,14 224,14 203,164"/>
+    <polygon points="292,14 334,14 313,164"/><polygon points="376,14 418,14 397,164"/><polygon points="460,14 502,14 481,164"/>
+  </g>
+  <rect x="292" y="236" width="252" height="150" fill="none" stroke="#f0c75e" stroke-width="4" stroke-dasharray="10 6"/>
+  <g fill="#f3ead8" stroke="#241a10" stroke-width="2"><circle cx="523" cy="40" r="18"/><circle cx="523" cy="76" r="18"/><circle cx="35" cy="40" r="18"/><circle cx="35" cy="76" r="18"/><circle cx="35" cy="112" r="18"/><circle cx="203" cy="360" r="18"/><circle cx="203" cy="324" r="18"/><circle cx="203" cy="288" r="18"/><circle cx="313" cy="360" r="18"/><circle cx="313" cy="324" r="18"/><circle cx="313" cy="288" r="18"/></g>
+  <g fill="#2a2420" stroke="#e2d3b2" stroke-width="2"><circle cx="523" cy="360" r="18"/><circle cx="523" cy="324" r="18"/><circle cx="35" cy="360" r="18"/><circle cx="35" cy="324" r="18"/><circle cx="35" cy="288" r="18"/><circle cx="203" cy="40" r="18"/><circle cx="203" cy="76" r="18"/><circle cx="203" cy="112" r="18"/><circle cx="313" cy="40" r="18"/><circle cx="313" cy="76" r="18"/><circle cx="313" cy="112" r="18"/></g>
+  <g fill="none" stroke="#f0c75e" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M530 180 H62 Q34 180 34 200 Q34 220 62 220 H520"/><path d="M506 209 L522 220 L506 231"/>
+  </g>
+  <text x="290" y="205" fill="#fff4d6" font-size="14" text-anchor="middle">White: along the top to the left, then along the bottom home</text>
+  <text x="588" y="370" fill="#fff4d6" font-size="14" text-anchor="middle">bear off</text>
+  <text x="588" y="388" fill="#fff4d6" font-size="14" text-anchor="middle">here</text>
+</svg>

@@ -93,3 +93,35 @@ Format: **E-nnn · date · decided by** — decision. *Why:* reason.
   moves the rook, en passant takes the pawn beside, a promoted pawn keeps its history); distance is in king steps (a
   knight's move is 2). Nothing is kept in the state. The table adds captures, material, pawn moves and checks. The award
   helper is kept in the game, not taken from the SDK, so Chess still runs on tables before D-136.
+- **E-013 · 2026-10-18 · Klaus** — Third game: Backgammon, for two players. *Implementation (Claude):*
+  - **Rules** (`games/backgammon/bg.ts`, `rules.ts`): all the rules of backgammon: the opening roll (each player
+    throws one die, the higher plays both), using both dice when possible and the larger one when only one can be
+    played, entering from the bar, blocked points, bearing off (with a larger die from the highest point only), and
+    single, gammon and backgammon wins. Played as a match to *Points to win the match* (1–15, odd, default 3) with the
+    *Doubling cube* (on by default; take or pass, only its owner doubles again, the Crawford game, no dead cube offered,
+    no beavers or Jacoby rule). One step at a time: each checker move is an intent and can be undone until *Done*; a
+    turn with no legal move passes by itself after a moment; bearing off the last checker ends the game at once.
+  - **Board** (`board.js`): White's home at the south player's right hand, moves animated one checker at a time, a
+    panel at each player's right with score, pips, the cube and the last moves. Tap the dice to roll, a checker to
+    pick it up (its targets light up, also several dice away), then where it goes; *Undo* and *Done* on the panel
+    (`boardIntents: ["roll", "move", "undo", "done"]`), *Next game* skips the wait between games. Board and checkers
+    are drawn here, no outside artwork.
+  - **Phone** (`deck.js`): roll, double (with a confirmation dialog, as Chess's E-009), take or pass, Undo, Done, and
+    the legal single moves as buttons in the player's own numbering, for a remote player or anyone who prefers it.
+  - **AI** (`ai.ts`, in the host's worker): a hand-made position evaluation (race, blots and the shots at them, made
+    points, primes, anchors). *beginner* adds noise and never doubles; *average* plays the best move by the
+    evaluation and doubles and takes by it; *strong* looks at its best few plays over all 21 replies. In single-game
+    matches (`scripts/bg-ladder.ts`, 100 each) strong beat average 59–41 and beginner 59–1; average beats beginner
+    about nine in ten. Moves one checker at a time; the board's `whenIdle` (games-service D-134, D-137) holds the next
+    AI move until the last one has been shown.
+  - **Seconds per turn** (0–180, default none): when it runs out, the table plays the turn for the player and takes a
+    double for them. A player who leaves is replaced by the stand-in, as Chess's E-010, until someone takes the seat;
+    the player at the table sits south (`"localSeat": "south"`, E-011).
+  - **Statistics** (games-service D-136): a table of points, games won and hits per player, and awards *Hitman*,
+    *Doublets*, *High Roller*, *Back from the Bar*, *Gammon Maker* and *Cube Handler*, the award helper kept in the game
+    as Chess does. The table has four columns because the phones' result card (games-service `deck.css`,
+    `.summary-table`) neither scrolls nor wraps single-word headers: eight columns made a 320 px phone 486 px wide.
+    Chess's eight-column table has the same exposure; a scrolling wrapper in games-service would fix it for every game.
+  - **Checks**: `tests/backgammon.test.ts` (move generation and the forced-play rules, the cube, Crawford, the match,
+    timers, the stand-in, the AI, replays), `tests/backgammon-host.test.ts` (a real host with fake phones),
+    `scripts/e2e/backgammon.py` (board and two phones, one at 320 px), and the soak run.
