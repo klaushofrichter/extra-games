@@ -1,7 +1,8 @@
 // Soak: many AI-only games per game, player count and play style, through games-service's own simulation loop and
 // with `@game-table/sdk` resolved by the host's import hook, exactly as on a table. Checks that every game finishes,
-// replays to the same state, and (Liar's Dice) loses exactly one die per round. A number option (Chess's Elo) plays its
-// two weakest levels against each other, which are quick, and a few games between club levels.
+// replays to the same state, (Liar's Dice) loses exactly one die per round, and (Backgammon) is won at the match
+// length. A number option (Chess's Elo) plays its two weakest levels against each other, which are quick, and a few
+// games between club levels.
 // Usage: node scripts/soak.ts [gamesPerConfig]
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -55,6 +56,16 @@ for (const g of games.values()) {
         const style = aiOptions[seat]?.[option.key] ?? "default";
         wins[style] = (wins[style] ?? 0) + 1;
       }
+      if (g.manifest.id === "backgammon") {
+        // The winner reached the match length, the score adds up from the games, and every game counts 1–3 × the cube.
+        const h = end.summary?.highlights ?? {};
+        const rows = end.summary?.table?.rows as [string, string, number, number][];
+        const len = (log[0] as any).settings.matchLength as number;
+        if (Math.max(...h.score) !== len || rows[0][2] + rows[1][2] !== h.score[0] + h.score[1]) bad++;
+        const seat = (log[0] as any).seats.find((x: any) => x.seat === h.winner)?.seat;
+        const style = aiOptions[seat]?.[option.key] ?? "default";
+        wins[style] = (wins[style] ?? 0) + 1;
+      }
       if (g.manifest.id === "chess") {
         const h = end.summary?.highlights ?? {};
         const reasons = ["checkmate", "stalemate", "repetition", "fifty", "material"];
@@ -69,5 +80,5 @@ for (const g of games.values()) {
   }
 }
 await rm(tmp, { recursive: true, force: true });
-console.log(failures ? `\n${failures} problems` : "\nall games finished and replayed exactly (Liar's Dice: one die lost per round; Chess: a known ending)");
+console.log(failures ? `\n${failures} problems` : "\nall games finished and replayed exactly (Liar's Dice: one die lost per round; Chess: a known ending; Backgammon: the match won at its length)");
 process.exit(failures ? 1 : 0);
