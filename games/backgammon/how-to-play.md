@@ -41,6 +41,8 @@ When all fifteen of your checkers are in your home board you may bear them off: 
 
 **Points to win the match** sets how many points win the match (1 plays a single game). The board shows the score and starts the next game by itself; **Next game** skips the wait.
 
+Each player's panel on the board shows their points so far and their **pips**: how far all their checkers still have to travel to bear off (a checker on your 13-point counts 13, one on the bar 25). Both players start with 167; fewer pips means you are ahead in the race.
+
 ## The doubling cube
 
 With the **Doubling cube** on, before rolling you may double (on your phone): the other player either **takes**, plays on for twice the points and gets the cube, or **passes** and loses this game at the cube's value before the double. Only the player holding the cube may double again; a cube in the middle belongs to both. In the **Crawford game**, the first game after a player gets within one point of winning the match, nobody may double. A double that could not change the match any more is not offered.

@@ -172,6 +172,8 @@ export function mount(root, ctx) {
   function drawPanels() {
     for (const el of box.querySelectorAll(".ch-panel")) {
       const color = Number(el.dataset.color);
+      // The frame of the player to move takes their lobby colour, as their seat plate does (not the brass of the board).
+      el.style.setProperty("--pc", playerColor(info, view.seats?.[color]));
       el.classList.toggle("active", !view.result && !info.over && view.turn === color);
       put(el, panelHtml(color));
     }
