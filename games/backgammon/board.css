@@ -1,0 +1,83 @@
+/* Backgammon board: a wooden board in the middle of the 1920 × 1080 surface, a panel at each player's right hand. */
+.bg-board { position: absolute; inset: 0; }
+.bg-static { position: absolute; inset: 0; pointer-events: none; }
+.bg-frame { filter: drop-shadow(0 30px 40px rgba(0, 0, 0, .55)); }
+.bg-point { opacity: .92; }
+.bg-num { font: 600 13px var(--text); fill: #d9c39a; opacity: .75; text-anchor: middle; dominant-baseline: central; }
+
+/* Moving parts in their own layers above the static board (one paint layer each). */
+.bg-marks, .bg-checkers, .bg-dice, .bg-zones { position: absolute; inset: 0; pointer-events: none; }
+.bg-checkers { will-change: transform; }
+.bg-zones { pointer-events: none; }
+.bg-zone { position: absolute; pointer-events: auto; }
+.bg-ck { position: absolute; width: 64px; height: 64px; border-radius: 50%; box-sizing: border-box; pointer-events: auto;
+  box-shadow: 0 3px 4px rgba(0, 0, 0, .45), inset 0 0 0 4px var(--ring), inset 0 0 0 8px rgba(0, 0, 0, .12); }
+.bg-ck.w { background: radial-gradient(circle at 38% 32%, #fffaf0, #e9dcc0 60%, #cdbb96); }
+.bg-ck.b { background: radial-gradient(circle at 38% 32%, #5a4a40, #2a211b 60%, #15100c); }
+.bg-ck.movable { cursor: pointer; box-shadow: 0 3px 4px rgba(0, 0, 0, .45), inset 0 0 0 4px var(--ring), 0 0 0 3px rgba(95, 191, 143, .9); }
+.bg-ck.lifted { transform: translateY(-4px) scale(1.08); box-shadow: 0 12px 14px rgba(0, 0, 0, .5), inset 0 0 0 4px var(--ring), 0 0 0 4px rgba(95, 191, 143, 1); }
+.bg-count { position: absolute; transform: translate(-50%, -50%); font: 700 24px var(--mono); pointer-events: none; }
+.bg-count.w { color: #3a2a18; }
+.bg-count.b { color: #f1e6cf; }
+.bg-off { position: absolute; width: 56px; height: 12px; border-radius: 4px; box-shadow: 0 1px 2px rgba(0, 0, 0, .5); }
+.bg-off.w { background: linear-gradient(#fffaf0, #cdbb96); }
+.bg-off.b { background: linear-gradient(#5a4a40, #15100c); border: 1px solid #6c5a4c; }
+.bg-target { position: absolute; width: 64px; height: 64px; border-radius: 50%; box-sizing: border-box; pointer-events: none;
+  border: 4px dashed rgba(95, 191, 143, .95); background: rgba(95, 191, 143, .22); }
+.bg-target.far { border-style: dotted; background: rgba(95, 191, 143, .12); }
+.bg-target.off { border-radius: 10px; }
+
+.bg-dice-at { position: absolute; display: grid; justify-items: center; gap: 8px; pointer-events: none; }
+.bg-dice-row { display: flex; gap: 14px; }
+.bg-die { width: var(--s); height: var(--s); padding: calc(var(--s) * .14); box-sizing: border-box; border-radius: calc(var(--s) * .18);
+  display: grid; grid-template: repeat(3, 1fr) / repeat(3, 1fr); place-items: center;
+  background: linear-gradient(145deg, #fffdf6, #e4d9c2); box-shadow: 0 4px 6px rgba(0, 0, 0, .45); transition: opacity .25s, filter .25s; }
+.bg-die i { width: 62%; height: 62%; border-radius: 50%; background: #241a10; }
+.bg-die.used { opacity: .35; filter: grayscale(1); }
+.bg-dice.rolling .bg-die { animation: bg-tumble .65s cubic-bezier(.2, .7, .3, 1); }
+@keyframes bg-tumble {
+  0% { transform: translate(-120px, -30px) rotate(-260deg) scale(.7); opacity: .2; }
+  70% { transform: translate(6px, 2px) rotate(12deg); opacity: 1; }
+  100% { transform: none; }
+}
+.bg-roll { pointer-events: auto; display: grid; grid-template-columns: auto auto; gap: 12px; padding: 14px 18px 10px; border-radius: 16px;
+  background: rgba(8, 22, 19, .55); border: 2px dashed rgba(214, 169, 74, .7); cursor: pointer; }
+.bg-roll .bg-die { opacity: .8; }
+.bg-roll span { grid-column: 1 / -1; font: 600 20px var(--text); color: var(--brass); }
+.bg-wait, .bg-opening { font: 600 19px var(--text); color: #e7dcc4; background: rgba(8, 22, 19, .6); padding: 4px 12px; border-radius: 10px; }
+
+.bg-cube { position: absolute; width: 56px; height: 56px; border-radius: 10px; display: grid; place-items: center; z-index: 2;
+  background: linear-gradient(145deg, #fbf5e6, #d8cba8); color: #241a10; font: 700 26px var(--mono); box-shadow: 0 4px 8px rgba(0, 0, 0, .5); }
+.bg-cube small { font: 700 9px var(--text); letter-spacing: .3px; }
+.bg-cube.offered { box-shadow: 0 0 0 4px var(--brass), 0 0 30px rgba(214, 169, 74, .7); }
+.bg-cube.crawford { opacity: .55; }
+.bg-cube[hidden] { display: none; }
+
+.bg-panel { position: absolute; width: 380px; padding: 16px 20px; border-radius: 18px; box-sizing: border-box;
+  background: rgba(8, 22, 19, .8); border: 2px solid rgba(214, 169, 74, .25); transition: border-color .3s, box-shadow .3s; }
+.bg-panel.active { border-color: var(--brass); box-shadow: 0 0 30px rgba(214, 169, 74, .25); }
+.bg-who { display: flex; align-items: center; gap: 10px; font-family: var(--display); font-size: 26px; }
+.bg-dot { width: 16px; height: 16px; border-radius: 50%; box-shadow: 0 0 0 2px rgba(0, 0, 0, .4); flex: none; }
+.bg-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bg-color { font: 600 15px var(--text); padding: 3px 10px; border-radius: 99px; }
+.bg-color.w { background: #f3ead8; color: #241a10; }
+.bg-color.b { background: #2a2420; color: #e2d3b2; border: 1px solid #e2d3b2; }
+.bg-standin { margin-top: 6px; font-size: 18px; color: var(--brass); }
+.bg-score { display: flex; gap: 18px; align-items: baseline; margin: 10px 0 6px; font: 600 32px var(--mono); }
+.bg-score small { font: 16px var(--text); color: var(--ink-soft); }
+.bg-mycube { margin-left: auto; font: 600 15px var(--text); padding: 3px 10px; border-radius: 8px; background: #efe5cc; color: #241a10; }
+.bg-status { font-size: 21px; min-height: 28px; }
+.bg-alert { color: var(--brass); }
+.bg-now { margin-top: 4px; font: 19px var(--mono); color: var(--ink); }
+.bg-btns { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 10px; margin-top: 10px; }
+.bg-btns button { min-height: 56px; font-size: 20px; }
+.bg-recent { margin-top: 10px; font-size: 17px; color: var(--ink-soft); display: grid; gap: 2px; }
+.bg-recent .me { color: var(--ink); }
+.bg-recent .dd { font-family: var(--mono); color: var(--ink-faint); }
+
+.bg-between { position: absolute; left: 960px; top: 540px; width: 620px; padding: 22px 26px; border-radius: 20px; text-align: center; z-index: 4;
+  background: rgba(8, 22, 19, .94); border: 2px solid var(--brass); box-shadow: 0 20px 50px rgba(0, 0, 0, .6); display: grid; gap: 10px; justify-items: center; }
+.bg-between[hidden] { display: none; }
+.bg-between-title { font-family: var(--display); font-size: 30px; }
+.bg-between-score { font: 600 24px var(--text); }
+.bg-between button { min-width: 220px; min-height: 56px; font-size: 21px; }
