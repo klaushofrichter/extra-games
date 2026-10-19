@@ -235,6 +235,12 @@ export default defineGame<State>({
     return { state: s };
   },
 
+  // Another player took over the seat (games-service D-159): the dice stay, the name changes.
+  onSeatChanged(s, seat) {
+    const p = s.players[seat.seat];
+    return p ? { state: { ...s, players: { ...s.players, [seat.seat]: { ...p, name: seat.name } } } } : { state: s };
+  },
+
   onSeatLeft(s, seat, ctx) {
     const p = s.players[seat];
     if (!p || p.out || s.phase === "over") return { state: s };

@@ -81,43 +81,37 @@ describe("chess on a table host", () => {
     expect(aiMove).toMatchObject({ accepted: true, ai: { worker: true } });
   }, 40000);
 
-  it("a player removed mid-game is replaced by the stand-in; someone who joins takes the seat back", async () => {
+  it("a running game keeps its players (games-service D-159): exchanged for someone at the table, they play the side on under their name", async () => {
     const a = await t.joinDeck("Ann");
     const b = await t.joinDeck("Ben");
     await begin([a, b], { timeControl: "no clock", whiteSeat: "south", standInElo: 600 });
     const ben = player("Ben");
     expect((await a.request("game", "intent", { name: "move", payload: { uci: "d2d4" } })).type).toBe("ack");
-    await t.ok("DELETE", `/players/${ben.id}`);
-    expect(t.host.table.phase).toBe("active");
-    // The stand-in answers for Black after a moment.
-    const v = (await a.waitView((x) => x.view.moveCount === 2)).view;
-    expect(v.standIn).toEqual([ben.seat]);
-    expect((t.host.table.runtime!.log.at(-1) as any)).toMatchObject({ t: "timer", id: "standin" });
-    // Cleo joins, sits in the empty seat and plays Black from now on.
-    const c = await t.joinDeck("Cleo");
+    expect((await t.api("DELETE", `/players/${ben.id}`)).status).toBe(409);
+    const r = await t.ok("POST", "/exchange", { seat: ben.seat, kind: "local" });
+    const c = await Deck.connect(t.base, { joinToken: r.url.split("/").pop(), name: "Cleo" });
     const cv = (await c.waitView((x) => x.view.color === 1)).view;
-    expect(cv.standIn).toEqual([]);
     expect(cv.names[ben.seat!]).toBe("Cleo");
-    expect((await a.request("game", "intent", { name: "move", payload: { uci: "c2c4" } })).type).toBe("ack");
-    // A legal move from Cleo's own view: the stand-in's reply to d4 was random, so a fixed move (e7e6) could be taken.
+    expect(cv.standIn).toEqual([]);
     const cl = (await c.waitView((x) => x.view.myTurn)).view;
     expect((await c.request("game", "intent", { name: "move", payload: { uci: cl.legal[0] } })).type).toBe("ack");
+    c.close();
   }, 30000);
 
-  it("against an AI, a phone that goes away is replaced by the stand-in after the waiting time (E-010)", async () => {
-    await t.ok("POST", "/play", { awayTimeout: true }); // the waiting time is a table setting, off by default (D-144)
+  it("against an AI, a phone that goes away keeps its seat; exchanged for an AI, both sides play on (D-159)", async () => {
     const a = await t.joinDeck("Klaus");
     await t.ok("POST", "/ai", {});
     await begin([a], { timeControl: "10+5", whiteSeat: "south", standInElo: 400 });
     expect((await a.request("game", "intent", { name: "move", payload: { uci: "e2e4" } })).type).toBe("ack");
     await until(() => state().sans.length === 2);
     a.close(); // the phone sleeps; the waiting time here is 300 ms
-    await until(() => state().standIn.length === 1);
-    expect(t.host.table.phase).toBe("active");
-    await until(() => state().sans.length >= 4, 15000); // the stand-in and the AI play on
-    // Someone joining takes White back from the stand-in.
-    const b = await t.joinDeck("Zoe");
-    await b.waitView((x) => x.view.color === 0 && x.view.standIn.length === 0);
+    await new Promise((r) => setTimeout(r, 600));
+    expect(state().standIn).toEqual([]); // nobody left: no stand-in
+    const klaus = player("Klaus");
+    expect(klaus.connected).toBe(false);
+    await t.ok("POST", "/exchange", { seat: klaus.seat, kind: "ai" });
+    expect(state().names[klaus.seat!]).toBe("Klaus (AI)");
+    await until(() => state().sans.length >= 4, 15000); // the two AI players play on
   }, 30000);
 
   it("the one player at the table sits south against a remote player, and plays without a clock by default (E-011)", async () => {

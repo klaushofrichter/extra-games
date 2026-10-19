@@ -362,6 +362,11 @@ export default defineGame<State>({
     return { state: s };
   },
 
+  // Another player took over the seat (games-service D-159): the side stays, the name changes.
+  onSeatChanged(s, seat) {
+    return { state: { ...s, names: { ...s.names, [seat.seat]: seat.name } } };
+  },
+
   onSeatLeft(s, seat, ctx) {
     if (s.result || colorOf(s, seat) === null) return { state: s };
     // The stand-in takes the seat whoever is left, also against an AI player (E-010): the game plays on to its end on the

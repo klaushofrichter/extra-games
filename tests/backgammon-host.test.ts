@@ -109,28 +109,18 @@ describe("backgammon on a table host", () => {
     }
   }, 40000);
 
-  it("a player removed mid-match is replaced by the stand-in; someone who joins takes the seat back", async () => {
+  it("a running match keeps its players (games-service D-159): exchanged for someone at the table, they play Black on", async () => {
     const a = await t.joinDeck("Ann");
     const b = await t.joinDeck("Ben");
     await begin([a, b], { matchLength: 3 });
     const ben = player("Ben");
-    await t.ok("DELETE", `/players/${ben.id}`);
-    expect(t.host.table.phase).toBe("active");
-    expect(state().standIn).toEqual([ben.seat]);
-    // Ann plays her turns; the stand-in plays Black's by itself.
-    const ann = player("Ann");
-    await until(async () => {
-      const v: any = t.host.table.runtime!.view(ann.seat!);
-      if (v.phase === "roll" && v.myTurn) await a.request("game", "intent", { name: "roll" });
-      else if (v.phase === "double" && v.myTurn) await a.request("game", "intent", { name: "take" });
-      else if (v.phase === "move" && v.myTurn) await a.request("game", "intent", v.legal.length ? { name: "move", payload: firstMove(v) } : { name: "done" });
-      return state().plays.filter((p: any) => p.color === 1).length >= 2;
-    }, 20000);
-    expect(t.host.table.runtime!.log.some((r: any) => r.t === "timer" && r.id === "standin")).toBe(true);
-    const c = await t.joinDeck("Cleo");
+    expect((await t.api("DELETE", `/players/${ben.id}`)).status).toBe(409);
+    const r = await t.ok("POST", "/exchange", { seat: ben.seat, kind: "local" });
+    const c = await Deck.connect(t.base, { joinToken: r.url.split("/").pop(), name: "Cleo" });
     const cv = (await c.waitView((x) => x.view.color === 1)).view;
     expect(cv.standIn).toEqual([]);
     expect(cv.names[ben.seat!]).toBe("Cleo");
+    c.close();
   }, 30000);
 
   it("runs AI-only simulations at each strength, every match finishing and replaying exactly", async () => {
