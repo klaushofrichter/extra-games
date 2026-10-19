@@ -564,6 +564,11 @@ export default defineGame<State>({
     return { state: s };
   },
 
+  // Another player took over the seat (games-service D-159): the colour and the match stay, the name changes.
+  onSeatChanged(s, seat) {
+    return { state: { ...s, names: { ...s.names, [seat.seat]: seat.name } } };
+  },
+
   onSeatLeft(s, seat, ctx) {
     if (s.result || colorOf(s, seat) === null) return { state: s };
     const next: State = { ...s, standIn: [...s.standIn.filter((x) => x !== seat), seat] };

@@ -109,15 +109,16 @@ describe("on a table host", () => {
     expect(replay(game.manifest, game.def, games[0])).toBe(end.stateHash);
   }, 60000);
 
-  it("a phone that leaves mid-game ends a two-player game with the other as winner", async () => {
+  it("a running game keeps its players (games-service D-159): exchanged for an AI, the seat plays on under the AI's name", async () => {
     const a = await t.joinDeck("Ann");
     const b = await t.joinDeck("Ben");
     await begin([a, b]);
     await a.waitView((v) => v.view.phase === "bidding");
     const ben = t.host.table.state().players.find((p) => p.name === "Ben")!;
-    await t.ok("DELETE", `/players/${ben.id}`);
-    await until(() => t.host.table.phase === "finished");
-    expect(t.host.table.state().summary!.text).toMatch(/^Ann wins with five dice left after one round\.$/);
+    expect((await t.api("DELETE", `/players/${ben.id}`)).status).toBe(409);
+    await t.ok("POST", "/exchange", { seat: ben.seat, kind: "ai" });
+    expect((t.host.table.runtime!.state as any).players[ben.seat!].name).toBe("Ben (AI)");
+    expect(t.host.table.phase).toBe("active");
   });
 
   it("runs AI-only simulations for every player count and style, all replaying exactly", async () => {
