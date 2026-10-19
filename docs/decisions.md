@@ -51,7 +51,7 @@ Format: **E-nnn · date · decided by** — decision. *Why:* reason.
     minute, D-119; their clock runs meanwhile) the game's own engine, the *stand-in*, plays the seat at the setting
     *Stand-in strength* (default 1200). It runs inside the rules with a node budget only, so replay reaches the same
     moves. Someone who sits in the empty seat (`dynamicPlayers`) takes over from it. If no human is left, the game ends.
-    The platform could offer this instead: an AI taking over a seat for any game (the Loopy list asks for it too).
+    The platform could offer this instead: an AI taking over a seat for any game.
   - **Checks:** `tests/chess.test.ts` (perft, notation, every ending, clocks with pauses, draw offers, the stand-in,
     the AI's levels, replays), `tests/chess-host.test.ts` (board and phone moves on a real host, an AI in its worker,
     the stand-in and taking the seat back, simulations), `scripts/e2e/chess.py` (a game by tapping the board, clocks and
@@ -138,3 +138,12 @@ Format: **E-nnn · date · decided by** — decision. *Why:* reason.
   happen at a table, since the platform never removes a player of a running game (their `onSeatLeft` stays for logs).
   Tests: removal refused; exchanged for someone at the table (Chess, Backgammon: the new player plays the side under
   their name) or for an AI (Chess against an AI, Liar's Dice).
+- **E-017 · 2026-10-19 · Klaus** — This repository is public: a public example of a game package for Game Table (E-001
+  made it private for games not public yet). *Why:* Klaus: "Extra-games does not need to be private as repository and
+  from reference point of view. It can be a public example of a game package"; "The repositories games-service and
+  extra games should refer to each other." *Implementation (Claude):* before the switch the whole history was checked
+  for credentials (none: the workflows use only GitHub's own token). The README introduces the repository as the
+  example and points to games-service's developer guide (games-service D-160, D-161), which points back here; no other
+  game repository is referred to; the badges render; the console no longer needs `GAME_REPO_TOKEN` for it. Still open
+  for Klaus: a licence (none yet, so all rights are reserved), and branch protection for `production` with the
+  `test`, `e2e` and `codeql` contexts.
