@@ -5,14 +5,19 @@
 <!-- Static assertion: GitHub publishes no endpoint for alert status. -->
 [![Dependabot](https://img.shields.io/badge/dependabot-enabled-025E8C?logo=dependabot&logoColor=white)](https://github.com/klaushofrichter/extra-games/security/dependabot)
 
-<!-- This repo is private, so these badges render blank: they are fetched anonymously and no token can help
-     (kube-setup docs/repository-baseline.md, requirement 4). They start working if the repo ever goes public.
-     No release badge: this repo cuts no releases; tables run whatever the production branch holds. -->
+<!-- The repo is public since 19 Oct 2026 (E-017), so these badges render. No release badge: this repo cuts no
+     releases; tables run whatever the production branch holds. -->
 
-Private and early-release games for [Game Table](https://github.com/klaushofrichter/games-service). They are not in the
-public games-service repository: the games-service console fetches them from here and gives them only to the tables an
-administrator ticks. Remote players of such a table see them too, because their board and phone pages come from the
-table itself.
+Games for [Game Table](https://github.com/klaushofrichter/games-service), and **a public example of a game repository**:
+games that live outside the platform, written against its SDK, tested against it and delivered to tables by its cloud
+service. The games-service console fetches them from here and gives them to the tables an administrator ticks; remote
+players of such a table see them too, because their board and phone pages come from the table itself.
+
+**Writing a game?** The contract between games and the platform is games-service's developer guide,
+[`docs/developers/game-development.md`](https://github.com/klaushofrichter/games-service/blob/main/docs/developers/game-development.md)
+(for language models: `https://games.skylar.technology/llms.txt`). This repository shows it at work: three complete
+games with board and phone UIs, rules for players, AI players, tests against a real Table Host, browser checks and CI
+against games-service. To start a repository of your own, copy its layout (below).
 
 Games here:
 
@@ -29,7 +34,7 @@ Games here:
 
 ```
 extra-games (this repo, branch production)
-   │  the console fetches the games/ folder as one bundle (GAME_REPO_TOKEN reads private repos)
+   │  the console fetches the games/ folder as one bundle (a private repository needs GAME_REPO_TOKEN)
    ▼
 games.skylar.technology  — console: Game repositories, and per table a checkbox for each repository
    │  the table's heartbeat lists its bundles; the table downloads them over its own authenticated link
