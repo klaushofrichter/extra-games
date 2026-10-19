@@ -144,9 +144,9 @@ Format: **E-nnn · date · decided by** — decision. *Why:* reason.
   extra games should refer to each other." *Implementation (Claude):* before the switch the whole history was checked
   for credentials (none: the workflows use only GitHub's own token). The README introduces the repository as the
   example and points to games-service's developer guide (games-service D-160, D-161), which points back here; no other
-  game repository is referred to; the badges render; the console no longer needs `GAME_REPO_TOKEN` for it. Still open
-  for Klaus: a licence (none yet, so all rights are reserved; settled by E-018), and branch protection for `production` with the
-  `test`, `e2e` and `codeql` contexts.
+  game repository is referred to; the badges render; the console no longer needs `GAME_REPO_TOKEN` for it. The licence was
+  still open (settled by E-018). Branch protection for `production` (`test`, `e2e`, `codeql`, no force pushes or
+  deletion) was already in place; an earlier version of this entry listed it as open by mistake.
 - **E-018 · 2026-10-19 · Klaus** — This repository is under the MIT licence, like games-service (D-162), so its layout
   and games can be copied for a game repository of one's own. *Why:* Klaus: "I want to use MIT for the public repos."
   *Implementation (Claude):* `LICENSE` (Copyright (c) 2026 Klaus Hofrichter), `"license": "MIT"` in `package.json`, a
