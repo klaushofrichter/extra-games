@@ -132,3 +132,9 @@ Format: **E-nnn · date · decided by** — decision. *Why:* reason.
   two, a typed number can be any from 1 to 100. A number out of range is now said in the settings window itself
   (games-service D-146). Backgammon and Chess: the side panel of the player to move is framed in that player's lobby
   colour, as their seat plate is, instead of the board's brass. Backgammon 2026.10.18.3, Chess 2026.10.18.2.
+- **E-016 · 2026-10-19 · Klaus** — Chess, Liar's Dice and Backgammon follow games-service D-159: a running game keeps its
+  players, and the board exchanges who plays a seat. *Implementation (Claude):* `onSeatChanged` in all three: the seat's
+  name changes (the side, dice or match stay). The stand-in (E-010) and Liar's Dice's end when a player leaves no longer
+  happen at a table, since the platform never removes a player of a running game (their `onSeatLeft` stays for logs).
+  Tests: removal refused; exchanged for someone at the table (Chess, Backgammon: the new player plays the side under
+  their name) or for an AI (Chess against an AI, Liar's Dice).
