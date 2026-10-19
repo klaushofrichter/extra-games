@@ -18,12 +18,12 @@ Games here:
 
 - **Liar's Dice** (2–6 players, hidden dice on every phone, bids and calls, wild ones, two AI styles).
 - **Chess** (2 players, moves made on the board, chess clocks from bullet to classical or none, draw offers and
-  resignation on the phones, AI players at an approximate Elo from 400 to 2200, and a stand-in AI that takes over the
-  seat of a player who leaves). Its clocks need games-service with game time (`ctx.now()`, D-126); on an older table
+  resignation on the phones, AI players at an approximate Elo from 400 to 2200). A player can be exchanged during a game on the board, like in
+  every game (games-service D-159). Its clocks need games-service with game time (`ctx.now()`, D-126); on an older table
   it plays without a clock and says so.
 - **Backgammon** (2 players, checkers moved on the board by tapping, rolls, doubles and Done on the phones too, matches
   to 1–100 points with the doubling cube and the Crawford rule, an optional time per turn, AI players at three
-  strengths, and a stand-in that plays on for a player who leaves).
+  strengths).
 
 ## How a game gets onto a table
 
@@ -59,7 +59,8 @@ D-097 and D-098.
 
 ## Writing a game
 
-Write it as described in games-service's README (*Writing a game*), with one difference: import the SDK by name.
+Write it as described in games-service's developer guide, [`docs/developers/game-development.md`](https://github.com/klaushofrichter/games-service/blob/main/docs/developers/game-development.md) (also `https://games.skylar.technology/llms.txt`): the contract between games and the platform. One difference from the built-in
+games: import the SDK by name.
 
 ```ts
 import { count, defineGame } from "@game-table/sdk";        // cards: "@game-table/sdk/cards"
@@ -74,7 +75,7 @@ changes (games-service D-127, here E-008). Set it in the same pull request as th
 
 Every game ships rules for players as `how-to-play.md`, with illustrations in `assets/` (games-service D-099): the phones
 show them in a modal from a **Rules** button, with the settings chosen at the table on top. Use the Markdown subset
-described in games-service's README (*Writing a game*), and name every setting by its manifest label;
+described in the developer guide (*Rules for players*), and name every setting by its manifest label;
 `tests/bundle.test.ts` checks both. A game id must not be one of games-service's built-in games (a table skips an extra game that
 would replace one) nor another extra repository's (the console flags clashes).
 
