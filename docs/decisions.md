@@ -145,5 +145,9 @@ Format: **E-nnn · date · decided by** — decision. *Why:* reason.
   for credentials (none: the workflows use only GitHub's own token). The README introduces the repository as the
   example and points to games-service's developer guide (games-service D-160, D-161), which points back here; no other
   game repository is referred to; the badges render; the console no longer needs `GAME_REPO_TOKEN` for it. Still open
-  for Klaus: a licence (none yet, so all rights are reserved), and branch protection for `production` with the
+  for Klaus: a licence (none yet, so all rights are reserved; settled by E-018), and branch protection for `production` with the
   `test`, `e2e` and `codeql` contexts.
+- **E-018 · 2026-10-19 · Klaus** — This repository is under the MIT licence, like games-service (D-162), so its layout
+  and games can be copied for a game repository of one's own. *Why:* Klaus: "I want to use MIT for the public repos."
+  *Implementation (Claude):* `LICENSE` (Copyright (c) 2026 Klaus Hofrichter), `"license": "MIT"` in `package.json`, a
+  *Licence* section in the README. No third-party images, sounds or fonts are in the repository.
