@@ -109,3 +109,7 @@ feature branch → PR → main → (PR) → production → tables, at the consol
 every PR to `main` or `production` and every push to `production`, and weekly (Mondays) against games-service `main`
 instead of the pinned ref, so a platform change that breaks these games shows up here first. `production` is the
 branch to protect with those three contexts, since that is what tables run.
+
+## Licence
+
+[MIT](LICENSE). Copyright (c) 2026 Klaus Hofrichter.

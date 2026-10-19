@@ -1,5 +1,6 @@
 {
   "name": "extra-games",
+  "license": "MIT",
   "private": true,
   "description": "Private and early-release games for Game Table, installed on tables through the games-service console",
   "type": "module",
