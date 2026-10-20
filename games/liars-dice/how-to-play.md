@@ -52,9 +52,9 @@ If **Seconds per turn** runs out:
 | Seconds per turn (0 = no limit) | 45 | Time to bid or call |
 | Seconds to show the dice after a call | 6 | How long the open cups stay up |
 
-## Leaving and the end
+## Changing players
 
-If a player leaves in the middle of a round, the round starts again with fresh dice for everyone else, since the bids so far counted their dice. The last player with dice wins.
+A game keeps its players. If someone has to go, the board can exchange them for another person or an AI player (tap their name in the board's settings, or **Exchange** at their seat when their phone is away): the newcomer plays on with the same dice, even in the middle of a round.
 
 ## Tips
 

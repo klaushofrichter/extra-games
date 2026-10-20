@@ -5,7 +5,7 @@
 // Doubling, taking and passing stay on the phones.
 //
 // Static and moving parts are separate layers (the points are drawn once; checkers have their own layer), and a move
-// plays as one animation per checker, so the board stays smooth on a 4K table (see game-table-board-animations).
+// plays as one animation per checker, so the board stays smooth on a 4K table (games-service's developer guide, section 9).
 import { W, H, esc, html, playerColor, playSound, remainingMs, seatPlates, useStyles } from "/shared/board-kit.js";
 import { COLOR_NAME, ROLL_MS, checkerSound, cubeSound, diceState, dieHtml, hitSound, offSound, ownNumber, rollSound, winSound } from "/games/backgammon/assets/bg-ui.js";
 
@@ -446,20 +446,20 @@ export function mount(root, ctx) {
       while (queue.length && !gone) {
         const { v, events } = queue.shift();
         try {
-        const moves = events.filter((e) => e.name === "moved").map((e) => e.data);
-        const restart = events.some((e) => e.name === "opening" || e.name === "undone");
-        if (events.some((e) => e.name === "rolled" || e.name === "opening")) {
-          sounds(events.filter((e) => e.name === "rolled" || e.name === "opening"));
-          await wait(ROLL_MS / 2); // the dice land before the first checker moves
-          diceBox.classList.add("rolling");
-          setTimeout(() => diceBox.classList.remove("rolling"), ROLL_MS);
-        }
-        if (!restart && shown && moves.length) {
-          for (const [k, m] of moves.entries()) {
-            if (k) await wait(90);
-            await playMove(m);
+          const moves = events.filter((e) => e.name === "moved").map((e) => e.data);
+          const restart = events.some((e) => e.name === "opening" || e.name === "undone");
+          if (events.some((e) => e.name === "rolled" || e.name === "opening")) {
+            sounds(events.filter((e) => e.name === "rolled" || e.name === "opening"));
+            await wait(ROLL_MS / 2); // the dice land before the first checker moves
+            diceBox.classList.add("rolling");
+            setTimeout(() => diceBox.classList.remove("rolling"), ROLL_MS);
           }
-        }
+          if (!restart && shown && moves.length) {
+            for (const [k, m] of moves.entries()) {
+              if (k) await wait(90);
+              await playMove(m);
+            }
+          }
         } catch (err) {
           console.error("backgammon board:", err); // never leave the queue stuck: show the latest board instead
         }

@@ -151,3 +151,42 @@ Format: **E-nnn · date · decided by** — decision. *Why:* reason.
   and games can be copied for a game repository of one's own. *Why:* Klaus: "I want to use MIT for the public repos."
   *Implementation (Claude):* `LICENSE` (Copyright (c) 2026 Klaus Hofrichter), `"license": "MIT"` in `package.json`, a
   *Licence* section in the README. No third-party images, sounds or fonts are in the repository.
+- **E-019 · 2026-10-19 · Claude** — An overnight review of the three games against games-service's developer guide
+  after its D-171 (no `onSeatLeft` during games, `seatColors` always empty, AI names cut to twelve characters, remote
+  watchers), with tests for seats changing hands at every awkward moment. *Why:* Klaus: "Do another /simplify run …
+  Apply any fixes, invent new testcases then needed, specifically for cornercases like "all seats are taken, can we
+  add another", and deploy when all test are green." *Implementation (Claude):*
+  - **Fixed:** Backgammon played any match longer than 25 points as 25 (the rules still capped it at E-013's old
+    range; E-015 offers up to 100). Backgammon's turn timer *evaluated* a double for a slow player and could pass it,
+    losing them the game; it now takes it, as E-013 and the rules for players say (it still never doubles for them;
+    the stand-in of old logs keeps judging). Chess: a draw offered by a player whose seat is then exchanged is
+    withdrawn, since the newcomer did not offer it (an offer *to* the seat stands, for the newcomer or the AI to
+    answer at once); the Game Viewer says so.
+  - **Stale since E-016:** the rules for players of all three games still described the stand-in, the empty seat and a
+    round restarted for a player who left; they now describe the exchange. Chess's setting *Stand-in strength (Elo) for
+    a player who leaves* could never take effect and is gone (the rules keep 1200, or an old log's value, so old logs
+    replay), as is "an AI that takes over the seat of a player who leaves" in its description. `"dynamicPlayers"` is
+    `false` for Chess and Backgammon: with two seats for two players nobody could be seated mid-game anyway, and it
+    only served the stand-in. The stand-in, `onSeatLeft` and `onSeatJoined` stay, marked as reached only by logs from
+    before games-service D-159 (as E-016 decided), so the Game Viewer can still replay them.
+  - **Simplified:** the unreachable `abandoned` result in Chess, an unused export in `chess/assets/pieces.js`, stale
+    comments (the rules' headers, a reference to a document outside this repository), the indentation of
+    Backgammon's animation queue.
+  - **Added:** Liar's Dice describes its steps for the Game Viewer (bids, calls, new rounds, the table acting for a slow
+    player) with *Round* and *Bid* columns, like the other two games.
+  - **Checked, unchanged:** no game reads `seatColors` (all use `playerColor`); no view leaks a cup; each game updates
+    only names in `onSeatChanged`, which is all their rules keep about a seat's player, and an AI that takes a seat
+    moves at once because it reads only its view; `canContinueWithout` stays the default everywhere, since every game
+    can wait for a player; summaries put the player's name first. The confirmation dialog in the Chess and Backgammon
+    phones looks alike but stays in each game: games are versioned and installed one folder each, so one game must not
+    load another's files.
+  - **Tests:** `tests/seats.test.ts`: Liar's Dice at 2 to 6 players with every seat going to an AI at a different
+    moment and one changing hands back and forth, every cup checked private at every step; the seat on turn exchanged
+    in the middle of a bid, the loser during the reveal, both seats right before the last call (the summary names the
+    new players; an exchange after the end changes nothing); Chess with the side to move exchanged (the AI moves at
+    once), a draw offer to and from an exchanged seat, Black exchanged right before mating, people replaced by AI
+    players back and forth; Backgammon with the player answering a double, the mover after one checker, a seat between
+    games and the doubler's seat while a double waits, and a whole match of a person who sits still against an AI.
+    Every game also replays exactly and the Game Viewer describes every step, names at the table's twelve characters
+    included. `chess-host.test.ts`: every seat taken, a third phone is refused and the game goes on; the exchange
+    is the way in. `backgammon.test.ts`: matches up to 100 points; the timer's take.

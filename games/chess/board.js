@@ -1,6 +1,6 @@
 // Chess board: the 8 × 8 board in the middle of the table, White's first rank toward White's seat, all pieces standing
 // up toward the edge the board faces (the turn-around button turns them). At each player's right hand a panel faces them: their clock, what they have
-// captured, the last moves and what is going on (check, a draw offer, the stand-in). Moves are made here: tap a piece of
+// captured, the last moves and what is going on (check, a draw offer). Moves are made here: tap a piece of
 // yours, then its square; a promotion asks which piece. The phones only show clocks and moves and offer a draw or
 // resignation.
 import { W, H, ROT, esc, html, ping, playerColor, playSound, remainingMs, seatPlates, useStyles } from "/shared/board-kit.js";
@@ -135,7 +135,7 @@ export function mount(root, ctx) {
     const took = (color === 0 ? v.captured.black : v.captured.white).split("").map((ch) => pieceSvg(ch, 30)).join("");
     let status = "";
     if (v.result) status = `<b>${esc(v.result.text)}</b>`;
-    else if (info.over) status = "<b>The game has ended</b>"; // ended by the table, e.g. a player left (the result says why)
+    else if (info.over) status = "<b>The game has ended</b>"; // ended by the table (End game), without a result of its own
     else if (v.turn === color) status = v.check ? `<b class="ch-alert">Check!</b> ${away ? "The stand-in" : "You"} to move` : away ? "The stand-in is moving…" : thinking ? "Thinking…" : "Your move";
     else {
       const mover = v.seats[color ^ 1];

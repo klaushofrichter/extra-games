@@ -1,5 +1,5 @@
 // Backgammon rules: the dice rules (both dice, the larger die, the bar, bearing off), whole turns with Undo and Done,
-// hitting, gammons and backgammons, the doubling cube with the Crawford rule, the match, the turn timer, the stand-in,
+// hitting, gammons and backgammons, the doubling cube with the Crawford rule, the match, the turn timer, the stand-in (old logs),
 // the AI's levels, the move list and exact replays on games-service's own runtime.
 import { describe, expect, it } from "vitest";
 import {
@@ -312,6 +312,13 @@ describe("the doubling cube and the match", () => {
     const { s } = newMatch({ matchLength: 1 }, [2, 1]);
     expect(canDouble({ ...s, phase: "roll" })).toBe(false);
   });
+
+  it("plays matches as long as the settings offer, up to 100 points (E-015)", () => {
+    expect(newMatch({ matchLength: 51 }).s.match.length).toBe(51);
+    expect(newMatch({ matchLength: 100 }).s.match.length).toBe(100);
+    expect(newMatch({ matchLength: 250 }).s.match.length).toBe(100);
+    expect(newMatch({ matchLength: 0 }).s.match.length).toBe(3);
+  });
 });
 
 describe("timers, the stand-in and the AI", () => {
@@ -325,7 +332,21 @@ describe("timers, the stand-in and the AI", () => {
     expect(ctx.timers.has("turn")).toBe(true); // the next player's turn has its own limit
   });
 
-  it("the stand-in plays a player who left, step by step, until someone takes the seat", () => {
+  it("the turn timer takes a double for a slow player, even a hopeless one, and never doubles for them (E-013)", () => {
+    const lost = at(board({ 1: 2 }, { 13: 13, 6: 2 }, { off: [13, 0] }), 0, { phase: "double", turnMs: 30_000 });
+    expect(shouldTake(persp(lost.board, 1), "average", { need: [3, 3], value: 1, freeDrop: false })).toBe(false); // the AI would pass
+    const r = def.onTimer!(lost, "turn", fakeCtx() as never) as { state: State; events: { name: string }[] };
+    expect(r.events.map((e) => e.name)).toEqual(["timeout", "took"]);
+    expect(r.state).toMatchObject({ phase: "roll", turn: 0, cube: { value: 2, owner: 1 } });
+    // On their own roll the timer rolls, with no double, however good their position.
+    const won = at(board({ 1: 2 }, { 13: 13, 6: 2 }, { off: [13, 0] }), 0, { turnMs: 30_000 });
+    expect(canDouble(won)).toBe(true);
+    const roll = def.onTimer!(won, "turn", fakeCtx([1, 1]) as never) as { state: State; events: { name: string }[] };
+    expect(roll.events.map((e) => e.name)).not.toContain("doubled");
+    expect(roll.state.cube.value).toBe(1);
+  });
+
+  it("the stand-in plays a player who left, step by step, until someone takes the seat (logs from before games-service D-159)", () => {
     let { s } = newMatch({}, [3, 1]);
     const ctx = fakeCtx([2, 2]);
     let r = def.onSeatLeft!(s, s.seats[0], ctx as never) as { state: State };

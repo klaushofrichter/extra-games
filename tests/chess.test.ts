@@ -1,5 +1,5 @@
 // Chess: the move generator against known perft counts, notation, every way a game ends, the clocks on game time,
-// draw offers, the stand-in for a player who leaves, the AI's strength levels, and exact replays.
+// draw offers, the stand-in of logs from before games-service D-159, the AI's strength levels, and exact replays.
 import { describe, expect, it } from "vitest";
 import { Position, START_FEN, perft, uci } from "../games/chess/chess.ts";
 import { Engine, level, pickMove } from "../games/chess/engine.ts";
@@ -236,7 +236,7 @@ describe("clocks", () => {
   });
 });
 
-describe("a player who leaves", () => {
+describe("a player who leaves (logs from before games-service D-159, E-016)", () => {
   it("is replaced by the stand-in, which plays the same moves in a replay", () => {
     const g = begin({ standInElo: 800 }, { seed: 7 });
     g.line("e2e4");
