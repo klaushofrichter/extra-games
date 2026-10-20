@@ -47,10 +47,10 @@ Each player's panel on the board shows their points so far and their **pips**: h
 
 With the **Doubling cube** on, before rolling you may double (on your phone): the other player either **takes**, plays on for twice the points and gets the cube, or **passes** and loses this game at the cube's value before the double. Only the player holding the cube may double again; a cube in the middle belongs to both. In the **Crawford game**, the first game after a player gets within one point of winning the match, nobody may double. A double that could not change the match any more is not offered.
 
-## Time and players who leave
+## Time and changing players
 
-**Seconds per turn (0 = no limit)** gives each turn a time limit; when it runs out, the table plays the turn for the player (and takes a double for them). An AI player's **Strength** is beginner, average or strong, set in its settings on the board.
+**Seconds per turn (0 = no limit)** gives each turn a time limit; when it runs out, the table plays the turn for the player (and takes a double for them; it never doubles for them). An AI player's **Strength** is beginner, average or strong, set in its settings on the board.
 
-If a player leaves during the match, the **stand-in** plays on for them; someone who sits down in the empty seat takes over. A phone that drops out gets a minute to come back first.
+A match keeps its two players. If someone has to go, the board can exchange them for another person or an AI player (tap their name in the board's settings, or **Exchange** at their seat when their phone is away): the newcomer plays on with the same colour, score and cube.
 
 > Tip: tap a picked-up checker again to put it down, or tap another one of yours instead.

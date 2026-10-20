@@ -55,7 +55,7 @@ D-097 and D-098.
 | `games/<id>/` | One folder per game, exactly like games-service's `games/`: `manifest.json`, `rules.ts`, `board.js`, `deck.js`, optional `board.css`/`deck.css`, `how-to-play.md` (rules for players) and `assets/`. Only this folder goes to tables. |
 | `games-service.ref` | The games-service branch, tag or commit these games are tested against |
 | `scripts/games-service.sh` | Brings games-service into `.games-service/` (git-ignored) for the tests; `npm run setup` runs it |
-| `tests/` | Vitest: rules (`liars-dice.test.ts`, `chess.test.ts`, `backgammon.test.ts`), a real Table Host with fake phones (`host.test.ts`, `chess-host.test.ts`, `backgammon-host.test.ts`), and the bundle path the console and tables take (`bundle.test.ts`) |
+| `tests/` | Vitest: rules (`liars-dice.test.ts`, `chess.test.ts`, `backgammon.test.ts`), seats changing hands at any moment in all three games (`seats.test.ts`), a real Table Host with fake phones (`host.test.ts`, `chess-host.test.ts`, `backgammon-host.test.ts`), and the bundle path the console and tables take (`bundle.test.ts`) |
 | `scripts/soak.ts` | Many AI-only games per player count and style, through the host's simulation loop (Chess: its two weakest levels, plus a few games at club strength) |
 | `scripts/chess-ladder.ts` | Chess strength check: matches between Elo levels, or against Stockfish limited to an Elo (Stockfish installed separately) |
 | `scripts/bg-ladder.ts` | Backgammon strength check: AI-only matches between two levels, half with each colour |

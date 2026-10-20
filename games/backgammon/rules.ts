@@ -1,8 +1,9 @@
 // Backgammon for two players on Game Table, played as a match to a number of points with the doubling cube and the
 // Crawford rule. The board draws the game and takes the moves (tap a checker, then where it goes; tap the dice to
 // roll); the phones roll, double, take or pass, undo and end the turn, and list the moves. AI players play at three
-// strengths. A player who leaves during the match is replaced by the stand-in, which plays on until someone takes the
-// empty seat again.
+// strengths. Who plays a seat may change during the match (the board exchanges players, games-service D-159): the colour,
+// the score and the cube stay with the seat, only the name changes. The stand-in (a player who left, replaced by the
+// rules' own AI) is kept only so that logs from before D-159 still replay: the platform no longer takes a player away.
 //
 // A turn: roll (or double first), move the dice one checker at a time (each move can be taken back until the turn
 // ends), then Done. With no legal move the turn passes by itself after a moment. Bearing off the last checker ends
@@ -40,6 +41,8 @@ const STAND_IN_MS = 800;
 export const NEXT_MS = 9000;
 /** The cube stops here. */
 const CUBE_MAX = 64;
+/** The longest match the settings offer (E-015). */
+const MATCH_MAX = 100;
 
 export type Kind = "single" | "gammon" | "backgammon" | "pass";
 
@@ -97,7 +100,7 @@ export interface State {
   games: GameRecord[];
   stats: [SideStats, SideStats];
   turnMs: number;
-  /** Seats the stand-in plays because their player left. */
+  /** Seats the stand-in plays because their player left (only in logs from before games-service D-159). */
   standIn: number[];
   result: null | { winner: Color; reason: "match" };
 }
@@ -283,17 +286,21 @@ function cubeSituation(s: State, me: Color): CubeSituation {
   return { need, value: s.cube.value, freeDrop: s.match.postCrawford && need[1] === 1 && need[0] > 1 };
 }
 
-/** One step for a side the rules play themselves (the stand-in, or the turn timer for a slow player). */
+/**
+ * One step for a side the rules play themselves: the stand-in, or the turn timer for a slow player. The timer takes a
+ * double for the player and never doubles for them (E-013): a slow player must not lose a game by it.
+ */
 function autoStep(s: State, ctx: GameContext, whole: boolean): Out {
   const who = actor(s);
   if (who === null) return { state: s, events: [] };
   const level: Level = "average";
+  const standIn = s.standIn.includes(s.seats[who]);
   if (s.phase === "double") {
-    const take = shouldTake(persp(s.board, who), level, cubeSituation(s, who));
+    const take = !standIn || shouldTake(persp(s.board, who), level, cubeSituation(s, who));
     return take ? takeCube(s) : passCube(s, ctx);
   }
   if (s.phase === "roll") {
-    if (canDouble(s) && s.standIn.includes(s.seats[who]) && shouldDouble(persp(s.board, who), level, cubeSituation(s, who))) return offer(s, ctx);
+    if (standIn && canDouble(s) && shouldDouble(persp(s.board, who), level, cubeSituation(s, who))) return offer(s, ctx);
     const r = roll(s, ctx);
     if (!whole || r.state.phase !== "move") return r;
     const rest = autoStep(r.state, ctx, true);
@@ -453,7 +460,7 @@ export default defineGame<State>({
     const seats = [...ctx.seats].sort((a, b) => a.seat - b.seat);
     const south = seats.find((x) => x.edge === "south") ?? seats[0];
     const north = seats.find((x) => x !== south) ?? seats[1] ?? seats[0];
-    const length = Math.max(1, Math.min(25, Math.round(Number(settings.matchLength ?? 3)) || 3));
+    const length = Math.max(1, Math.min(MATCH_MAX, Math.round(Number(settings.matchLength ?? 3)) || 3));
     const base: State = {
       seats: [south.seat, north.seat],
       names: Object.fromEntries(seats.map((x) => [x.seat, x.name])),
@@ -569,6 +576,7 @@ export default defineGame<State>({
     return { state: { ...s, names: { ...s.names, [seat.seat]: seat.name } } };
   },
 
+  // onSeatLeft and onSeatJoined: only replays of logs from before games-service D-159 reach these (E-016, E-019).
   onSeatLeft(s, seat, ctx) {
     if (s.result || colorOf(s, seat) === null) return { state: s };
     const next: State = { ...s, standIn: [...s.standIn.filter((x) => x !== seat), seat] };
