@@ -49,10 +49,10 @@ A king under attack is in **check**: you must get it out of check. No way out is
 
 With one player at the table and the other remote or an AI, the player at the table sits south, facing the board the right way; a remote player's board turns to them by itself. **White plays from** decides who gets white: the south seat (the default), the north seat, or chance. The board is turned so that White's first rank is in front of White. All pieces stand the same way, toward the edge the board faces; the board's turn-around button turns them for the other side of the table.
 
-## AI players and players who leave
+## AI players and changing players
 
 An AI player's strength is set as an approximate Elo rating (400 for a beginner, 2200 for a strong club player) in its settings on the board.
 
-If a player leaves during the game, the **stand-in** plays on for them in their colour, at the **Stand-in strength (Elo) for a player who leaves**. Someone who sits down in the empty seat takes over from it. A phone that drops out gets a minute to come back before the stand-in takes over; their clock keeps running meanwhile. This also holds against an AI player: the game then plays on by itself, and joining with the QR code puts you back in the empty seat.
+A game keeps its two players. If someone has to go, the board can exchange them for another person or an AI player (tap their name in the board's settings, or **Exchange** at their seat when their phone is away): the newcomer plays on with the same colour, position and clock. While a phone is away, that player's clock keeps running.
 
 > Tip: tap a picked-up piece again to put it back, or tap another of your pieces instead.

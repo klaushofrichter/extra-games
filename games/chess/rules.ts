@@ -1,7 +1,8 @@
 // Chess for two players on Game Table. The board draws the game and takes the moves (a tap on a piece, a tap on its
 // square); the phones show the clocks, the moves so far, and offer a draw or resignation. AI players play at an
-// approximate Elo rating. A player who leaves during the game is replaced by the engine, the "stand-in", which plays
-// on in their colour until someone takes the empty seat again.
+// approximate Elo rating. Who plays a seat may change during the game (the board exchanges players, games-service
+// D-159): the side stays with the seat, only the name changes. The "stand-in" (the engine playing for a player who left)
+// is kept only so that logs from before D-159 still replay: the platform no longer takes a player away.
 //
 // Clocks use the game time (`ctx.now()`, games-service D-126): each move charges the mover the time since their turn
 // began, then adds the increment; a timer per turn makes the flag fall. A pause on the table stops both.
@@ -17,7 +18,7 @@ const STAND_IN_MS = 900;
 const STAND_IN_NODES = 60_000;
 
 export type Color = 0 | 1;
-export type Reason = "checkmate" | "resignation" | "time" | "stalemate" | "repetition" | "fifty" | "material" | "agreement" | "timeVsMaterial" | "abandoned";
+export type Reason = "checkmate" | "resignation" | "time" | "stalemate" | "repetition" | "fifty" | "material" | "agreement" | "timeVsMaterial";
 
 export interface ClockState {
   base: number;
@@ -45,8 +46,9 @@ export interface State {
   timeControl: string;
   /** The seat that offered a draw, until it is answered or the other side moves. */
   drawOffer: number | null;
-  /** Seats the engine plays because their player left. */
+  /** Seats the engine plays because their player left (only in logs from before games-service D-159). */
   standIn: number[];
+  /** The stand-in's strength: the setting old logs have, else 1200. */
   standInElo: number;
   result: null | { winner: Color | null; reason: Reason; by?: number };
 }
@@ -196,7 +198,6 @@ const REASON_TEXT: Record<Reason, string> = {
   material: "as neither side can mate",
   agreement: "by agreement",
   timeVsMaterial: "as the flag fell but the other side can't mate",
-  abandoned: "as nobody is left to play",
 };
 
 /** Captured pieces by the colour that lost them: what is missing from the starting set (promotions aside). */
@@ -362,15 +363,20 @@ export default defineGame<State>({
     return { state: s };
   },
 
-  // Another player took over the seat (games-service D-159): the side stays, the name changes.
+  // Another player took over the seat (games-service D-159): the side and the clock stay, the name changes. A draw the
+  // previous player offered is withdrawn: the newcomer did not offer it (E-019). An offer to this seat stands, for the
+  // newcomer to answer.
   onSeatChanged(s, seat) {
-    return { state: { ...s, names: { ...s.names, [seat.seat]: seat.name } } };
+    const withdrawn = s.drawOffer === seat.seat && !s.result;
+    const next: State = { ...s, names: { ...s.names, [seat.seat]: seat.name }, drawOffer: withdrawn ? null : s.drawOffer };
+    return { state: next, events: withdrawn ? [{ name: "drawWithdrawn", data: { by: seat.seat } }] : [] };
   },
 
+  // onSeatLeft and onSeatJoined: only replays of logs from before games-service D-159 reach these (E-016, E-019).
+  // There the stand-in took the seat of a player who left, also against an AI player (E-010), and someone who sat down
+  // in the empty seat took the side back.
   onSeatLeft(s, seat, ctx) {
     if (s.result || colorOf(s, seat) === null) return { state: s };
-    // The stand-in takes the seat whoever is left, also against an AI player (E-010): the game plays on to its end on the
-    // board, and anyone who sits down in the empty seat takes the side back.
     const next: State = { ...s, standIn: [...s.standIn.filter((x) => x !== seat), seat], drawOffer: s.drawOffer === seat ? null : s.drawOffer };
     scheduleStandIn(next, ctx);
     return { state: next, events: [{ name: "standIn", data: { seat } }] };
@@ -378,7 +384,6 @@ export default defineGame<State>({
 
   onSeatJoined(s, seat, ctx) {
     if (!s.standIn.includes(seat.seat) || s.result) return { state: s };
-    // Someone sat down in the empty seat: they take over from the stand-in.
     const next: State = { ...s, standIn: s.standIn.filter((x) => x !== seat.seat), names: { ...s.names, [seat.seat]: seat.name } };
     if (s.seats[turnOf(s.fen)] === seat.seat) ctx.clearTimer("standin");
     return { state: next, events: [{ name: "takenOver", data: { seat: seat.seat, name: seat.name } }] };
@@ -463,6 +468,7 @@ export default defineGame<State>({
       return { text: `Stand-in plays ${label} ${san}${ending}`, columns, steps: [{ seat, text: `${label} ${san}`, auto: true }], details: { fen: after.fen } };
     }
     if (step.kind === "timer" && step.timer === "flag" && after.result) return { text: `The flag falls.${ending}`, columns };
+    if (step.kind === "seatChanged" && before.drawOffer !== null && after.drawOffer === null) return { text: "Takes over the seat; the draw offer is withdrawn.", columns };
     if (step.kind === "seatLeft" && after.standIn.length > before.standIn.length) return { text: `Left: the stand-in (Elo ${after.standInElo}) plays on.`, columns };
     if (step.kind === "seatJoined" && after.standIn.length < before.standIn.length) return { text: "Takes over from the stand-in.", columns };
     return null;

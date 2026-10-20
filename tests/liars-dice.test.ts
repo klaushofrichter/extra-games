@@ -1,4 +1,4 @@
-// Liar's Dice rules: table order, bidding, calls, wild ones, the reveal, timers, leaving players, privacy,
+// Liar's Dice rules: table order, bidding, calls, wild ones, the reveal, timers, leaving players (old logs), privacy,
 // the AI, summaries and exact replay. Everything runs on games-service's own runtime (tests/harness.ts).
 import { beforeAll, describe, expect, it } from "vitest";
 import {
@@ -353,7 +353,7 @@ describe("timers", () => {
   });
 });
 
-describe("players leaving", () => {
+describe("players leaving (logs from before games-service D-159, E-016)", () => {
   it("restarts the round with fresh cups, without the leaver", () => {
     const { rt, state } = start(game, 4, quiet, 6);
     rt.state = position(state(), {}, 0);

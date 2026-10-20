@@ -1,6 +1,6 @@
 // Backgammon on a real games-service Table Host: the lobby, rolling and moving from the board and the phones, the cube
-// on the phones only, Next game from the board, an AI player in its worker thread, the stand-in for a player who
-// leaves, simulations, and logs that replay exactly.
+// on the phones only, Next game from the board, an AI player in its worker thread, a player exchanged during the match,
+// simulations, and logs that replay exactly.
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { Deck, testHost, until } from "../.games-service/tests/helpers.ts";
 import { LogStore } from "../.games-service/apps/table-host/src/logs.ts";

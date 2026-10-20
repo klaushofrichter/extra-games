@@ -1,6 +1,6 @@
 // Chess on a real games-service Table Host: the lobby, moves from the board and the phones, an AI player in its worker
-// thread, the stand-in for a player who leaves and the player who takes the seat back, simulations, and logs that
-// replay exactly.
+// thread, a player exchanged during the game (for someone at the table or an AI), simulations, and logs that replay
+// exactly.
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { Deck, testHost, until } from "../.games-service/tests/helpers.ts";
 import { LogStore } from "../.games-service/apps/table-host/src/logs.ts";
@@ -28,7 +28,7 @@ describe("chess on a table host", () => {
   it("is listed with its manifest's facts and serves only the board's and phones' files", async () => {
     const g = (await t.ok("GET", "/games")).find((x: { id: string }) => x.id === "chess");
     expect(g).toMatchObject({ name: "Chess", players: [2], ai: true, simulation: true, seatLayouts: [2] });
-    expect(g.settings.map((s: { key: string }) => s.key)).toEqual(["timeControl", "whiteSeat", "standInElo"]);
+    expect(g.settings.map((s: { key: string }) => s.key)).toEqual(["timeControl", "whiteSeat"]);
     expect(g.aiOptions[0]).toMatchObject({ key: "elo", min: 400, max: 2200 });
     for (const f of ["board.js", "board.css", "deck.js", "assets/pieces.js", "assets/how-to-move.svg", "how-to-play.md"]) expect((await fetch(`${t.base}/games/chess/${f}`)).status, f).toBe(200);
     for (const f of ["rules.ts", "chess.ts", "engine.ts", "manifest.json"]) expect((await fetch(`${t.base}/games/chess/${f}`)).status, f).toBe(404);
@@ -84,7 +84,7 @@ describe("chess on a table host", () => {
   it("a running game keeps its players (games-service D-159): exchanged for someone at the table, they play the side on under their name", async () => {
     const a = await t.joinDeck("Ann");
     const b = await t.joinDeck("Ben");
-    await begin([a, b], { timeControl: "no clock", whiteSeat: "south", standInElo: 600 });
+    await begin([a, b], { timeControl: "no clock", whiteSeat: "south" });
     const ben = player("Ben");
     expect((await a.request("game", "intent", { name: "move", payload: { uci: "d2d4" } })).type).toBe("ack");
     expect((await t.api("DELETE", `/players/${ben.id}`)).status).toBe(409);
@@ -98,10 +98,31 @@ describe("chess on a table host", () => {
     c.close();
   }, 30000);
 
+  it("every seat taken: a third phone is turned away and the game goes on untouched; an exchange is the way in", async () => {
+    const a = await t.joinDeck("Ann");
+    const b = await t.joinDeck("Ben");
+    await begin([a, b]);
+    expect((await a.request("game", "intent", { name: "move", payload: { uci: "e2e4" } })).type).toBe("ack");
+    const before = JSON.stringify(state());
+    await expect(t.joinDeck("Cleo")).rejects.toThrow(/no free seat/i);
+    expect(JSON.stringify(state())).toBe(before);
+    expect(t.host.table.state().players.filter((p) => p.seat !== null)).toHaveLength(2);
+    // The way in during a game: the board exchanges a player, here Ann for Cleo, in the middle of the game.
+    const ann = player("Ann");
+    const r = await t.ok("POST", "/exchange", { seat: ann.seat, kind: "local" });
+    const c = await Deck.connect(t.base, { joinToken: r.url.split("/").pop(), name: "Cleo" });
+    const cv = (await c.waitView((x) => x.view.color === 0)).view;
+    expect(cv).toMatchObject({ sans: ["e4"], names: { [ann.seat!]: "Cleo" }, myTurn: false });
+    expect((await b.request("game", "intent", { name: "move", payload: { uci: "e7e5" } })).type).toBe("ack");
+    await c.waitView((x) => x.view.myTurn);
+    expect((await c.request("game", "intent", { name: "move", payload: { uci: "g1f3" } })).type).toBe("ack");
+    c.close();
+  }, 30000);
+
   it("against an AI, a phone that goes away keeps its seat; exchanged for an AI, both sides play on (D-159)", async () => {
     const a = await t.joinDeck("Klaus");
     await t.ok("POST", "/ai", {});
-    await begin([a], { timeControl: "10+5", whiteSeat: "south", standInElo: 400 });
+    await begin([a], { timeControl: "10+5", whiteSeat: "south" });
     expect((await a.request("game", "intent", { name: "move", payload: { uci: "e2e4" } })).type).toBe("ack");
     await until(() => state().sans.length === 2);
     a.close(); // the phone sleeps; the waiting time here is 300 ms

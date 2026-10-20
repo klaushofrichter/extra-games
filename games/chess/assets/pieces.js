@@ -31,9 +31,8 @@ export function pieceSvg(letter, size = 80) {
     <g fill="${st.fill}" stroke="${st.stroke}" stroke-width="3.5" stroke-linejoin="round">${SHAPES[t].replaceAll("{D}", st.detail)}${BASE}</g></svg>`;
 }
 
-/** Piece names for texts. */
-export const PIECE_NAME = { p: "pawn", n: "knight", b: "bishop", r: "rook", q: "queen", k: "king" };
-export const VALUE = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 0 };
+/** Piece values for the material edge (pawn 1, knight and bishop 3, rook 5, queen 9). */
+const VALUE = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 0 };
 
 /** "4:05", or "0:09.3" under ten seconds (the same as the rules' clockText). */
 export function clockText(ms) {

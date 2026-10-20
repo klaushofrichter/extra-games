@@ -11,7 +11,7 @@ Checks on the way:
   - the phones show both clocks (the running one counting down), the moves, a draw offer and its answer, and Resign
     both asking for confirmation first;
   - the phone layout rules of games-service (D-065) on both phones;
-  - the rules on the smallest phone: this table's three settings and the illustration;
+  - the rules on the smallest phone: this table's two settings and the illustration;
   - checkmate ends the game with a summary.
 
 Starts its own Table Host from .games-service with GAMES_DIR pointing at this repo's games/.
@@ -192,7 +192,7 @@ def main():
             ben.locator("[data-rules]").click()
             ben.locator(".rules-modal .md h3").first.wait_for()
             assert "Chess" in ben.inner_text(".rules-modal .rules-head h2")
-            assert ben.locator(".rules-settings tr").count() == 3, "the three settings at this table"
+            assert ben.locator(".rules-settings tr").count() == 2, "the two settings at this table"
             img = ben.locator(".rules-modal .md img")
             img.scroll_into_view_if_needed()
             wait(lambda: img.evaluate("i => i.complete && i.naturalWidth > 0"), 10, "the rules illustration")

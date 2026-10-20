@@ -3,7 +3,7 @@
 // otherwise the bidder does. Out of dice, out of the game; the last player with dice wins.
 //
 // Rules are pure and replayable (D-032 in games-service): all randomness goes through ctx.
-import { count, defineGame, list, type GameContext, type SeatInfo } from "@game-table/sdk";
+import { count, defineGame, list, type GameContext, type SeatInfo, type StepInfo } from "@game-table/sdk";
 
 export type Face = 1 | 2 | 3 | 4 | 5 | 6;
 export interface Bid {
@@ -16,14 +16,14 @@ interface Player {
   seat: number;
   name: string;
   dice: Face[];
-  /** Out of dice (or left the table). */
+  /** Out of dice (or, in logs from before games-service D-159, left the table). */
   out: boolean;
   roundsLost: number;
   callsWon: number;
   bids: number;
   /** Round in which the player went out; null while playing. */
   outInRound: number | null;
-  /** Left the table (as opposed to losing all their dice). */
+  /** Left the table (as opposed to losing all their dice); only in logs from before games-service D-159. */
   left: boolean;
 }
 
@@ -241,6 +241,7 @@ export default defineGame<State>({
     return p ? { state: { ...s, players: { ...s.players, [seat.seat]: { ...p, name: seat.name } } } } : { state: s };
   },
 
+  // Only replays of logs from before games-service D-159 reach this (E-016, E-019): a running game keeps its players.
   onSeatLeft(s, seat, ctx) {
     const p = s.players[seat];
     if (!p || p.out || s.phase === "over") return { state: s };
@@ -310,7 +311,33 @@ export default defineGame<State>({
     if (!v.myTurn) return null;
     return chooseMove(v.myDice, v.bid, v.totalDice, v.onesWild, options.style === "bold" ? "bold" : "cautious", ctx.random);
   },
+
+  // One step in words for the Game Viewer and the move list (games-service section 12), after the game.
+  describe(step: StepInfo<State>) {
+    const { before: b, after: a } = step;
+    const name = (seat: number) => step.names[seat] ?? a.players[seat]?.name ?? "?";
+    const columns = { round: a.round, bid: a.bid ? bidText(a.bid) : null };
+    if (step.kind === "intent" && !step.accepted) return { text: `${step.intent?.name} refused: ${step.reason ?? "?"}`, columns };
+    if (a.bids.length > b.bids.length && a.round === b.round) {
+      const text = `bids ${bidText(a.bid!)}`;
+      return step.kind === "timer" ? { text: `Out of time: the table ${text}`, columns, steps: [{ seat: b.turn, text, auto: true }] } : { text, columns };
+    }
+    if (a.reveal && !b.reveal) {
+      const r = a.reveal;
+      const text = `calls Liar! on ${bidText(r.bid)}: ${count(r.matched, "die counts", "dice count")}, ${r.bidHeld ? "the bid holds" : "a lie"}; ${name(r.loser)} loses a die${a.players[r.loser].out ? " and is out" : ""}.${a.phase === "over" ? ` ${name(a.winner!)} wins.` : ""}`;
+      return step.kind === "timer" ? { text: `Out of time: the table ${text}`, columns, steps: [{ seat: r.caller, text: "calls Liar!", auto: true }] } : { text, columns };
+    }
+    if (step.kind === "timer" && a.round > b.round) return { text: `Round ${a.round}: everyone rolls; ${name(a.turn)} opens.`, columns };
+    return null;
+  },
 });
+
+const FACE_WORDS = ["", "one", "two", "three", "four", "five", "six"];
+const FACE_PLURAL = ["", "ones", "twos", "threes", "fours", "fives", "sixes"];
+/** "four fives", "one six": a bid in words (as the UIs write it, assets/dice.js). */
+export function bidText(b: Pick<Bid, "quantity" | "face">): string {
+  return `${b.quantity < 7 ? FACE_WORDS[b.quantity] : b.quantity} ${b.quantity === 1 ? FACE_WORDS[b.face] : FACE_PLURAL[b.face]}`;
+}
 
 /** What everyone may see. Cups stay hidden except in the reveal after a call. */
 function publicView(s: State) {
