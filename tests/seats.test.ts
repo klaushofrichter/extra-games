@@ -168,7 +168,7 @@ describe("Liar's Dice: seats exchanged at any moment", () => {
     expect(swapped).toBe(1);
     expect(rt.over).toBe(true);
     namesAreCurrent(rt);
-    expect(rt.summary!.text).toMatch(new RegExp(`^(${LONG}|${LONG_AI.replace(/[()]/g, "\\$&")}) wins`));
+    expect([LONG, LONG_AI].some((n) => rt.summary!.text.startsWith(`${n} wins`))).toBe(true);
     const end = JSON.stringify(rt.state);
     exchange(rt, 0, "Too late", "human");
     expect(JSON.stringify(rt.state)).toBe(end);
