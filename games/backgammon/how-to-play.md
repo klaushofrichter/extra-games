@@ -45,7 +45,7 @@ Each player's panel on the board shows their points so far and their **pips**: h
 
 ## The doubling cube
 
-With the **Doubling cube** on, before rolling you may double (on your phone): the other player either **takes**, plays on for twice the points and gets the cube, or **passes** and loses this game at the cube's value before the double. Only the player holding the cube may double again; a cube in the middle belongs to both. In the **Crawford game**, the first game after a player gets within one point of winning the match, nobody may double. A double that could not change the match any more is not offered.
+With the **Doubling cube** on, before rolling you may double (on your phone, or **Double** on the board, tapped twice to be sure): the other player either **takes**, plays on for twice the points and gets the cube, or **passes** and loses this game at the cube's value before the double. **Take** and **Pass** are on the phone and on the board, under the double in that player's box, so the whole match can be played on the board. Only the player holding the cube may double again; a cube in the middle belongs to both. In the **Crawford game**, the first game after a player gets within one point of winning the match, nobody may double. A double that could not change the match any more is not offered.
 
 ## Time and changing players
 
