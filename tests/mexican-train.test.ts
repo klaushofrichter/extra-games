@@ -6,6 +6,8 @@ import { beforeAll, describe, expect, it } from "vitest";
 import { chooseMove, engineOf, handSize, legalMoves, longestChain, openEnd, pips, type State, type Tile } from "../games/mexican-train/rules.ts";
 // @ts-ignore: a plain browser module of the game, with no types
 import { FIELD, HALF, layout, MAX_SCALE, MIN_SCALE } from "../games/mexican-train/assets/layout.js";
+// @ts-ignore: a plain browser module of the game, with no types
+import { tileSvg } from "../games/mexican-train/assets/tiles.js";
 import { loadGame, replaysExactly, seats, start, type Game } from "./harness.ts";
 
 let game: Game;
@@ -358,5 +360,17 @@ describe("the board's layout", () => {
     const empty = ["0", "1", "2", "3"].map((id) => ({ id, owner: Number(id), tiles: [] })).concat([{ id: "m", owner: null as any, tiles: [] }]);
     expect(layout(empty, seatAt).scale).toBe(MAX_SCALE);
     expect(layout(empty, seatAt, 0.8).scale).toBe(0.8);
+  });
+});
+
+describe("tile faces", () => {
+  it("turns digits upright whichever way a tile lies (E-022)", () => {
+    // A tile in a row running right to left lies at 180°: its digits turn 180° back.
+    expect(tileSvg(3, 12, 38, { faces: "numbers", upright: -180 })).toContain('transform="rotate(180)"');
+    // Lying the board's way, no turn; a double laid across turns its digits back by its own quarter turn.
+    expect(tileSvg(3, 12, 38, { faces: "numbers", upright: 0 })).not.toContain("rotate(");
+    expect(tileSvg(5, 5, 38, { faces: "numbers", upright: 0 })).toContain('transform="rotate(270)"');
+    // Pips are symmetric and never turn.
+    expect(tileSvg(3, 12, 38, { faces: "colour", upright: -180 })).not.toContain("rotate(");
   });
 });

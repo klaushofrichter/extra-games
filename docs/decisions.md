@@ -250,3 +250,13 @@ Format: **E-nnn · date · decided by** — decision. *Why:* reason.
   Background choice has a last option, *A new one each round*, which shows the scenes in turn from round 1 (an old
   `rotate` preference is ignored). Any scene picked shows at once. `scripts/e2e/mexican_train.py` picks *A new one each
   round* and then Starfield in round 2.
+- **E-022 · 2026-10-23 · Klaus** — Mexican Train's seat plates show points only once a round has been scored, and
+  digits on tiles always read upright. *Why:* Klaus, with a screenshot of round 1: "we are playing for a while. Not
+  no points... is that right". It was: points are scored only at the end of a round (the pips left in hand), but
+  "13 tiles · 0 pts" on every plate read as if nobody were scoring. The same screenshot showed tiles with *Numbers*
+  faces upside down in rows running right to left. Klaus: "yes, fix both and deploy when green". *Implementation
+  (Claude):* a plate shows "13 tiles" in round 1, then "13 tiles · 42 pts so far", and "42 pts" at the end.
+  `tileSvg` takes `upright`, the angle at which digits read upright in the tile's own frame; the board passes its
+  facing minus the tile's direction, so digits face the board's front on every tile, doubles included (pips are
+  symmetric and never turn). Checks: a unit test of the turns; `scripts/e2e/mexican_train.py` reads the plates
+  before and after round 1.
