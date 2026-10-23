@@ -37,7 +37,7 @@ describe("backgammon on a table host", () => {
     for (const f of ["rules.ts", "bg.ts", "ai.ts", "manifest.json"]) expect((await fetch(`${t.base}/games/backgammon/${f}`)).status, f).toBe(404);
   });
 
-  it("two players: moves from the board and a phone, Undo and Done, the cube only on the phones, an exact replay", async () => {
+  it("two players: moves from the board and a phone, Undo and Done, the cube on the board and the phones, an exact replay", async () => {
     const a = await t.joinDeck("Ann");
     const b = await t.joinDeck("Ben");
     await begin([a, b], { matchLength: 3 });
@@ -59,15 +59,17 @@ describe("backgammon on a table host", () => {
         expect((await board.request("game", "intent", { playerId: mover.p.id, name: "move", payload: firstMove(lv) })).type).toBe("ack");
       }
       expect((await board.request("game", "intent", { playerId: mover.p.id, name: "done" })).type).toBe("ack");
-      // The other player rolls from the board, but doubling stays on the phone (403 from the board).
+      // The other player doubles from the board (E-026), and the board answers for the player it was offered to: the
+      // doubler cannot take their own double.
       expect(state()).toMatchObject({ phase: "roll", turn: state().seats.indexOf(other.p.seat) });
-      expect((await board.request("game", "intent", { playerId: other.p.id, name: "double" })).payload.status).toBe(403);
+      expect((await board.request("game", "intent", { playerId: other.p.id, name: "double" })).type).toBe("ack");
+      expect(state().phase).toBe("double");
+      await board.request("game", "intent", { playerId: other.p.id, name: "take" });
+      expect(state()).toMatchObject({ phase: "double", cube: { value: 1 } });
+      expect((await board.request("game", "intent", { playerId: mover.p.id, name: "take" })).type).toBe("ack");
     } finally {
       board.close();
     }
-    expect((await other.deck.request("game", "intent", { name: "double" })).type).toBe("ack");
-    await mover.deck.waitView((x) => x.view.phase === "double" && x.view.myTurn);
-    expect((await mover.deck.request("game", "intent", { name: "take" })).type).toBe("ack");
     expect(state().cube).toMatchObject({ value: 2, owner: state().seats.indexOf(mover.p.seat) });
     expect((await other.deck.request("game", "intent", { name: "roll" })).type).toBe("ack");
     const ov = (await other.deck.waitView((x) => x.view.phase === "move" && x.view.myTurn)).view;

@@ -69,6 +69,7 @@
 .bg-mycube { margin-left: auto; font: 600 15px var(--text); padding: 3px 10px; border-radius: 8px; background: #efe5cc; color: #241a10; }
 .bg-status { font-size: 21px; min-height: 28px; }
 .bg-alert { color: var(--brass); }
+.bg-btns .bg-sure { background: var(--brass); color: #10221d; border-color: var(--brass); font-size: 17px; white-space: nowrap; }
 .bg-now { margin-top: 4px; font: 19px var(--mono); color: var(--ink); }
 .bg-btns { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 10px; margin-top: 10px; }
 .bg-btns button { min-height: 56px; font-size: 20px; }

@@ -364,3 +364,20 @@ Format: **E-nnn · date · decided by** — decision. *Why:* reason.
   - **Checks.** `tests/last-card.test.ts`: the dots, and the direction for 3 to 8 players with the platform's seat
     places (normal play counter-clockwise, reversed clockwise). `scripts/e2e/last_card.py` plays with tap to play on
     and taps a card once, at a point of it not under its neighbour in the hand.
+- **E-026 · 2026-10-23 · Klaus** — Backgammon: a double is answered on the board too. Klaus: "when one player
+  'doubles', we want to show the 'take' or 'pass' button also on the board, in the players box on the side, right under
+  the text where is says 'Lena (AI) doubles to 2'. We can't guarantee that the other player (not Lena) is tapping these
+  buttons, but this is on the open board, so it's ok. By this was we allow to play on the board only, without using the
+  deck." *Implementation (Claude):*
+  - **Take and Pass** sit under "… doubles to n" in the box of the player the double was offered to, facing them, when
+    the board may act for that seat (`info.controlSeats`, games-service D-102: the table's board for the people at
+    the table, a remote board only for its own player); not for an AI or a stand-in. The line then no longer says "on
+    your phone". The answer is sent for that player's seat, not for the doubler's (whose turn it is).
+  - **Double** joins Roll in the panel of a player who may double, so a whole match can be played on the board. As the
+    phone asks before doubling, the first tap turns the button into "Double to n?" (brass) for four seconds; a second
+    tap doubles.
+  - `boardIntents` adds `double`, `take` and `pass`; the rules check them as from a phone. The how-to-play says so.
+  - **Checks.** `scripts/e2e/backgammon.py`: after a phone doubles, the board shows Take and Pass in the other player's
+    box only, without "on your phone", and Take there turns the cube to 2; later the cube's owner doubles on the board
+    (one tap only asks), and a phone takes. `tests/backgammon-host.test.ts`: the board doubles for one player and takes
+    for the other; the doubler's own take is refused.

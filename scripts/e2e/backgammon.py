@@ -7,7 +7,9 @@ Checks on the way:
   - tapping a checker lights up where it can go, tapping one of those moves it there, Undo on the board takes it back,
     and only the side to move can pick up checkers;
   - tapping the dice on the board rolls them; the phones' move buttons and Done play a turn too;
-  - doubling on a phone asks for confirmation first (Cancel changes nothing), the other phone takes, the cube shows 2;
+  - doubling on a phone asks for confirmation first (Cancel changes nothing); the other phone offers Take and Pass, and
+    so does the board, under the double in that player's box: Take on the board, and the cube shows 2;
+  - Double on the board asks once more on the same button (one tap changes nothing), then doubles; a phone takes;
   - the phone layout rules of games-service (D-065) on both phones, on and off turn and when doubled;
   - the rules on the smallest phone: this table's three settings and the illustration;
   - a whole game played on, then Next game on the board starts the next one at once.
@@ -226,10 +228,15 @@ def main():
             other.locator(".bg-acts [data-act=take]").wait_for()
             check(other, f"{other.label} doubled")
             shot(other, "deck-doubled")
+            # Take and Pass on the board too, in the box of the player the double was offered to.
+            answer = f'.bg-panel[data-color="{1 - game()["turn"]}"]'
+            board.wait_for_selector(f"{answer} [data-act=pass]")
+            assert board.locator(f'.bg-panel[data-color="{game()["turn"]}"] [data-act=take]').count() == 0, "the doubler may take"
+            assert "on your phone" not in board.inner_text(f"{answer} .bg-status")
             time.sleep(0.4)
             shot(board, "board-doubled")
-            other.locator(".bg-acts [data-act=take]").click()
-            wait(lambda: game()["cube"]["value"] == 2, 5, "the take")
+            tap(board, f"{answer} [data-act=take]")
+            wait(lambda: game()["cube"]["value"] == 2, 5, "the take on the board")
             time.sleep(0.4)
             assert board.inner_text(".bg-cube").strip() == "2", "the cube does not show 2"
 
@@ -253,10 +260,23 @@ def main():
             # Play the game on from the phones until it is won.
             end = time.time() + 240
             turns = 0
+            board_doubled = False
             while time.time() < end:
                 v = game()
                 if v["phase"] in ("gameOver", "over"):
                     break
+                if v["phase"] == "roll" and v.get("canDouble") and not board_doubled:
+                    # The cube's owner doubles on the board: the first tap only asks "Double to 4?".
+                    settle(board)
+                    double = f'.bg-panel[data-color="{v["turn"]}"] [data-act=double]'
+                    tap(board, double)
+                    board.wait_for_selector(f"{double}.bg-sure")
+                    assert game()["phase"] == "roll", "one tap on Double doubled"
+                    shot(board, "board-double-confirm")
+                    tap(board, double)
+                    wait(lambda: game()["phase"] == "double", 5, "the double from the board")
+                    board_doubled = True
+                    continue
                 if v["phase"] == "double":  # never offered here, but answer it if it comes
                     (ann if v["turn"] == 1 else ben).locator(".bg-acts [data-act=take]").click()
                     continue
@@ -268,6 +288,7 @@ def main():
                     time.sleep(0.6)
                     shot(board, "board-middle")
             v = game()
+            assert board_doubled or v["phase"] == "over", "never doubled on the board"
             assert v["phase"] in ("gameOver", "over"), f"the game did not end (phase {v['phase']})"
             settle(board)
             shot(board, "board-game-won")

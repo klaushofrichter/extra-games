@@ -2,7 +2,7 @@
 // the bar in the middle and the borne-off checkers in the tray at the right. At each player's right hand a panel faces
 // them: their score and pip count, what to do now, Roll, Undo and Done, and the last turns. Moves are made here: tap a
 // checker, then where it goes (the points it can reach light up; one die or several in a row); tap the dice to roll.
-// Doubling, taking and passing stay on the phones.
+// Doubling (tap Double twice), taking and passing work here too, so a match can be played on the board alone.
 //
 // Static and moving parts are separate layers (the points are drawn once; checkers have their own layer), and a move
 // plays as one animation per checker, so the board stays smooth on a 4K table (games-service's developer guide, section 9).
@@ -62,6 +62,7 @@ export function mount(root, ctx) {
   let shown = null; // the board as drawn now (it trails `view` while moves play)
   let selected = null; // the spot of a picked-up checker
   let sending = false;
+  let confirmDouble = null, confirmTimer = null; // the colour whose Double asks "Double to n?"
   let gone = false;
   const queue = [];
   let playing = null; // the promise of the queue being played
@@ -293,21 +294,29 @@ export function mount(root, ctx) {
     const ai = (info.players ?? []).find((p) => p.seat === seat)?.kind === "ai";
     const control = !!ctx?.act && (info.controlSeats ?? []).includes(seat) && !v.result && !info.over;
     const mine = v.turn === color;
+    const showButtons = control && mine && (v.phase === "roll" || v.phase === "move") && !away;
+    // A double is answered here too (the board is open: whoever taps, it counts for this player).
+    const answerHere = control && !mine && v.phase === "double" && !away && !ai;
     let status = "";
     if (v.result) status = `<b>${esc(v.result.text)}</b>`;
     else if (info.over) status = "<b>The match has ended</b>";
     else if (v.phase === "gameOver") status = esc(gameLine(v.lastGame));
-    else if (v.phase === "double") status = mine ? `You double to ${v.cube.value * 2}: waiting for ${esc(nameOf(color ^ 1))}` : `<b class="bg-alert">${esc(nameOf(color ^ 1))} doubles to ${v.cube.value * 2}</b>: take or pass on your phone`;
+    else if (v.phase === "double") status = mine ? `You double to ${v.cube.value * 2}: waiting for ${esc(nameOf(color ^ 1))}` : `<b class="bg-alert">${esc(nameOf(color ^ 1))} doubles to ${v.cube.value * 2}</b>${answerHere ? "" : ": take or pass on your phone"}`;
     else if (!mine) status = `<span class="muted">${esc(nameOf(color ^ 1))} ${v.phase === "roll" ? "to roll" : "is moving"}${v.standIn.includes(v.seats[color ^ 1]) ? " (stand-in)" : ""}</span>`;
     else if (away) status = "The stand-in is playing…";
     else if (ai) status = v.phase === "roll" ? "Rolling…" : "Thinking…";
-    else if (v.phase === "roll") status = v.canDouble ? "Your roll: tap the dice, or double on your phone" : "Your roll: tap the dice";
+    else if (v.phase === "roll") status = v.canDouble ? `Your roll: tap the dice, or double${showButtons ? "" : " on your phone"}` : "Your roll: tap the dice";
     else if (v.blocked) status = "No move possible: the turn passes";
     else if (v.canDone) status = "<b>All moved: tap Done</b>";
     else status = `Move: ${v.remaining.join(" and ")}${v.legal.some((m) => m.from === "bar") ? " (from the bar first)" : ""}`;
-    const showButtons = control && mine && (v.phase === "roll" || v.phase === "move") && !away;
-    const buttons = showButtons
+    const doubling = confirmDouble === color;
+    const buttons = answerHere
       ? `<div class="bg-btns">
+          <button type="button" class="primary" data-act="take" ${sending ? "disabled" : ""}>Take</button><button type="button" data-act="pass" ${sending ? "disabled" : ""}>Pass</button>
+        </div>`
+      : showButtons
+      ? `<div class="bg-btns">
+          ${v.phase === "roll" && v.canDouble ? `<button type="button" class="${doubling ? "bg-sure" : ""}" data-act="double" ${sending ? "disabled" : ""}>${doubling ? `Double to ${v.cube.value * 2}?` : "Double"}</button>` : ""}
           ${v.phase === "roll" ? `<button type="button" class="primary" data-act="roll" ${sending ? "disabled" : ""}>Roll</button>` : ""}
           ${v.phase === "move" ? `<button type="button" data-act="undo" ${v.canUndo && !sending ? "" : "disabled"}>Undo</button><button type="button" class="primary" data-act="done" ${v.canDone && !sending ? "" : "disabled"}>Done</button>` : ""}
         </div>`
@@ -476,12 +485,24 @@ export function mount(root, ctx) {
   }
 
   // ----- touch -----
+  // Double asks once more on the same button (as the phone confirms it), for a few seconds.
+  function setConfirm(c) {
+    confirmDouble = c;
+    clearTimeout(confirmTimer);
+    if (c !== null) confirmTimer = setTimeout(() => setConfirm(null), 4000);
+    if (view) drawPanels();
+  }
+
   async function act(name, payload) {
     if (sending || !view) return;
+    if (name === "double" && confirmDouble !== view.turn) return setConfirm(view.turn);
+    if (confirmDouble !== null) setConfirm(null);
     sending = true;
     selected = null;
     draw();
-    const r = await ctx.act(view.turnSeat, name, payload);
+    // Take and pass answer for the player the double was offered to, not the one whose turn it is.
+    const seat = name === "take" || name === "pass" ? view.seats[view.turn ^ 1] : view.turnSeat;
+    const r = await ctx.act(seat, name, payload);
     sending = false;
     if (gone || !view) return;
     if (!r.ok) draw();
@@ -551,6 +572,7 @@ export function mount(root, ctx) {
     },
     destroy() {
       gone = true;
+      clearTimeout(confirmTimer);
     },
   };
 }
