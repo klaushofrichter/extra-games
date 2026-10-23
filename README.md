@@ -29,6 +29,11 @@ Games here:
 - **Backgammon** (2 players, checkers moved on the board by tapping, rolls, doubles and Done on the phones too, matches
   to 1–100 points with the doubling cube and the Crawford rule, an optional time per turn, AI players at three
   strengths).
+- **Mexican Train** (2–8 players, dominoes with a double-twelve set, your tiles on your phone only, your own train
+  plus the shared Mexican train, markers, doubles to cover, an optional opening run and a double blank worth 50, two AI
+  styles). Its board is the most customised here: tiles that size themselves to the room, screensaver-style animated
+  backgrounds, the platform's seat plates restyled as glass with turn animations, sound effects and music that
+  composes itself, all within the platform (E-020).
 
 ## How a game gets onto a table
 
@@ -55,11 +60,12 @@ D-097 and D-098.
 | `games/<id>/` | One folder per game, exactly like games-service's `games/`: `manifest.json`, `rules.ts`, `board.js`, `deck.js`, optional `board.css`/`deck.css`, `how-to-play.md` (rules for players) and `assets/`. Only this folder goes to tables. |
 | `games-service.ref` | The games-service branch, tag or commit these games are tested against |
 | `scripts/games-service.sh` | Brings games-service into `.games-service/` (git-ignored) for the tests; `npm run setup` runs it |
-| `tests/` | Vitest: rules (`liars-dice.test.ts`, `chess.test.ts`, `backgammon.test.ts`), seats changing hands at any moment in all three games (`seats.test.ts`), a real Table Host with fake phones (`host.test.ts`, `chess-host.test.ts`, `backgammon-host.test.ts`), and the bundle path the console and tables take (`bundle.test.ts`) |
+| `tests/` | Vitest: rules (`liars-dice.test.ts`, `chess.test.ts`, `backgammon.test.ts`, `mexican-train.test.ts` with the board's layout), seats changing hands at any moment in all three games (`seats.test.ts`), a real Table Host with fake phones (`host.test.ts`, `chess-host.test.ts`, `backgammon-host.test.ts`), and the bundle path the console and tables take (`bundle.test.ts`) |
 | `scripts/soak.ts` | Many AI-only games per player count and style, through the host's simulation loop (Chess: its two weakest levels, plus a few games at club strength) |
+| `scripts/train-lengths.ts` | Mexican Train: how long trains get, by player count, from AI-only games; the board's layout is sized from it (E-020) |
 | `scripts/chess-ladder.ts` | Chess strength check: matches between Elo levels, or against Stockfish limited to an Elo (Stockfish installed separately) |
 | `scripts/bg-ladder.ts` | Backgammon strength check: AI-only matches between two levels, half with each colour |
-| `scripts/e2e/` | Browser checks (Playwright): Liar's Dice with a board and three phones, Chess with a board and two phones (moves by tapping the board, clocks, a draw offer, mate), Backgammon with a board and two phones (moves by tapping the board and from a phone, Undo, a double and a take, a whole game, Next game), each opening the rules; uses games-service's e2e helpers from `.games-service/` |
+| `scripts/e2e/` | Browser checks (Playwright): Liar's Dice with a board and three phones, Chess with a board and two phones (moves by tapping the board, clocks, a draw offer, mate), Backgammon with a board and two phones (moves by tapping the board and from a phone, Undo, a double and a take, a whole game, Next game), Mexican Train with a board, three phones and an AI player (two rounds by tapping, the scores between them), each opening the rules; uses games-service's e2e helpers from `.games-service/` |
 | `docs/decisions.md` | Decisions for this repo |
 
 ## Writing a game

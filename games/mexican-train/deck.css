@@ -1,0 +1,37 @@
+/* Mexican Train phone (E-020): within the platform's cards; designed for 360 px wide and short screens. */
+.mtd { display: grid; gap: 10px; }
+.mtd-status.go { box-shadow: 0 0 0 2px var(--brass, #d6a94a) inset; }
+.mtd-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 2px; }
+.mtd-big { font-size: 1.25em; line-height: 1.2; }
+.mtd-score { text-align: right; flex: none; }
+.mtd-score b { display: block; font-size: 1.6em; font-variant-numeric: tabular-nums; }
+.mtd-score span { font-size: .75em; opacity: .7; }
+.mtd-trains { display: grid; grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)); gap: 8px; margin-top: 8px; }
+.mtd-train { position: relative; display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 8px; min-height: 52px; padding: 8px 10px; text-align: left; border: 2px solid transparent !important; }
+.mtd-train .dot { width: 12px; height: 12px; border-radius: 50%; background: var(--c); }
+.mtd-train .nm { font-size: .9em; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mtd-train .end { font-size: 1.5em; font-weight: 800; font-variant-numeric: tabular-nums; }
+.mtd-train .mk { position: absolute; top: -8px; right: 8px; font-size: .65em; font-weight: 700; text-transform: uppercase; background: var(--c); color: #1b1407; padding: 1px 6px; border-radius: 6px; }
+.mtd-train.hit { border-color: var(--brass, #ffd166) !important; animation: mtd-lift .8s ease-in-out infinite alternate; }
+.mtd-train.dim { opacity: .45; }
+.mtd-train:disabled { opacity: .75; }
+@keyframes mtd-lift { to { transform: translateY(-2px); } }
+.mtd-hand-h { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.mtd-sort { min-height: 40px; padding: 4px 12px; font-size: .85em; }
+.mtd-hand { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin: 10px 0 6px; }
+.mtd-tile { background: none !important; border: 0 !important; padding: 0 !important; min-height: 0 !important; width: 38px; height: 68px; display: grid; place-items: center; transition: transform .15s; box-shadow: none !important; }
+.mtd-tile svg { filter: drop-shadow(0 3px 5px rgba(0,0,0,.4)); }
+.mtd-tile.ok { transform: translateY(-4px); }
+.mtd-tile.ok svg { filter: drop-shadow(0 0 7px rgba(255,209,102,.6)); }
+.mtd-tile.no { opacity: .55; }
+.mtd-tile.sel { transform: translateY(-10px) scale(1.08); }
+.mtd-tile.sel svg { filter: drop-shadow(0 0 12px #ffd166); }
+.mtd-actions { display: grid; grid-template-columns: 1fr; gap: 8px; }
+.mtd-actions button { min-height: 52px; }
+.mtd-hint { min-height: 1.2em; font-size: .85em; margin-top: 4px; }
+.mtd-table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; margin-top: 6px; }
+.mtd-table th { font-size: .7em; text-transform: uppercase; letter-spacing: .1em; opacity: .7; text-align: right; font-weight: 600; }
+.mtd-table td { padding: 4px 2px; text-align: right; border-top: 1px solid rgba(255,255,255,.1); }
+.mtd-table th:first-child, .mtd-table td:first-child { text-align: left; }
+.mtd-table tr.me td { font-weight: 700; }
+@media (prefers-reduced-motion: reduce) { .mtd-train.hit { animation: none; } }
