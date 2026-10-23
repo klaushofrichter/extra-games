@@ -3,7 +3,7 @@
 // its number or symbol; Skip, Reverse and Draw Two hit the next player, a Wild picks the colour, a Wild Draw Four does
 // both. Whoever plays their last card first wins the round and scores what the others still hold; the first to the
 // target wins the game. When a player is down to one card, the board calls it for them: "Last card!".
-import { count, defineGame, list, mostAward, type GameAward, type GameContext, type SeatInfo, type StepInfo } from "@game-table/sdk";
+import { count, defineGame, leastAward, list, mostAward, type GameAward, type GameContext, type SeatInfo, type StepInfo } from "@game-table/sdk";
 
 export const COLORS = ["r", "y", "g", "b"] as const;
 export type Color = (typeof COLORS)[number];
@@ -35,6 +35,14 @@ interface Player {
   forced: number;
   out: number;
   lastCalls: number;
+  /** Times this player changed the colour to play (another colour by number or symbol, or a wild calling a new one). */
+  changes: number;
+  /** The most points won in one round. */
+  bestRound: number;
+  /** The most cards held during a round this player went on to win. */
+  comeback: number;
+  /** The most cards held at once. */
+  maxHand: number;
 }
 export interface RoundResult {
   round: number;
@@ -58,6 +66,8 @@ export interface State {
   drewId: number | null;
   results: RoundResult[];
   winners: number[];
+  /** The most cards each seat has held in this round (for Comeback). */
+  roundMax: Record<number, number>;
 }
 
 const HAND = 7;
@@ -119,6 +129,13 @@ export function playable(s: Pick<State, "turn" | "players" | "discard" | "color"
 
 type Events = { name: string; data?: unknown }[];
 
+/** After a hand grew: the most cards held, in the game and in this round. */
+function held(s: State, seat: number) {
+  const n = s.players[seat].hand.length;
+  if (n > s.players[seat].maxHand) s.players[seat] = { ...s.players[seat], maxHand: n };
+  if (n > (s.roundMax[seat] ?? 0)) s.roundMax = { ...s.roundMax, [seat]: n };
+}
+
 function armTurn(s: State, ctx: GameContext) {
   ctx.clearTimer("turn");
   if (s.turnMs > 0 && s.phase === "playing") ctx.setTimer("turn", s.turnMs);
@@ -155,6 +172,8 @@ function deal(s0: State, round: number, ctx: GameContext): State {
   s.discard = [{ ...first, color: first.c as Color, angle: ctx.randomInt(-12, 12), dx: 0, dy: 0, seat: null }];
   s.color = first.c as Color;
   s.turn = s.order[(round - 1) % s.order.length];
+  s.roundMax = Object.fromEntries(s.order.map((x) => [x, HAND]));
+  for (const x of s.order) held(s, x);
   return s;
 }
 
@@ -167,7 +186,11 @@ function endRound(s: State, out: number, ctx: GameContext, events: Events): Stat
     if (seat !== out) won += s.players[seat].hand.reduce((n, c) => n + points(c), 0);
   }
   scores[out] = won;
-  const players = { ...s.players, [out]: { ...s.players[out], total: s.players[out].total + won, out: s.players[out].out + 1 } };
+  const p = s.players[out];
+  const players = {
+    ...s.players,
+    [out]: { ...p, total: p.total + won, out: p.out + 1, bestRound: Math.max(p.bestRound, won), comeback: Math.max(p.comeback, s.roundMax[out] ?? 0) },
+  };
   const results = [...s.results, { round: s.round, out, scores }];
   const next: State = { ...s, players, results, drewId: null };
   const best = Math.max(...s.order.map((seat) => players[seat].total));
@@ -204,7 +227,8 @@ function play(s0: State, seat: number, id: number, chosen: unknown, ctx: GameCon
   const s: State = { ...s0, players: { ...s0.players }, drawPile: [...s0.drawPile], discard: [...s0.discard] };
   const hand = p.hand.filter((c) => c.id !== id);
   const action = card.k === "skip" || card.k === "rev" || card.k === "+2" || card.k === "+4";
-  s.players[seat] = { ...p, hand, played: p.played + 1, actions: p.actions + (action ? 1 : 0), wilds: p.wilds + (card.c === "w" ? 1 : 0), lastCalls: p.lastCalls + (hand.length === 1 ? 1 : 0) };
+  const changed = color !== s0.color;
+  s.players[seat] = { ...p, hand, played: p.played + 1, actions: p.actions + (action ? 1 : 0), wilds: p.wilds + (card.c === "w" ? 1 : 0), lastCalls: p.lastCalls + (hand.length === 1 ? 1 : 0), changes: p.changes + (changed ? 1 : 0) };
   const landed: Discard = { ...card, color, angle: ctx.randomInt(-28, 28), dx: ctx.randomInt(-22, 22), dy: ctx.randomInt(-22, 22), seat };
   s.discard = [...s.discard, landed].slice(-60); // older cards stay for reshuffling; the board shows the last few
   s.color = color;
@@ -227,6 +251,7 @@ function play(s0: State, seat: number, id: number, chosen: unknown, ctx: GameCon
     const got = take(s, n, ctx, events);
     const v = s.players[victim];
     s.players[victim] = { ...v, hand: [...v.hand, ...got], drawn: v.drawn + got.length, forced: v.forced + got.length };
+    held(s, victim);
     events.push({ name: "drew", data: { seat: victim, n: got.length, forced: true } });
     skip = true;
   }
@@ -247,6 +272,7 @@ function draw(s0: State, seat: number, ctx: GameContext, auto = false): { state:
     return { state: advance(s, ctx), events };
   }
   s.players[seat] = { ...p, hand: [...p.hand, card], drawn: p.drawn + 1 };
+  held(s, seat);
   events.push({ name: "drew", data: { seat, n: 1, auto } });
   // A card that can't be played ends the turn at once; one that can waits for Play or Keep.
   if (!fits(card, top(s), s.color)) {
@@ -348,7 +374,7 @@ export default defineGame<State>({
   setup(ctx, settings) {
     const order = tableOrder(ctx.seats);
     const players: Record<number, Player> = {};
-    for (const x of ctx.seats) players[x.seat] = { seat: x.seat, name: x.name, hand: [], total: 0, played: 0, actions: 0, wilds: 0, drawn: 0, forced: 0, out: 0, lastCalls: 0 };
+    for (const x of ctx.seats) players[x.seat] = { seat: x.seat, name: x.name, hand: [], total: 0, played: 0, actions: 0, wilds: 0, drawn: 0, forced: 0, out: 0, lastCalls: 0, changes: 0, bestRound: 0, comeback: 0, maxHand: 0 };
     const base: State = {
       target: Number(settings.target ?? 200),
       turnMs: Number(settings.turnSeconds ?? 30) * 1000,
@@ -365,6 +391,7 @@ export default defineGame<State>({
       drewId: null,
       results: [],
       winners: [],
+      roundMax: {},
     };
     const s = deal(base, 1, ctx);
     armTurn(s, ctx);
@@ -429,6 +456,11 @@ export default defineGame<State>({
       mostAward({ id: "wild-one", icon: "🌈", title: "Wild One", blurb: "Played the most wild cards." }, scores((p) => p.wilds), (n) => count(n, "wild card")),
       mostAward({ id: "piled-on", icon: "📚", title: "Piled On", blurb: "Was made to draw the most cards by others." }, scores((p) => p.forced), (n) => count(n, "card")),
       mostAward({ id: "last-card", icon: "☝️", title: "Last Card!", blurb: "Got down to one card the most often." }, scores((p) => p.lastCalls), (n) => count(n, "time")),
+      mostAward({ id: "chameleon", icon: "🦎", title: "Chameleon", blurb: "Changed the colour to play most often." }, scores((p) => p.changes), (n) => count(n, "time")),
+      mostAward({ id: "big-haul", icon: "💰", title: "Big Haul", blurb: "Scored the most points in a single round." }, scores((p) => p.bestRound), (n) => count(n, "point")),
+      mostAward({ id: "comeback", icon: "🔄", title: "Comeback", blurb: "Won a round after holding the most cards in it." }, scores((p) => p.comeback), (n) => `from ${count(n, "card")}`),
+      mostAward({ id: "hoarder", icon: "🗃️", title: "Hoarder", blurb: "Held the most cards at once." }, scores((p) => p.maxHand), (n) => count(n, "card")),
+      leastAward({ id: "light-fingers", icon: "🪶", title: "Light Fingers", blurb: "Drew the fewest cards." }, scores((p) => p.drawn), (n) => count(n, "card")),
     ].filter((a): a is GameAward => a !== null);
     return {
       text: `${list(names)} ${names.length === 1 ? "wins" : "win"} with ${count(best, "point")} after ${count(s.results.length, "round")}.`,
