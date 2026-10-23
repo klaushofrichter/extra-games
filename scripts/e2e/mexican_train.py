@@ -127,6 +127,9 @@ def main():
             assert board.locator(".mt-root .mt-scene, .mt-root .mt-sky").count() > 0, "no background on the board"
             assert board.locator(".mt-root .kit-plate").count() == 4, "four seat plates"
             assert board.locator(".mt-root .kit-plate.active").count() == 1, "one plate marked for the player on turn"
+            # No points on the plates before the first round has been scored (E-022).
+            plates = board.inner_text(".mt-root .kit-plates")
+            assert "15 tiles" in plates and "pts" not in plates, plates
 
             # The rules on the smallest phone: title, the five settings of this table, the illustration.
             small = decks[2]
@@ -175,6 +178,7 @@ def main():
                     shot(board, "board-round-over")
                     shot(decks[0], "deck-round-over")
                     assert "Round 1" in board.inner_text(".mt-result"), board.inner_text(".mt-result")
+                    assert "so far" in board.inner_text(".mt-root .kit-plates"), "the plates show the points so far after round 1"
                     # The table may deal the next round at once.
                     board.locator(".mt-next").click()
                     wait(lambda: board.locator(".mt-result:not([hidden])").count() == 0, 10, "the next round to be dealt")

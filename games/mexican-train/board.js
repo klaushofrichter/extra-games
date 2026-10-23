@@ -122,7 +122,8 @@ export function mount(root, ctx = {}) {
           return;
         }
         const last = i === L.shown.length - 1;
-        s += `<g class="mt-tile"${last ? ` data-end="${esc(t.id)}"` : ""} transform="translate(${q.x.toFixed(1)},${q.y.toFixed(1)}) rotate(${((q.ang * 180) / Math.PI).toFixed(1)})">${tileSvg(tile[0], tile[1], h, { faces: p.faces })}</g>`;
+        const deg = (q.ang * 180) / Math.PI;
+        s += `<g class="mt-tile"${last ? ` data-end="${esc(t.id)}"` : ""} transform="translate(${q.x.toFixed(1)},${q.y.toFixed(1)}) rotate(${deg.toFixed(1)})">${tileSvg(tile[0], tile[1], h, { faces: p.faces, upright: (info.rotation ?? 0) - deg })}</g>`;
       });
     }
     // Open ends, markers, the Mexican train's label.
@@ -178,9 +179,12 @@ export function mount(root, ctx = {}) {
     const extra = (seat) => {
       const pl = view.players.find((x) => x.seat === seat);
       if (!pl) return "watching";
-      return `${seat === active ? `<b class="mt-turn">Their turn</b> · ` : ""}${pl.tiles} ${pl.tiles === 1 ? "tile" : "tiles"} · ${pl.total} pts`;
+      // Points are scored only at the end of a round (the pips left in hand): until the first round is over there are
+      // none to show, and "0 pts" read as if nobody were scoring (E-022).
+      const score = view.last ? ` · ${pl.total} ${pl.total === 1 ? "pt" : "pts"}${view.phase === "over" ? "" : " so far"}` : "";
+      return `${seat === active ? `<b class="mt-turn">Their turn</b> · ` : ""}${pl.tiles} ${pl.tiles === 1 ? "tile" : "tiles"}${score}`;
     };
-    const key = JSON.stringify([active, view.players.map((x) => [x.seat, x.tiles, x.total]), info.players.map((x) => [x.seat, x.name, x.connected, x.color])]);
+    const key = JSON.stringify([active, view.phase, !!view.last, view.players.map((x) => [x.seat, x.tiles, x.total]), info.players.map((x) => [x.seat, x.name, x.connected, x.color])]);
     if (key === platesKey) return;
     platesKey = key;
     seatPlates(box, info, (seat) => extra(seat), { active });
