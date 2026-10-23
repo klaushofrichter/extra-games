@@ -260,3 +260,36 @@ Format: **E-nnn · date · decided by** — decision. *Why:* reason.
   facing minus the tile's direction, so digits face the board's front on every tile, doubles included (pips are
   symmetric and never turn). Checks: a unit test of the turns; `scripts/e2e/mexican_train.py` reads the plates
   before and after round 1.
+
+## Last Card: the card game of colours and numbers, played with the sling (23 Oct 2026)
+
+- **E-023 · 2026-10-23 · Klaus** — A new game, Last Card: UNO-style play for 2 to 8 players, built on games-service's
+  sling (D-189). *Why:* Klaus: "We want to implement UNO with this, but this should be a Platform feature … Go ahead
+  and do UNO with this feature", with no shouting ("We do NOT want the board to detect audio for privacy reasons …
+  We can skip the rule") but "a "UNO" display on the board … an animated visual of the word … next to the player
+  name-card that shows for a second, with a sound effect, and then fades away", and "sound effects with UNO, but no
+  background music". *Implementation (Claude):*
+  - **The name.** UNO is a trademark (and its cards' look trade dress), and this repository is public, so the game is
+    *Last Card*, after the traditional game with the same call, with its own card design (a white window, not the
+    tilted oval). The board calls "Last card!". Renaming is one manifest field and a few strings.
+  - **Rules.** 108 cards (per colour one 0, two of 1–9, Skip, Reverse, Draw Two; four Wilds, four Wild Draw Fours);
+    seven each; the first card on the pile is a number. Match colour or number or symbol, or play a wild and pick the
+    colour. Skip, Reverse (a Skip with two players), Draw Two and Wild Draw Four (no challenge) hit the next player.
+    Nothing fits: draw one; play it if it fits, or keep it; a card that doesn't fit ends the turn. An empty draw pile
+    turns the discards over. The first out scores the others' cards (number value, actions 20, wilds 50); the first to
+    *Points to win the game* (default 200) wins. No penalty for not calling: the board calls it for everyone.
+  - **Board.** Draw and discard piles, a ring in the colour to play (and the colour a wild called), arrows turning the
+    way play goes, the platform's plates with cards and points, "Last card!" popping up next to the player's plate,
+    the round's scores with *Next round*. Cards come in at the player's edge while slung, back first, and fly face up
+    to the pile; drawn cards fly to the player. *Card animation* (Fast, Normal, Slow) in the board's settings; the
+    phones read it, so drawn cards arrive in time. Sound effects made with Web Audio when they play (throw, land, draw,
+    Skip, Reverse, Draw cards, wild, "Last card!", shuffle, the round won); no music.
+  - **Phone.** The cards that fit lift and glow on your turn; push one off the top to play it; one that doesn't fit
+    peeks out and bounces back; a wild asks for its colour (Cancel puts it back); *Draw a card*, then *Keep it*.
+  - **AI.** Hits a next player who has two cards or fewer with Draw Two, Wild Draw Four or Skip, keeps wilds for later,
+    plays the colour it holds most of, sheds high numbers. The turn timer plays for a slow player what the AI would,
+    or draws and keeps.
+  - **Checks.** `tests/last-card.test.ts` (21 tests: the deck, dealing, what fits, every special card, drawing and
+    keeping, reshuffling, "Last card!", scoring, the end, privacy, the timer, seats changing hands, the AI, the Game
+    Viewer, whole games replaying exactly at 2–8 players); the soak; `scripts/e2e/last_card.py` (a whole game with two
+    phones slinging, the back at the edge while dragging, a bounce, a wild's colour, "Last card!", the scores).

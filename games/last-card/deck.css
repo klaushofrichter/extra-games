@@ -1,0 +1,36 @@
+/* Last Card phone (E-023): within the platform's cards; designed for 360 px wide and short screens. The game's area
+   clips at its top edge: that is where a card leaves the phone (the sling, games-service D-189). */
+.lcd { position: relative; display: flex; flex-direction: column; gap: 10px; height: calc(100dvh - 96px); min-height: 500px; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; }
+.lcd-status.go { box-shadow: 0 0 0 2px var(--brass, #d6a94a) inset; }
+.lcd-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 2px; }
+.lcd-big { font-size: 1.2em; line-height: 1.2; }
+.lcd-top { position: relative; flex: none; width: 52px; height: 62px; }
+.lcd-top svg { position: absolute; left: 0; top: 0; filter: drop-shadow(0 2px 4px rgba(0,0,0,.4)); }
+.lcd-dot { position: absolute; right: 0; bottom: 2px; width: 16px; height: 16px; border-radius: 50%; background: var(--c); border: 2px solid #fff; }
+.lcd-zone { flex: 1; min-height: 60px; display: grid; place-items: center; align-content: center; gap: 6px; color: rgba(255,255,255,.5); text-align: center; opacity: 0; transition: opacity .3s; }
+.lcd-zone.on { opacity: 1; }
+.lcd-hint { font-size: .9em; }
+.lcd-arrow { font-size: 40px; line-height: 1; animation: lcd-up 1.6s ease-in-out infinite; }
+@keyframes lcd-up { 0%, 100% { transform: translateY(8px); opacity: .4; } 50% { transform: translateY(-8px); opacity: 1; } }
+.lcd-actions { display: flex; align-items: center; gap: 8px; padding: 0 4px; }
+.lcd-actions button { min-height: 48px; flex: 1; }
+.lcd-me { flex: none; min-width: 64px; font-weight: 700; font-variant-numeric: tabular-nums; opacity: .8; }
+.lcd-hand { position: relative; flex: none; }
+.lcd-card { position: absolute; width: 76px; height: 114px; touch-action: none; transition: transform .15s, opacity .15s; }
+.lcd-card svg { display: block; pointer-events: none; filter: drop-shadow(0 4px 7px rgba(0,0,0,.45)); }
+.lcd-card.ok { transform: translateY(-12px); }
+.lcd-card.ok svg { filter: drop-shadow(0 0 9px rgba(255,209,102,.85)); }
+.lcd-card.no { opacity: .55; }
+.lcd-card.sling-drag { z-index: 60 !important; opacity: 1; transition: none; }
+.lcd-card.sling-drag svg { filter: drop-shadow(0 14px 20px rgba(0,0,0,.55)); }
+.lcd-pick { position: absolute; inset: 0; z-index: 80; display: grid; place-items: center; background: rgba(0,0,0,.55); }
+.lcd-pick-box { width: min(320px, 90%); padding: 18px; border-radius: 18px; background: #12262a; display: grid; gap: 12px; text-align: center; }
+.lcd-colors { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.lcd-colors button { min-height: 64px; border: 0 !important; background: var(--c) !important; color: #fff !important; font-weight: 800; font-size: 1.05em; text-shadow: 0 1px 2px rgba(0,0,0,.4); }
+.lcd-cancel { min-height: 44px; }
+.lcd-table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; margin-top: 6px; }
+.lcd-table th { font-size: .7em; text-transform: uppercase; letter-spacing: .1em; opacity: .7; text-align: right; font-weight: 600; }
+.lcd-table td { padding: 4px 2px; text-align: right; border-top: 1px solid rgba(255,255,255,.1); }
+.lcd-table th:first-child, .lcd-table td:first-child { text-align: left; }
+.lcd-table tr.me td { font-weight: 700; }
+@media (prefers-reduced-motion: reduce) { .lcd-arrow { animation: none; } }
