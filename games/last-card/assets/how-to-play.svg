@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 230" width="360" height="230">
+  <rect width="360" height="230" rx="16" fill="#142a33"/>
+  <rect x="24" y="40" width="120" height="176" rx="16" fill="#0d1d23" stroke="#3b5a63" stroke-width="2"/>
+  <line x1="24" y1="70" x2="144" y2="70" stroke="#f2b81c" stroke-width="2" stroke-dasharray="5 4"/>
+  <g transform="translate(62 18) rotate(-6)"><rect width="46" height="70" rx="6" fill="#fff"/><rect x="3" y="3" width="40" height="64" rx="4" fill="#2f7fe0"/><rect x="11" y="15" width="24" height="40" rx="6" fill="#fff"/><text x="23" y="44" text-anchor="middle" font-size="22" font-weight="900" font-family="system-ui,sans-serif" fill="#2f7fe0">7</text></g>
+  <path d="M84 150 V104" stroke="#f2b81c" stroke-width="4" stroke-linecap="round"/><path d="M74 114 L84 102 L94 114" fill="none" stroke="#f2b81c" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <g transform="translate(40 158)"><rect width="34" height="52" rx="5" fill="#fff"/><rect x="2" y="2" width="30" height="48" rx="4" fill="#e5484d"/></g>
+  <g transform="translate(86 158)"><rect width="34" height="52" rx="5" fill="#fff"/><rect x="2" y="2" width="30" height="48" rx="4" fill="#2fa35b"/></g>
+  <path d="M160 90 C 200 60, 230 60, 258 92" fill="none" stroke="#e9f1f3" stroke-width="3" stroke-dasharray="6 6"/><path d="M250 84 L260 94 L246 98" fill="none" stroke="#e9f1f3" stroke-width="3" stroke-linecap="round"/>
+  <circle cx="290" cy="130" r="60" fill="none" stroke="#2f7fe0" stroke-width="6" opacity=".9"/>
+  <g transform="translate(266 92) rotate(10)"><rect width="46" height="70" rx="6" fill="#fff"/><rect x="3" y="3" width="40" height="64" rx="4" fill="#2f7fe0"/><rect x="11" y="15" width="24" height="40" rx="6" fill="#fff"/><text x="23" y="44" text-anchor="middle" font-size="22" font-weight="900" font-family="system-ui,sans-serif" fill="#2f7fe0">7</text></g>
+  <text x="290" y="214" text-anchor="middle" font-size="14" fill="#cfe3e6" font-family="system-ui,sans-serif">Same colour, number or symbol</text>
+</svg>

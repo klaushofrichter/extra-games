@@ -1,0 +1,83 @@
+{
+  "id": "last-card",
+  "name": "Last Card",
+  "version": "2026.10.23.1",
+  "sdk": "^0.1",
+  "description": "The card game of colours and numbers for 2 to 8 players. Push a card off the top of your phone onto the pile: match its colour, number or symbol, hit the next player with Skip, Reverse and Draw cards, and play your last card first.",
+  "players": {
+    "min": 2,
+    "max": 8
+  },
+  "turnModel": "sequential",
+  "seatLayouts": [
+    2,
+    4,
+    6,
+    8
+  ],
+  "edges": [
+    "north",
+    "south",
+    "east",
+    "west"
+  ],
+  "seatConstraints": null,
+  "dynamicPlayers": false,
+  "saveGame": false,
+  "settings": [
+    {
+      "key": "target",
+      "type": "int",
+      "min": 50,
+      "max": 500,
+      "step": 50,
+      "default": 200,
+      "label": "Points to win the game"
+    },
+    {
+      "key": "turnSeconds",
+      "type": "int",
+      "min": 0,
+      "max": 120,
+      "step": 5,
+      "default": 30,
+      "label": "Seconds per turn (0 = no limit)"
+    },
+    {
+      "key": "roundSeconds",
+      "type": "int",
+      "min": 2,
+      "max": 60,
+      "step": 2,
+      "default": 12,
+      "label": "Seconds to show the scores after a round"
+    }
+  ],
+  "ai": {
+    "supported": true,
+    "options": [],
+    "hostConfig": []
+  },
+  "simulation": {
+    "supported": true,
+    "headless": true
+  },
+  "remoteBoardControl": true,
+  "skipTimers": [
+    "next"
+  ],
+  "viewer": {
+    "columns": [
+      {
+        "key": "round",
+        "label": "Round"
+      },
+      {
+        "key": "top",
+        "label": "Top card"
+      }
+    ]
+  },
+  "lobbyButton": "top-right",
+  "permissions": []
+}
