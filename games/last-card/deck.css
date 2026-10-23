@@ -20,7 +20,8 @@
 .lcd-card svg { display: block; pointer-events: none; filter: drop-shadow(0 4px 7px rgba(0,0,0,.45)); }
 .lcd-card.ok { transform: translateY(-12px); }
 .lcd-card.ok svg { filter: drop-shadow(0 0 9px rgba(255,209,102,.85)); }
-.lcd-card.no { opacity: .55; }
+/* Cards that don't fit now: darker and greyer, but solid, so a row behind never shows through (E-024). */
+.lcd-card.no svg { filter: brightness(.48) saturate(.5) drop-shadow(0 4px 7px rgba(0,0,0,.45)); }
 .lcd-card.sling-drag { z-index: 60 !important; opacity: 1; transition: none; }
 .lcd-card.sling-drag svg { filter: drop-shadow(0 14px 20px rgba(0,0,0,.55)); }
 .lcd-pick { position: absolute; inset: 0; z-index: 80; display: grid; place-items: center; background: rgba(0,0,0,.55); }

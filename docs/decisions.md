@@ -307,7 +307,8 @@ Format: **E-nnn · date · decided by** — decision. *Why:* reason.
     the middle, turned to face its player, with the number on a badge above it; red and pulsing at one card. Redrawn
     only when a count changes. The plates show the points; "Last card!" moved further in, past the fan.
   - **Phone.** Status, then the buttons (points, *Draw a card*, *Keep it*), then the space where cards leave, then the
-    hand. The hint to push a card off the top shows until the phone has played three cards that way (remembered in
+    hand. On your turn the cards that don't fit are darker and greyer but solid (not see-through, which blended
+    the rows into each other). The hint to push a card off the top shows until the phone has played three cards that way (remembered in
     the browser). The hand has no limit: rows of overlapping cards with at least 30 px of each showing (10 to a row on
     a 390 px phone, 8 on 320 px), stacked from the bottom into the free space, closing up when there are many (about
     40 cards fill a phone; in 600 AI games, 150 each with 2, 4, 6 and 8 players, the largest hand was 20).
