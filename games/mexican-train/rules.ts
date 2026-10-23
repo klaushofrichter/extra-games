@@ -5,6 +5,8 @@
 // they pass and a marker goes on their train, opening it to the others. A double must be covered before anyone plays
 // anywhere else, and its player plays again. A round ends when someone plays their last tile, or when nobody can play
 // and nothing is left to draw; everyone scores the pips left in their hand. The lowest total after the last round wins.
+// Two options, chosen when the game is started: the opening run (in a player's first turn of a round, tiles played on
+// their own train keep the turn until they tap Done) and the double blank counting 50 points.
 //
 // Rules are pure and replayable (D-032 in games-service): all randomness goes through ctx.
 import { count, defineGame, list, mostAward, type GameAward, type GameContext, type SeatInfo, type StepInfo } from "@game-table/sdk";
@@ -55,6 +57,14 @@ export interface RoundResult {
 
 export interface State {
   rounds: number;
+  /** In a player's first turn of a round, tiles on their own train keep the turn (the opening run). */
+  openingRun: boolean;
+  /** The double blank left in a hand scores 50 points. */
+  blank50: boolean;
+  /** Seats whose first turn of this round hasn't ended yet. */
+  opening: Record<number, boolean>;
+  /** Tiles the player on turn has played this turn (for the opening run). */
+  turnPlays: number;
   turnMs: number;
   roundMs: number;
   /** Seats in the order turns pass around the table. */
@@ -93,23 +103,31 @@ export const handSize = (players: number) => (players <= 4 ? 15 : players <= 6 ?
 /** The engine of a round: double twelve first, then one lower each round. */
 export const engineOf = (round: number) => HIGH + 1 - round;
 
-export const pips = (hand: readonly Tile[]) => hand.reduce((n, [a, b]) => n + a + b, 0);
+export const pips = (hand: readonly Tile[], blank50 = false) => hand.reduce((n, [a, b]) => n + (blank50 && a === 0 && b === 0 ? 50 : a + b), 0);
 export const isDouble = (t: readonly number[]) => t[0] === t[1];
 export const sameTile = (a: readonly number[], b: readonly number[]) => (a[0] === b[0] && a[1] === b[1]) || (a[0] === b[1] && a[1] === b[0]);
 
 /** The number a train's next tile must match. */
 export const openEnd = (train: Train, engine: number) => (train.tiles.length ? train.tiles[train.tiles.length - 1][1] : engine);
 
-/** Trains `seat` may play on now: only the uncovered double's while there is one, else its own, the Mexican and marked ones. */
-export function playable(s: Pick<State, "trains" | "pending">, seat: number): string[] {
+/** The player on turn is in their opening run: they played on their own train in their first turn of the round. */
+export const inRun = (s: Partial<Pick<State, "openingRun" | "opening" | "turnPlays" | "turn">>, seat: number) =>
+  !!s.openingRun && !!s.opening?.[seat] && (s.turnPlays ?? 0) > 0 && s.turn === seat;
+
+/**
+ * Trains `seat` may play on now: only the uncovered double's while there is one; only its own during its opening run;
+ * else its own, the Mexican and marked ones.
+ */
+export function playable(s: Pick<State, "trains" | "pending"> & Partial<State>, seat: number): string[] {
   if (s.pending) return [s.pending];
+  if (inRun(s, seat)) return [String(seat)];
   return Object.entries(s.trains)
     .filter(([, t]) => t.owner === seat || t.owner === null || t.marker)
     .map(([id]) => id);
 }
 
 /** Every legal play for `seat`: each tile in its hand that matches the end of a train it may play on. */
-export function legalMoves(s: Pick<State, "trains" | "pending" | "engine">, seat: number, hand: readonly Tile[]): Move[] {
+export function legalMoves(s: Pick<State, "trains" | "pending" | "engine"> & Partial<State>, seat: number, hand: readonly Tile[]): Move[] {
   const moves: Move[] = [];
   for (const id of playable(s, seat)) {
     const end = openEnd(s.trains[id], s.engine);
@@ -151,6 +169,8 @@ function deal(s: State, round: number, ctx: GameContext): State {
     turn: s.order[(round - 1) % s.order.length],
     drew: false,
     pending: null,
+    opening: Object.fromEntries(s.order.map((seat) => [seat, true])),
+    turnPlays: 0,
     trains,
     boneyard: set.slice(s.order.length * size),
   };
@@ -184,12 +204,13 @@ function pass(s: State, seat: number, events: Events): State {
  * nobody can play any more, the round is over (blocked).
  */
 function advance(s: State, ctx: GameContext, events: Events): State {
-  let next: State = { ...s, turn: nextSeat(s, s.turn), drew: false };
+  // Whoever's turn ends, their first turn of the round is over.
+  let next: State = { ...s, turn: nextSeat(s, s.turn), drew: false, turnPlays: 0, opening: { ...s.opening, [s.turn]: false } };
   if (!next.boneyard.length) {
     if (!anyoneCanPlay(next)) return endRound(next, null, ctx, events);
     while (!legalMoves(next, next.turn, next.players[next.turn].hand).length) {
       next = pass(next, next.turn, events);
-      next = { ...next, turn: nextSeat(next, next.turn) };
+      next = { ...next, turn: nextSeat(next, next.turn), opening: { ...next.opening, [next.turn]: false } };
     }
   }
   armTurn(next, ctx);
@@ -202,7 +223,7 @@ function endRound(s: State, out: number | null, ctx: GameContext, events: Events
   const scores: Record<number, number> = {};
   for (const seat of s.order) {
     const p = players[seat];
-    const score = pips(p.hand);
+    const score = pips(p.hand, s.blank50);
     scores[seat] = score;
     players[seat] = {
       ...p,
@@ -242,8 +263,16 @@ function play(s: State, seat: number, tile: Tile, train: string, ctx: GameContex
   // Playing on your own train takes your marker off it.
   const trains = { ...s.trains, [train]: { ...t, tiles: [...t.tiles, placed], marker: t.owner === seat ? false : t.marker } };
   const events: Events = [{ name: "played", data: { seat, tile: placed, train, auto } }];
-  let next: State = { ...s, players, trains, pending: double ? train : null };
+  let next: State = { ...s, players, trains, pending: double ? train : null, turnPlays: s.turnPlays + 1 };
   if (!hand.length) return { state: endRound(next, seat, ctx, events), events };
+  // The opening run: in their first turn of the round, a player who plays on their own train goes on while they can.
+  if (!double && s.openingRun && s.opening[seat] && t.owner === seat) {
+    if (legalMoves(next, seat, hand).length) {
+      armTurn(next, ctx);
+      return { state: next, events };
+    }
+    return { state: advance(next, ctx, events), events };
+  }
   if (double) {
     // A double: the same player plays again, and the double must be covered first.
     next = { ...next, drew: false };
@@ -280,6 +309,10 @@ export default defineGame<State>({
     }
     const base: State = {
       rounds: Math.min(HIGH + 1, Math.max(1, Number(settings.rounds ?? HIGH + 1))),
+      openingRun: settings.openingRun !== false,
+      blank50: settings.blank50 === true,
+      opening: {},
+      turnPlays: 0,
       turnMs: Number(settings.turnSeconds ?? 60) * 1000,
       roundMs: Number(settings.roundSeconds ?? 10) * 1000,
       order,
@@ -320,6 +353,12 @@ export default defineGame<State>({
       if (tile[0] !== end && tile[1] !== end) return { reject: `That tile doesn't match the ${end} at the end of the train.` };
       return play(s, seat, [Math.min(tile[0], tile[1]), Math.max(tile[0], tile[1])], train, ctx);
     }
+    if (intent.name === "done") {
+      if (!inRun(s, seat)) return { reject: "Only during your opening run can you end your turn without playing." };
+      if (s.pending) return { reject: "Cover the double first." };
+      const events: Events = [{ name: "done", data: { seat } }];
+      return { state: advance(s, ctx, events), events };
+    }
     if (intent.name === "draw") {
       if (moves.length) return { reject: "You can play a tile, so you can't draw." };
       if (s.drew) return { reject: "You have drawn already this turn." };
@@ -337,6 +376,10 @@ export default defineGame<State>({
       if (moves.length) {
         const m = chooseMove(viewFor(s, seat), "steady");
         if (m && m.name === "play") return play(s, seat, m.payload.tile, m.payload.train, ctx, true);
+      }
+      if (inRun(s, seat) && !s.pending) {
+        const events: Events = [{ name: "done", data: { seat, auto: true } }];
+        return { state: advance(s, ctx, events), events };
       }
       if (!s.drew && s.boneyard.length) return draw(s, seat, ctx, true);
       return { state: s };
@@ -412,6 +455,7 @@ export default defineGame<State>({
       const d = (e.data ?? {}) as any;
       if (e.name === "played") lines.push(`${d.seat === b.turn ? "" : `${name(d.seat)} `}plays ${d.tile[0]}|${d.tile[1]} on ${trainName(d.train, d.seat)}${isDouble(d.tile) ? " (a double)" : ""}`);
       if (e.name === "drew") lines.push(`draws a tile`);
+      if (e.name === "done") lines.push(`ends their opening run`);
       if (e.name === "passed") lines.push(`${d.seat === b.turn ? "" : `${name(d.seat)} `}passes; a marker goes on their train`);
       if (e.name === "roundOver") lines.push(d.out !== null ? `${name(d.out)} is out: round ${d.round} is over` : `nobody can play: round ${d.round} is over`);
       if (e.name === "round") lines.push(`Round ${d.round} starts from the double ${d.engine}; ${name(d.starter)} begins`);
@@ -428,6 +472,8 @@ function publicView(s: State) {
     phase: s.phase,
     round: s.round,
     rounds: s.rounds,
+    openingRun: s.openingRun,
+    blank50: s.blank50,
     engine: s.engine,
     turn: s.turn,
     pending: s.pending,
@@ -444,14 +490,15 @@ function publicView(s: State) {
   };
 }
 
-export type SeatView = ReturnType<typeof publicView> & { seat: number; hand: Tile[]; moves: Move[]; canDraw: boolean; myTurn: boolean };
+export type SeatView = ReturnType<typeof publicView> & { seat: number; hand: Tile[]; moves: Move[]; canDraw: boolean; canDone: boolean; inRun: boolean; myTurn: boolean };
 
 function viewFor(s: State, seat: number): SeatView {
   const p = s.players[seat];
   const myTurn = s.phase === "playing" && s.turn === seat;
   const hand = p ? p.hand : [];
   const moves = myTurn ? legalMoves(s, seat, hand) : [];
-  return { ...publicView(s), seat, hand, moves, canDraw: myTurn && !moves.length && !s.drew && s.boneyard.length > 0, myTurn };
+  const run = myTurn && inRun(s, seat);
+  return { ...publicView(s), seat, hand, moves, canDraw: myTurn && !moves.length && !s.drew && s.boneyard.length > 0, canDone: run && !s.pending, inRun: run, myTurn };
 }
 
 /**

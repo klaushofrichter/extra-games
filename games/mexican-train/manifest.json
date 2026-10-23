@@ -4,29 +4,101 @@
   "version": "2026.10.22.1",
   "sdk": "^0.1",
   "description": "Dominoes for 2 to 8 players. Build your own train of matching tiles from the double in the middle, help yourself to the shared Mexican train, and get rid of your tiles first. The fewest points after the last round wins.",
-  "players": { "min": 2, "max": 8 },
+  "players": {
+    "min": 2,
+    "max": 8
+  },
   "turnModel": "sequential",
-  "seatLayouts": [2, 4, 6, 8],
-  "edges": ["north", "south", "east", "west"],
+  "seatLayouts": [
+    2,
+    4,
+    6,
+    8
+  ],
+  "edges": [
+    "north",
+    "south",
+    "east",
+    "west"
+  ],
   "seatConstraints": null,
   "dynamicPlayers": false,
   "saveGame": false,
   "settings": [
-    { "key": "rounds", "type": "int", "min": 1, "max": 13, "default": 13, "label": "Rounds (13 starts at double twelve and goes down to double blank)" },
-    { "key": "turnSeconds", "type": "int", "min": 0, "max": 180, "step": 10, "default": 60, "label": "Seconds per turn (0 = no limit)" },
-    { "key": "roundSeconds", "type": "int", "min": 3, "max": 30, "default": 10, "label": "Seconds to show the scores after a round" }
+    {
+      "key": "rounds",
+      "type": "int",
+      "min": 1,
+      "max": 13,
+      "default": 13,
+      "label": "Rounds"
+    },
+    {
+      "key": "openingRun",
+      "type": "bool",
+      "default": true,
+      "label": "First turn of a round: play a run of tiles on your own train"
+    },
+    {
+      "key": "blank50",
+      "type": "bool",
+      "default": false,
+      "label": "Double blank counts 50 points"
+    },
+    {
+      "key": "turnSeconds",
+      "type": "int",
+      "min": 0,
+      "max": 180,
+      "step": 10,
+      "default": 60,
+      "label": "Seconds per turn (0 = no limit)"
+    },
+    {
+      "key": "roundSeconds",
+      "type": "int",
+      "min": 3,
+      "max": 30,
+      "default": 10,
+      "label": "Seconds to show the scores after a round"
+    }
   ],
   "ai": {
     "supported": true,
     "options": [
-      { "key": "style", "type": "enum", "values": ["planner", "steady"], "default": "planner", "label": "Play style" }
+      {
+        "key": "style",
+        "type": "enum",
+        "values": [
+          "planner",
+          "steady"
+        ],
+        "default": "planner",
+        "label": "Play style"
+      }
     ],
     "hostConfig": []
   },
-  "simulation": { "supported": true, "headless": true },
+  "simulation": {
+    "supported": true,
+    "headless": true
+  },
   "remoteBoardControl": true,
-  "skipTimers": ["next"],
-  "viewer": { "columns": [{ "key": "round", "label": "Round" }, { "key": "engine", "label": "Engine" }] },
+  "skipTimers": [
+    "next"
+  ],
+  "viewer": {
+    "columns": [
+      {
+        "key": "round",
+        "label": "Round"
+      },
+      {
+        "key": "engine",
+        "label": "Engine"
+      }
+    ]
+  },
   "lobbyButton": "top-right",
   "permissions": []
 }

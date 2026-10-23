@@ -190,3 +190,55 @@ Format: **E-nnn · date · decided by** — decision. *Why:* reason.
     Every game also replays exactly and the Game Viewer describes every step, names at the table's twelve characters
     included. `chess-host.test.ts`: every seat taken, a third phone is refused and the game goes on; the exchange
     is the way in. `backgammon.test.ts`: matches up to 100 points; the timer's take.
+- **E-020 · 2026-10-22 · Klaus** — A fourth game, Mexican Train: dominoes for 2 to 8 players with the most
+  customised board in this repository, to show what a game can do within the platform. *Why:* Klaus: "I would like to
+  add a highly customized game that changes the board considerable, similar to Loopy. It should be colorful, have
+  screen animations, support 2 to 8 players. It needs to take advantage of the private deck. It will be included in
+  the ExtraGames, so it can't be under copyrights." Of the suggestions (Mexican Train, Crazy Eights, a tile rummy) he
+  took Mexican Train, asked how its trains of unpredictable length fit the board, and reviewed four mockups. Then:
+  "the point of this is to show customization of the board and the deck, but of course to stay within the platform.
+  Add soundeffects, possibly even background music, and add game specific settings"; "We music only for this game at
+  this time, as long as it is aligned with the platform. Rule options can be presented when the game starts";
+  "Tiles look a bit small. Can we consider dynamic sizing of the tiles? … a different background … subtile
+  animations, perhaps like clouds or a slow moving starfield"; frames and zoom for the player on turn, semi-transparent
+  plates; "can we use some screensaver-style background with animation? … write our own engine as part of the game
+  (not the platform)"; a picture from a phone as the background was left out for now ("lets skipp the upload"), since
+  a phone reaches a game only through logged moves, and logs go to the service. *Implementation (Claude):*
+  - **Rules** (`rules.ts`): the common published rules with a double-twelve set. Engines from double twelve down,
+    15, 12 or 10 tiles by player count, one tile a turn on your own train, the Mexican train or a marked one; draw one
+    when nothing fits, then pass with a marker; a double is covered before anything else and its player plays again;
+    a round ends when someone plays their last tile or nobody can play with nothing left to draw; pips in hand score,
+    the fewest points win. Settings chosen when the game is started: *Rounds* (1–13), *First turn of a round: play a
+    run of tiles on your own train* (on; Done ends the run), *Double blank counts 50 points* (off), and the turn and
+    score times. A slow player's tile is played (or a tile drawn, or the run ended) by the table. Two AI styles:
+    *planner* keeps its longest chain for its own train and sends other tiles elsewhere, heaviest first; *steady*.
+    No name is a trademark; the tiles, colours, sounds and music are made for the game.
+  - **Measured, not guessed** (`scripts/train-lengths.ts`): 3,500 AI-only games through the host's simulation loop.
+    The longest train in 99 % of rounds: 47 tiles at two players, 29 at four, 24 at six, 21 at eight; at most 89 tiles
+    on the board. Two players draw most of the boneyard, so they get the longest trains.
+  - **The board** (`board.js`, `assets/layout.js`): a lane per train from the hub toward its owner's seat, the Mexican
+    train in the gap with the most room. A train leaves the hub straight and, where its lane is wide enough, bends into
+    rows square to the board that wind toward its player. All tiles share one scale, as big as the room allows (up to
+    160 %), shrinking when a train needs the space (down to 60 %) and never growing again within a round; past that, a
+    train folds its middle into a "+n" chip (not needed in any measured game). Big open-end numbers, markers, rails
+    and a light running along the rails of the player on turn; tiles slide in from their player's seat, and
+    `whenIdle()` holds AI players until the board has shown them. The scores after a round, with *Next round*.
+  - **The seat plates** are the platform's (board kit), restyled in the game's own CSS, scoped to its root: glass tinted
+    in the player's colour with the background showing through; on their turn a zoom, a light running round the frame
+    and a slow glow.
+  - **Backgrounds** (`assets/scenes.js`): our own screensaver-style scenes (Aurora, Lava lamp, Plasma, Fireflies) at a
+    third of the board's resolution, at most 30 frames a second, paused while hidden; Starfield and Clouds as pictures
+    painted once and slid by the compositor. Existing screensavers were not copied: XScreenSaver's are desktop programs,
+    and shader collections mostly allow only non-commercial use. A still frame with motion off or reduced motion.
+  - **Sound** (`assets/audio.js`): effects through the board kit's `playSound()` (only while the table's sound is on),
+    and music that composes itself (key, mode, tempo, progressions, a motif in A A B A, then a new tune), off by default,
+    following the table's sound switch and stopping with the game. All synthesised: no files to license.
+  - **Board settings** (display only, per table): background, a new background each round, background motion, music,
+    tile faces, big end numbers.
+  - **The phone** (`deck.js`): your tiles only; the trains you may play on with their open ends; a tile that fits
+    glows, then a highlighted train plays it (a second tap plays a tile that fits one train only); Draw, Done; it
+    vibrates when your turn begins. Laid out for 320 px.
+  - **Checks:** `tests/mexican-train.test.ts` (dealing, legal plays, markers, doubles, drawing, blocked rounds, both
+    options, privacy, the timer, an exchange, the AI, whole games at 2–8 players replaying exactly, the summary, and
+    the layout through real games: every tile inside the play area, no two trains on top of each other);
+    `scripts/e2e/mexican_train.py` (a board, three phones and an AI player over two rounds); the soak.

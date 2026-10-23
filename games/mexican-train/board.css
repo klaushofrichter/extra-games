@@ -1,0 +1,65 @@
+/* Mexican Train board (E-020). Everything is scoped to .mt-root, including the look of the platform's seat plates. */
+.mt-root { position: absolute; inset: 0; overflow: hidden; }
+.mt-felt, .mt-bgbox, .mt-svg, .mt-layer { position: absolute; inset: 0; }
+.mt-felt { background: #04060f; }
+.mt-bg { position: absolute; inset: 0; overflow: hidden; }
+.mt-scene { position: absolute; inset: 0; width: 100%; height: 100%; }
+.mt-sky { position: absolute; left: 0; top: 0; width: 200%; height: 200%; background-repeat: repeat; background-size: 25% 25%; will-change: transform; }
+.mt-svg { width: 100%; height: 100%; }
+.mt-svg text { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+.mt-layer { pointer-events: none; }
+
+/* The open ends a player may use breathe; a double waiting to be covered pulses faster. */
+.mt-pulse { animation: mt-pulse 1.2s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+.mt-pulse.slow { animation-duration: 2.6s; }
+@keyframes mt-pulse { 50% { transform: scale(1.18); } }
+/* A light running along the rails of the player on turn. */
+.mt-runlight { animation: mt-run 2.8s linear infinite; opacity: .9; filter: drop-shadow(0 0 6px #fff); }
+@keyframes mt-run { from { stroke-dashoffset: 1000; } to { stroke-dashoffset: 0; } }
+
+/* Text in the hub, facing the board's front. */
+.mt-hubtext { position: absolute; left: 50%; top: calc(50% + 46px); display: grid; justify-items: center; gap: 0; color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,.8); font-size: 14px; line-height: 1.25; }
+.mt-hubtext b { font-size: 15px; }
+.mt-hubtext span { opacity: .85; }
+.mt-clock { font-variant-numeric: tabular-nums; }
+.mt-clock.low { color: #ff8a80; opacity: 1 !important; font-weight: 700; }
+.mt-banner { position: absolute; left: 50%; top: 50%; background: #ff6b6b; color: #fff; font-weight: 800; font-size: 26px; padding: 10px 24px; border-radius: 999px; box-shadow: 0 10px 30px rgba(0,0,0,.4); white-space: nowrap; }
+
+/* The scores after a round. */
+.mt-result { position: absolute; left: 50%; top: 50%; min-width: 520px; padding: 24px 30px; border-radius: 22px; color: var(--ink, #f3eee2);
+  background: rgba(8, 12, 28, .72); backdrop-filter: blur(14px) saturate(1.4); -webkit-backdrop-filter: blur(14px) saturate(1.4);
+  border: 1px solid rgba(255,255,255,.18); box-shadow: 0 30px 80px rgba(0,0,0,.5); pointer-events: auto; }
+.mt-r-head { font-family: var(--display, Georgia, serif); font-size: 30px; margin-bottom: 12px; }
+.mt-result table { width: 100%; border-collapse: collapse; font-size: 22px; font-variant-numeric: tabular-nums; }
+.mt-result th { font-size: 14px; letter-spacing: .12em; text-transform: uppercase; color: rgba(255,255,255,.6); text-align: right; font-weight: 600; padding: 4px 8px; }
+.mt-result td { padding: 6px 8px; text-align: right; border-top: 1px solid rgba(255,255,255,.1); }
+.mt-result th:first-child, .mt-result td:first-child { text-align: left; }
+.mt-dot { display: inline-block; width: 14px; height: 14px; border-radius: 50%; margin-right: 10px; vertical-align: -1px; }
+.mt-r-foot { margin-top: 14px; font-size: 18px; color: rgba(255,255,255,.8); display: flex; gap: 14px; align-items: center; justify-content: space-between; }
+.mt-next { font: inherit; font-size: 18px; font-weight: 700; color: #1b1407; background: #ffd166; border: 0; border-radius: 999px; padding: 10px 20px; cursor: pointer; }
+
+/* The platform's seat plates, in this game's look: glass tinted in the player's colour, the background showing
+   through; on their turn a zoom, a light running round the frame and a slow glow. */
+@property --mt-spin { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+.mt-root .kit-plate {
+  background: linear-gradient(140deg, color-mix(in srgb, var(--seat) 34%, transparent), rgba(6, 10, 26, .28) 70%);
+  backdrop-filter: blur(10px) saturate(1.5); -webkit-backdrop-filter: blur(10px) saturate(1.5);
+  border: 2px solid color-mix(in srgb, var(--seat) 70%, transparent); border-radius: 22px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.25);
+}
+.mt-root .kit-plate .kit-dot { box-shadow: 0 0 10px var(--seat); }
+.mt-root .kit-plate.active { scale: 1.14; animation: mt-zoom .55s cubic-bezier(.2,.8,.2,1.25), mt-glow 2.4s ease-in-out .55s infinite alternate; }
+.mt-root .kit-plate.active::before {
+  content: ""; position: absolute; inset: -6px; border-radius: 26px; padding: 4px; pointer-events: none;
+  background: conic-gradient(from var(--mt-spin), transparent 0turn, var(--seat) .1turn, #fff .14turn, var(--seat) .18turn, transparent .3turn, transparent .5turn, var(--seat) .6turn, #fff .64turn, var(--seat) .68turn, transparent .8turn);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude;
+  animation: mt-spin 3.2s linear infinite;
+}
+.mt-root .mt-turn { color: #fff; font-weight: 700; }
+@keyframes mt-zoom { from { scale: 1; } }
+@keyframes mt-spin { to { --mt-spin: 360deg; } }
+@keyframes mt-glow { from { box-shadow: 0 0 18px 2px color-mix(in srgb, var(--seat) 35%, transparent), inset 0 1px 0 rgba(255,255,255,.25); } to { box-shadow: 0 0 42px 8px color-mix(in srgb, var(--seat) 70%, transparent), inset 0 1px 0 rgba(255,255,255,.25); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .mt-pulse, .mt-runlight, .mt-root .kit-plate.active, .mt-root .kit-plate.active::before { animation: none; }
+}
