@@ -60,5 +60,5 @@ the next round is dealt; the board's **Next round** button deals it at once.
 
 ## The table
 
-The **board settings** (the gear) choose the background, a new background each round, the music, how the tiles look
-and whether the train ends show big numbers. They change only the look, never the game.
+The **board settings** (the gear) choose the background (or a new one each round), the music, how the tiles look and
+whether the train ends show big numbers. They change only the look, never the game.

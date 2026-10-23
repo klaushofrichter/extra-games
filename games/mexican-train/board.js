@@ -21,8 +21,8 @@ const STYLE = {
 };
 const prefOf = (info) => ({
   faces: info.prefs?.faces ?? "colour",
-  background: STYLE[info.prefs?.background] ? info.prefs.background : "aurora",
-  rotate: info.prefs?.rotate === true,
+  // A scene, or "rotate" for a new one each round.
+  background: STYLE[info.prefs?.background] || info.prefs?.background === "rotate" ? info.prefs.background : "aurora",
   motion: info.prefs?.motion !== false,
   music: ["soft", "on"].includes(info.prefs?.music) ? info.prefs.music : "off",
   ends: info.prefs?.ends !== false,
@@ -33,8 +33,15 @@ const reducedMotion = () => typeof matchMedia === "function" && matchMedia("(pre
 export function settings({ info, setPrefs }) {
   const p = prefOf(info);
   return [
-    { type: "choice", label: "Background", value: p.background, options: BACKGROUNDS.map((b) => ({ value: b.id, label: b.label })), onChange: (v) => setPrefs({ background: v }) },
-    { type: "toggle", label: "A new background each round", value: p.rotate, onChange: (v) => setPrefs({ rotate: !!v }) },
+    // One choice, so it always names what the board shows: a scene, or a new one each round (a separate "each round"
+    // switch left the choice saying Starfield while the board had moved on to Clouds).
+    {
+      type: "choice",
+      label: "Background",
+      value: p.background,
+      options: [...BACKGROUNDS.map((b) => ({ value: b.id, label: b.label })), { value: "rotate", label: "A new one each round" }],
+      onChange: (v) => setPrefs({ background: v }),
+    },
     { type: "toggle", label: "Background motion", value: p.motion, onChange: (v) => setPrefs({ motion: !!v }) },
     { type: "choice", label: "Music", value: p.music, options: [{ value: "off", label: "Off" }, { value: "soft", label: "Soft" }, { value: "on", label: "On" }], onChange: (v) => setPrefs({ music: v }) },
     { type: "choice", label: "Tile faces", value: p.faces, options: [{ value: "colour", label: "Coloured" }, { value: "classic", label: "Classic" }, { value: "numbers", label: "Numbers" }], onChange: (v) => setPrefs({ faces: v }) },
@@ -64,9 +71,8 @@ export function mount(root, ctx = {}) {
 
   function background() {
     const p = prefOf(info);
-    // "A new background each round": the chosen one in round 1, then on through the list.
-    const i = BACKGROUNDS.findIndex((b) => b.id === p.background);
-    const id = p.rotate ? BACKGROUNDS[(i + Math.max(0, view.round - 1)) % BACKGROUNDS.length].id : p.background;
+    // "A new one each round": the scenes in turn, round 1 the first.
+    const id = p.background === "rotate" ? BACKGROUNDS[Math.max(0, view.round - 1) % BACKGROUNDS.length].id : p.background;
     const moving = p.motion && !reducedMotion();
     const key = `${id}:${moving}`;
     if (key === bg.key) return id;
