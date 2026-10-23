@@ -27,7 +27,7 @@
 .bg-target.far { border-style: dotted; background: rgba(95, 191, 143, .12); }
 .bg-target.off { border-radius: 10px; }
 
-.bg-dice-at { position: absolute; display: grid; justify-items: center; gap: 8px; pointer-events: none; }
+.bg-dice-at { position: absolute; width: max-content; display: grid; justify-items: center; gap: 8px; pointer-events: none; }
 .bg-dice-row { display: flex; gap: 14px; }
 .bg-die { width: var(--s); height: var(--s); padding: calc(var(--s) * .14); box-sizing: border-box; border-radius: calc(var(--s) * .18);
   display: grid; grid-template: repeat(3, 1fr) / repeat(3, 1fr); place-items: center;
@@ -40,11 +40,13 @@
   70% { transform: translate(6px, 2px) rotate(12deg); opacity: 1; }
   100% { transform: none; }
 }
-.bg-roll { pointer-events: auto; display: grid; grid-template-columns: auto auto; gap: 12px; padding: 14px 18px 10px; border-radius: 16px;
+.bg-roll { pointer-events: auto; display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 14px 18px 10px; border-radius: 16px;
   background: rgba(8, 22, 19, .55); border: 2px dashed rgba(214, 169, 74, .7); cursor: pointer; }
 /* Before the roll the dice show no numbers, so nothing on the board looks like a roll that has not happened yet. */
 .bg-roll .bg-die.blank { opacity: .4; }
-.bg-roll span { grid-column: 1 / -1; font: 600 20px var(--text); color: var(--brass); }
+/* The two dice side by side, always (an absolutely placed box near the board's edge squeezed them into a column). */
+.bg-roll-dice { display: flex; gap: 12px; }
+.bg-roll-text { font: 600 20px var(--text); color: var(--brass); white-space: nowrap; }
 .bg-wait, .bg-opening { font: 600 19px var(--text); color: #e7dcc4; background: rgba(8, 22, 19, .6); padding: 4px 12px; border-radius: 10px; }
 
 .bg-cube { position: absolute; width: 56px; height: 56px; border-radius: 10px; display: grid; place-items: center; z-index: 2;

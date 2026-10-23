@@ -6,7 +6,8 @@ Checks on the way:
   - the board shows 15 checkers a side in the starting position, White's home at the south player's right hand;
   - tapping a checker lights up where it can go, tapping one of those moves it there, Undo on the board takes it back,
     and only the side to move can pick up checkers;
-  - tapping the dice on the board rolls them; the phones' move buttons and Done play a turn too;
+  - the dice to roll sit side by side; tapping them on the board rolls them; the phones' move buttons and Done play a
+    turn too;
   - doubling on a phone asks for confirmation first (Cancel changes nothing); the other phone offers Take and Pass, and
     so does the board, under the double in that player's box: Take on the board, and the cube shows 2;
   - Double on the board asks once more on the same button (one tap changes nothing), then doubles; a phone takes;
@@ -207,6 +208,9 @@ def main():
             # The other player rolls by tapping the dice on the board, and moves from the phone's list.
             board.wait_for_selector("[data-roll]")
             shot(board, "board-roll")
+            # The two dice of Tap to roll side by side, not stacked (they were, squeezed near the board's edge).
+            dice = board.evaluate("[...document.querySelectorAll('[data-roll] .bg-die')].map((d) => d.getBoundingClientRect().top)")
+            assert len(dice) == 2 and abs(dice[0] - dice[1]) < 2, f"the dice to roll are not side by side: {dice}"
             check(other, f"{other.label} on their roll")
             tap_until(board, "[data-roll]", lambda: game()["phase"] == "move", "the board roll")
             settle(board)

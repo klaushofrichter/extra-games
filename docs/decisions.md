@@ -377,6 +377,10 @@ Format: **E-nnn · date · decided by** — decision. *Why:* reason.
     phone asks before doubling, the first tap turns the button into "Double to n?" (brass) for four seconds; a second
     tap doubles.
   - `boardIntents` adds `double`, `take` and `pass`; the rules check them as from a phone. The how-to-play says so.
+  - **The dice of *Tap to roll* side by side.** Klaus (iPad photo): "When showing the 'roll the dice' the die should
+    align horizontally. Right now they are stacked." The box near the board's edge shrank to the room left to that
+    edge, which squeezed its two-column grid into one column; the dice are a row of their own now and the box takes
+    its natural width. `scripts/e2e/backgammon.py` checks that both dice share a line.
   - **Checks.** `scripts/e2e/backgammon.py`: after a phone doubles, the board shows Take and Pass in the other player's
     box only, without "on your phone", and Take there turns the cube to 2; later the cube's owner doubles on the board
     (one tap only asks), and a phone takes. `tests/backgammon-host.test.ts`: the board doubles for one player and takes
