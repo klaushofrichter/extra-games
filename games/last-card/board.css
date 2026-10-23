@@ -1,0 +1,59 @@
+/* Last Card board (E-023). */
+.lc-root { position: absolute; inset: 0; overflow: hidden; background: radial-gradient(55% 60% at 50% 49%, #24464f 0%, #142a33 55%, #0b171d 100%); }
+.lc-root .kit-plates { position: absolute; inset: 0; z-index: 4; }
+/* The direction of play: two arrows round the middle, turning slowly (a small layer: cheap). */
+.lc-dir { position: absolute; left: 920px; top: 530px; width: 600px; height: 600px; margin: -300px 0 0 -300px; opacity: .22; }
+.lc-dir path { fill: none; stroke: #e9f1f3; stroke-width: 10; stroke-linecap: round; stroke-linejoin: round; }
+.lc-spin { animation: lc-spin 24s linear infinite; transform-origin: 0 0; }
+/* Play the other way round: the arrows mirrored (a mirrored clockwise turn is counterclockwise). */
+.lc-root.ccw .lc-dir { transform: scaleX(-1); }
+@keyframes lc-spin { to { transform: rotate(360deg); } }
+/* The colour to play: a glowing ring round the discard pile. */
+.lc-ring { position: absolute; left: 1030px; top: 530px; width: 330px; height: 330px; margin: -165px 0 0 -165px; border-radius: 50%;
+  border: 10px solid var(--c, #fff); box-shadow: 0 0 40px var(--c, #fff), inset 0 0 30px color-mix(in srgb, var(--c, #fff) 45%, transparent); opacity: .85; transition: border-color .4s, box-shadow .4s; }
+.lc-draw > .lc-stack { position: absolute; left: 0; top: 0; width: 128px; height: 192px; filter: drop-shadow(0 6px 10px rgba(0,0,0,.45)); }
+.lc-draw > .lc-stack:nth-child(1) { transform: translate(742px, 430px); }
+.lc-draw > .lc-stack:nth-child(2) { transform: translate(745px, 434px); }
+.lc-draw > .lc-stack:nth-child(3) { transform: translate(748px, 438px); }
+.lc-left { position: absolute; left: 812px; top: 650px; transform: translateX(-50%); color: rgba(255,255,255,.65); font: 600 20px system-ui, sans-serif; white-space: nowrap; }
+.lc-pile > div { position: absolute; left: 0; top: 0; width: 128px; height: 192px; filter: drop-shadow(0 8px 14px rgba(0,0,0,.5)); }
+.lc-called { position: absolute; left: 0; top: 0; width: 0; height: 0; }
+.lc-called span { position: absolute; transform: translate(-50%, -50%); padding: 6px 18px; border-radius: 999px; background: var(--c); color: #fff; font: 800 24px system-ui, sans-serif; letter-spacing: .04em; box-shadow: 0 4px 14px rgba(0,0,0,.4); white-space: nowrap; }
+/* "Last card!" next to a player's plate: pops up, wobbles, fades. */
+.lc-burst { position: absolute; width: 0; height: 0; z-index: 40; transform: rotate(var(--rot)); }
+.lc-burst span { position: absolute; transform: translate(-50%, -50%); white-space: nowrap; font: italic 900 58px system-ui, sans-serif; letter-spacing: .02em;
+  color: #fff; -webkit-text-stroke: 3px #1b2340; paint-order: stroke fill; text-shadow: 0 0 24px #f2b81c, 0 6px 0 #e5484d;
+  animation: lc-burst 1.8s cubic-bezier(.2,.9,.3,1.2) forwards; }
+@keyframes lc-burst {
+  0% { transform: translate(-50%, -50%) scale(.2) rotate(-12deg); opacity: 0; }
+  18% { transform: translate(-50%, -50%) scale(1.15) rotate(4deg); opacity: 1; }
+  30% { transform: translate(-50%, -50%) scale(1) rotate(-3deg); }
+  70% { transform: translate(-50%, -50%) scale(1.02) rotate(0deg); opacity: 1; }
+  100% { transform: translate(-50%, -70%) scale(1.1); opacity: 0; }
+}
+.lc-panel { position: absolute; left: 960px; top: 520px; z-index: 35; min-width: 560px; padding: 28px 34px; border-radius: 22px; background: rgba(12, 22, 28, .9); border: 1px solid rgba(255,255,255,.18); box-shadow: 0 30px 80px rgba(0,0,0,.6); color: #eef3f4; font: 20px system-ui, sans-serif; text-align: center; }
+.lc-panel h2 { margin: 0 0 16px; font: 700 28px system-ui, sans-serif; }
+.lc-panel table { width: 100%; border-collapse: collapse; }
+.lc-panel th { font-weight: 600; color: rgba(255,255,255,.55); font-size: 15px; text-transform: uppercase; letter-spacing: .08em; padding: 4px 10px; }
+.lc-panel td { padding: 6px 10px; border-top: 1px solid rgba(255,255,255,.1); }
+.lc-panel td:first-child { text-align: left; }
+.lc-panel tr.won td { color: #f2b81c; font-weight: 700; }
+.lc-panel p { margin: 14px 0 0; color: rgba(255,255,255,.6); }
+.lc-next { margin-top: 18px; display: grid; gap: 12px; justify-items: center; color: rgba(255,255,255,.75); font-size: 22px; }
+.lc-bar { width: 100%; height: 10px; border-radius: 999px; background: rgba(255,255,255,.12); overflow: hidden; }
+.lc-bar i { display: block; height: 100%; border-radius: 999px; background: #f2b81c; transition: width .25s linear; }
+.lc-go { font: 700 20px system-ui, sans-serif; padding: 12px 26px; border-radius: 999px; border: 0; background: #f2b81c; color: #1b1407; cursor: pointer; }
+/* A player's hand: a fan of backs between the plate and the middle, with the number on it. */
+.lc-fan { position: absolute; width: 0; height: 0; z-index: 3; transform-origin: 0 0; } /* under the plates (4) */
+.lc-fan i { position: absolute; left: 0; bottom: 0; width: 46px; height: 69px; border-radius: 6px; transform-origin: 50% 160%;
+  background: linear-gradient(150deg, transparent 38%, #f2b81c 38% 41%, #e5484d 41% 55%, #2f7fe0 55% 58%, transparent 58%), #1b2340;
+  border: 3px solid #fff; box-shadow: 0 3px 8px rgba(0,0,0,.45); }
+.lc-fan b { position: absolute; left: 0; bottom: 74px; transform: translateX(-50%); min-width: 46px; padding: 2px 10px; border-radius: 999px;
+  background: #eef3f4; color: #10202a; font: 800 30px/1.2 system-ui, sans-serif; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,.45); }
+/* 6, 9, 16 … are underlined, as on the cards, so they read right from the other side of the table. */
+.lc-fan b.turn { text-decoration: underline; text-decoration-thickness: 3px; text-underline-offset: 4px; }
+.lc-fan b.one { background: #e5484d; color: #fff; animation: lc-one 1s ease-in-out infinite alternate; }
+.lc-fan b.won { bottom: 22px; padding: 4px 18px; background: #f2b81c; color: #1b1407; font-size: 26px; letter-spacing: .02em;
+  box-shadow: 0 0 24px rgba(242,184,28,.6), 0 4px 12px rgba(0,0,0,.45); animation: lc-won 1.2s ease-in-out infinite alternate; }
+@keyframes lc-won { to { transform: translateX(-50%) scale(1.08); } }
+@keyframes lc-one { to { transform: translateX(-50%) scale(1.12); } }

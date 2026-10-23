@@ -260,3 +260,107 @@ Format: **E-nnn · date · decided by** — decision. *Why:* reason.
   facing minus the tile's direction, so digits face the board's front on every tile, doubles included (pips are
   symmetric and never turn). Checks: a unit test of the turns; `scripts/e2e/mexican_train.py` reads the plates
   before and after round 1.
+
+## Last Card: the card game of colours and numbers, played with the sling (23 Oct 2026)
+
+- **E-023 · 2026-10-23 · Klaus** — A new game, Last Card: UNO-style play for 2 to 8 players, built on games-service's
+  sling (D-189). *Why:* Klaus: "We want to implement UNO with this, but this should be a Platform feature … Go ahead
+  and do UNO with this feature", with no shouting ("We do NOT want the board to detect audio for privacy reasons …
+  We can skip the rule") but "a "UNO" display on the board … an animated visual of the word … next to the player
+  name-card that shows for a second, with a sound effect, and then fades away", and "sound effects with UNO, but no
+  background music". *Implementation (Claude):*
+  - **The name.** UNO is a trademark (and its cards' look trade dress), and this repository is public, so the game is
+    *Last Card*, after the traditional game with the same call, with its own card design (a white window, not the
+    tilted oval). The board calls "Last card!". Renaming is one manifest field and a few strings.
+  - **Rules.** 108 cards (per colour one 0, two of 1–9, Skip, Reverse, Draw Two; four Wilds, four Wild Draw Fours);
+    seven each; the first card on the pile is a number. Match colour or number or symbol, or play a wild and pick the
+    colour. Skip, Reverse (a Skip with two players), Draw Two and Wild Draw Four (no challenge) hit the next player.
+    Nothing fits: draw one; play it if it fits, or keep it; a card that doesn't fit ends the turn. An empty draw pile
+    turns the discards over. The first out scores the others' cards (number value, actions 20, wilds 50); the first to
+    *Points to win the game* (default 200) wins. No penalty for not calling: the board calls it for everyone.
+  - **Board.** Draw and discard piles, a ring in the colour to play (and the colour a wild called), arrows turning the
+    way play goes, the platform's plates with cards and points, "Last card!" popping up next to the player's plate,
+    the round's scores with *Next round*. Cards come in at the player's edge while slung, back first, and fly face up
+    to the pile; drawn cards fly to the player. *Card animation* (Fast, Normal, Slow) in the board's settings; the
+    phones read it, so drawn cards arrive in time. Sound effects made with Web Audio when they play (throw, land, draw,
+    Skip, Reverse, Draw cards, wild, "Last card!", shuffle, the round won); no music.
+  - **Phone.** The cards that fit lift and glow on your turn; push one off the top to play it; one that doesn't fit
+    peeks out and bounces back; a wild asks for its colour (Cancel puts it back); *Draw a card*, then *Keep it*.
+  - **AI.** Hits a next player who has two cards or fewer with Draw Two, Wild Draw Four or Skip, keeps wilds for later,
+    plays the colour it holds most of, sheds high numbers. The turn timer plays for a slow player what the AI would,
+    or draws and keeps.
+  - **Checks.** `tests/last-card.test.ts` (21 tests: the deck, dealing, what fits, every special card, drawing and
+    keeping, reshuffling, "Last card!", scoring, the end, privacy, the timer, seats changing hands, the AI, the Game
+    Viewer, whole games replaying exactly at 2–8 players); the soak; `scripts/e2e/last_card.py` (a whole game with two
+    phones slinging, the back at the edge while dragging, a bounce, a wild's colour, "Last card!", the scores).
+
+## Last Card: hands you can see, a calmer phone (23 Oct 2026)
+
+- **E-024 · 2026-10-23 · Klaus** — After playing Last Card: every player's hand shows on the board as a fan of card
+  backs with its number, the phone's buttons sit right under its status, the push hint goes once you know it, and the
+  hand uses the phone's free space. *Why:* Klaus: "we should see more clearly on the board how many cards a player
+  has. In a real game we would see it also … show on top of the box a spread of cards with the back"; "There is a lot
+  of unused space on the deck between the button "draw a card" and the game status box … How many cards can we have on
+  the deck? … move the button up … We do not need to show the push line after a few moves." (His third point, the
+  warning that moved the status, is the platform's: games-service D-191.) *Implementation (Claude):*
+  - **Board.** A fan of up to 15 backs (plain styled boxes, not SVG, so eight fans stay cheap) between each plate and
+    the middle, turned to face its player, with the number on a badge above it; red and pulsing at one card. Redrawn
+    only when a count changes. The plates show the points; "Last card!" moved further in, past the fan.
+  - **Phone.** Status, then the buttons (points, *Draw a card*, *Keep it*), then the space where cards leave, then the
+    hand. On your turn the cards that don't fit are darker and greyer but solid (not see-through, which blended
+    the rows into each other). The hint to push a card off the top shows until the phone has played three cards that way (remembered in
+    the browser). The hand has no limit: rows of overlapping cards with at least 30 px of each showing (10 to a row on
+    a 390 px phone, 8 on 320 px), stacked from the bottom into the free space, closing up when there are many (about
+    40 cards fill a phone; in 600 AI games, 150 each with 2, 4, 6 and 8 players, the largest hand was 20).
+  - **The release line.** Klaus: "I would like to see the notice "push a card off the top…" closer to the status box
+    … If the card is on the status box … and let go, it should move to the board to the middle direction." A dashed
+    line right under the status, with "Let go of a card above this line to play it" (until the phone has played three
+    cards; then just the line), passed to the sling as `line()` (games-service D-193). It turns gold, and the card
+    glows, while a card is above it; letting go there plays it toward the middle. Then the buttons, the free space and
+    the hand.
+  - **Drawn cards come in on the phone.** Klaus: "When I draw a card, there is animation on the board, but not on the
+    deck." The way in was there, but the phone redrew the whole hand at every update, and the next one (the turn
+    moving on, an AI player's move) replaced the card in the middle of its animation. The hand is now updated in place
+    (cards kept by id, moved, added and removed), so the animation runs to the end, and cards slide to new places.
+  - **Awards.** Five more (Klaus: "can you invent at least three more awards?"), ten in all: *Chameleon* (changed the
+    colour to play most often: another colour by number or symbol, or a wild calling a new one), *Big Haul* (most
+    points in one round), *Comeback* (won a round after holding the most cards in it), *Hoarder* (most cards held at
+    once) and *Light Fingers* (fewest cards drawn). An award shows only when someone stands out (the SDK's
+    `mostAward`/`leastAward`).
+  - **Checks.** `scripts/e2e/last_card.py`: a fan with seven backs and "7" for each player at the start, the buttons
+    under the status, and a card that doesn't fit shows its message without moving the status.
+    `tests/last-card.test.ts`: the awards go to the right players in twelve whole games, and each new one comes up.
+
+## Last Card: arrows the right way round, readable counts, a visible countdown (23 Oct 2026)
+
+- **E-025 · 2026-10-23 · Klaus** — Three changes after more games. *Why:* Klaus: "when showing the number of cards …
+  and it is a 9 or 6, we should show "9." and "6." to make it easier to understand when reading upside down. The
+  spread of cards is good, but it could be partially underneath the player box, like 20%?"; "Is there a countdown
+  indicator and a "advance now" button for the "Seconds to show the scores after a round"?"; "I saw once instance
+  where the rotation indicator was going clockwise, but the game actually was counter-clockwise." *Implementation
+  (Claude):*
+  - **The arrows were always the wrong way round.** Play goes south, east, north, west (`tableOrder`): on the board
+    bottom, right, top, left, which is counter-clockwise; the arrows showed clockwise for it, and flipped after a
+    Reverse. The board now works the way round out from the seats in playing order (the signed area of their
+    positions round the middle, `assets/table.js` `clockwise`) and the direction of play, instead of assuming it.
+  - **Counts.** A hand's badge underlines a number that reads as another number upside down (6, 9, 16, 18, 66 …; not
+    8, 11 or 10), as the cards do; Klaus first asked for a dot ("6."), then: "the cards use "underline" style to
+    differentiate 6 and 9. We should do that as well for consistency." The fan tucks under its plate by a fifth of a
+    card (under the plate, not over it).
+  - **Winner.** A hand with no cards left (the round's winner) shows a gold "Winner!" right above the plate, not a 0
+    out where the cards were (Klaus: "the "0" by Zoe is somewhat disconnected from Zoe's player box because there
+    are no cards. In this case, I would like to fill the void with a "Winner!" panel").
+  - **Wording.** The round's scores say "Round 1: Anna (AI) played the last card" (was "their last card").
+  - **Countdown.** The round's scores already had *Next round* and "in N s"; now a bar runs down to the next round,
+    the words read "Next round in N s", and the button "Next round now" (when the board may skip it). The board's
+    view carries `roundMs` for the bar.
+  - **Tap to play.** Klaus: "players can use the drag method to push a card to the board. We could have a setting to
+    enable in addition the previous tap a card to play." A game setting, *Tap a card to play it (as well as pushing
+    it off)*, off by default: then a short tap (under 8 px and half a second) on a card that fits plays it; it rises
+    off the top of the phone, and a wild asks for its colour. Pushing works either way; a tap on a card that doesn't
+    fit bounces as before. Only the phone reads it (`info.settings`); the rules don't.
+    The phone's listeners on its root (tap, buttons) come off in `destroy()`: the root outlives the game, and a stale
+    tap listener ran after the game ended (a browser error the e2e check caught).
+  - **Checks.** `tests/last-card.test.ts`: the dots, and the direction for 3 to 8 players with the platform's seat
+    places (normal play counter-clockwise, reversed clockwise). `scripts/e2e/last_card.py` plays with tap to play on
+    and taps a card once, at a point of it not under its neighbour in the hand.
