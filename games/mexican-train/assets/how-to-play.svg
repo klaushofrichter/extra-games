@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 400" width="720" height="400" font-family="system-ui, -apple-system, sans-serif">
+  <!-- Mexican Train for the rules (E-020): the engine in the middle, your train toward you, the Mexican train, a marker. -->
+  <rect width="720" height="400" rx="24" fill="#0b1430"/>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M360 205 L360 330" stroke="#03050c" stroke-width="40"/>
+    <path d="M360 205 L360 330" stroke="#3f8f7a" stroke-width="34" stroke-dasharray="6 11"/>
+    <path d="M360 205 L590 205" stroke="#03050c" stroke-width="40"/>
+    <path d="M360 205 L590 205" stroke="#3f8f7a" stroke-width="34" stroke-dasharray="6 11"/>
+    <path d="M360 205 L140 95" stroke="#03050c" stroke-width="40"/>
+    <path d="M360 205 L140 95" stroke="#3f8f7a" stroke-width="34" stroke-dasharray="6 11"/>
+  </g>
+  <!-- the hub with the engine, double 12 -->
+  <circle cx="360" cy="205" r="52" fill="#04060f" stroke="#5ef2a8" stroke-width="5"/>
+  <g transform="translate(360,205) rotate(90)">
+    <rect x="-36" y="-18" width="72" height="36" rx="6" fill="#fbf6e9" stroke="#c9bd9d" stroke-width="1.5"/>
+    <line x1="0" y1="-14" x2="0" y2="14" stroke="#b9ab84" stroke-width="1.5"/>
+    <text x="-18" y="6" text-anchor="middle" font-size="17" font-weight="800" fill="#087f5b" transform="rotate(-90 -18 0)">12</text>
+    <text x="18" y="6" text-anchor="middle" font-size="17" font-weight="800" fill="#087f5b" transform="rotate(-90 18 0)">12</text>
+  </g>
+  <!-- your train, toward your seat: 12|5, 5|3 -->
+  <g font-size="17" font-weight="800" text-anchor="middle">
+    <g transform="translate(360,286) rotate(90)"><rect x="-36" y="-18" width="72" height="36" rx="6" fill="#fbf6e9" stroke="#c9bd9d" stroke-width="1.5"/><line x1="0" y1="-14" x2="0" y2="14" stroke="#b9ab84" stroke-width="1.5"/>
+      <text x="-18" y="6" fill="#087f5b" transform="rotate(-90 -18 0)">12</text><text x="18" y="6" fill="#1c7ed6" transform="rotate(-90 18 0)">5</text></g>
+  </g>
+  <circle cx="360" cy="350" r="22" fill="#0b1310" stroke="#f2d24b" stroke-width="4"/><text x="360" y="358" text-anchor="middle" font-size="22" font-weight="800" fill="#fff">5</text>
+  <!-- the Mexican train: 12|8, 8|1 -->
+  <g font-size="17" font-weight="800" text-anchor="middle">
+    <g transform="translate(450,205)"><rect x="-36" y="-18" width="72" height="36" rx="6" fill="#fbf6e9" stroke="#c9bd9d" stroke-width="1.5"/><line x1="0" y1="-14" x2="0" y2="14" stroke="#b9ab84" stroke-width="1.5"/>
+      <text x="-18" y="6" fill="#087f5b">12</text><text x="18" y="6" fill="#5c940d">8</text></g>
+    <g transform="translate(528,205)"><rect x="-36" y="-18" width="72" height="36" rx="6" fill="#fbf6e9" stroke="#c9bd9d" stroke-width="1.5"/><line x1="0" y1="-14" x2="0" y2="14" stroke="#b9ab84" stroke-width="1.5"/>
+      <text x="-18" y="6" fill="#5c940d">8</text><text x="18" y="6" fill="#0b7285">1</text></g>
+  </g>
+  <circle cx="606" cy="205" r="22" fill="#0b1310" stroke="#2ec4b6" stroke-width="4"/><text x="606" y="213" text-anchor="middle" font-size="22" font-weight="800" fill="#fff">1</text>
+  <rect x="540" y="236" width="140" height="30" rx="15" fill="#2ec4b6"/><text x="610" y="257" text-anchor="middle" font-size="16" font-weight="800" fill="#1b1407">Mexican train</text>
+  <!-- someone else's train with a marker: open to everyone -->
+  <g transform="translate(290,170) rotate(26.6)" font-size="17" font-weight="800" text-anchor="middle"><rect x="-36" y="-18" width="72" height="36" rx="6" fill="#fbf6e9" stroke="#c9bd9d" stroke-width="1.5"/><line x1="0" y1="-14" x2="0" y2="14" stroke="#b9ab84" stroke-width="1.5"/>
+    <text x="18" y="6" fill="#087f5b">12</text><text x="-18" y="6" fill="#e03131">3</text></g>
+  <circle cx="200" cy="125" r="22" fill="#0b1310" stroke="#5fb7e8" stroke-width="4"/><text x="200" y="133" text-anchor="middle" font-size="22" font-weight="800" fill="#fff">3</text>
+  <circle cx="160" cy="160" r="17" fill="#5fb7e8"/><path d="M151,165 h18 v-6 h-5 v-5 h-7 v5 h-6z" fill="#1b1407"/>
+  <!-- labels -->
+  <g font-size="16" fill="#f3eee2">
+    <text x="420" y="300">Your train: the next tile needs a 5</text>
+    <text x="440" y="140">Everyone's: the Mexican train</text>
+    <text x="40" y="215">A marker: Ben's train is</text><text x="40" y="236">open to everyone</text>
+    <text x="270" y="40" font-weight="700">The engine: double 12 in round 1</text>
+  </g>
+</svg>
