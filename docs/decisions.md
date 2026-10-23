@@ -330,3 +330,37 @@ Format: **E-nnn · date · decided by** — decision. *Why:* reason.
   - **Checks.** `scripts/e2e/last_card.py`: a fan with seven backs and "7" for each player at the start, the buttons
     under the status, and a card that doesn't fit shows its message without moving the status.
     `tests/last-card.test.ts`: the awards go to the right players in twelve whole games, and each new one comes up.
+
+## Last Card: arrows the right way round, readable counts, a visible countdown (23 Oct 2026)
+
+- **E-025 · 2026-10-23 · Klaus** — Three changes after more games. *Why:* Klaus: "when showing the number of cards …
+  and it is a 9 or 6, we should show "9." and "6." to make it easier to understand when reading upside down. The
+  spread of cards is good, but it could be partially underneath the player box, like 20%?"; "Is there a countdown
+  indicator and a "advance now" button for the "Seconds to show the scores after a round"?"; "I saw once instance
+  where the rotation indicator was going clockwise, but the game actually was counter-clockwise." *Implementation
+  (Claude):*
+  - **The arrows were always the wrong way round.** Play goes south, east, north, west (`tableOrder`): on the board
+    bottom, right, top, left, which is counter-clockwise; the arrows showed clockwise for it, and flipped after a
+    Reverse. The board now works the way round out from the seats in playing order (the signed area of their
+    positions round the middle, `assets/table.js` `clockwise`) and the direction of play, instead of assuming it.
+  - **Counts.** A hand's badge underlines a number that reads as another number upside down (6, 9, 16, 18, 66 …; not
+    8, 11 or 10), as the cards do; Klaus first asked for a dot ("6."), then: "the cards use "underline" style to
+    differentiate 6 and 9. We should do that as well for consistency." The fan tucks under its plate by a fifth of a
+    card (under the plate, not over it).
+  - **Winner.** A hand with no cards left (the round's winner) shows a gold "Winner!" right above the plate, not a 0
+    out where the cards were (Klaus: "the "0" by Zoe is somewhat disconnected from Zoe's player box because there
+    are no cards. In this case, I would like to fill the void with a "Winner!" panel").
+  - **Wording.** The round's scores say "Round 1: Anna (AI) played the last card" (was "their last card").
+  - **Countdown.** The round's scores already had *Next round* and "in N s"; now a bar runs down to the next round,
+    the words read "Next round in N s", and the button "Next round now" (when the board may skip it). The board's
+    view carries `roundMs` for the bar.
+  - **Tap to play.** Klaus: "players can use the drag method to push a card to the board. We could have a setting to
+    enable in addition the previous tap a card to play." A game setting, *Tap a card to play it (as well as pushing
+    it off)*, off by default: then a short tap (under 8 px and half a second) on a card that fits plays it; it rises
+    off the top of the phone, and a wild asks for its colour. Pushing works either way; a tap on a card that doesn't
+    fit bounces as before. Only the phone reads it (`info.settings`); the rules don't.
+    The phone's listeners on its root (tap, buttons) come off in `destroy()`: the root outlives the game, and a stale
+    tap listener ran after the game ended (a browser error the e2e check caught).
+  - **Checks.** `tests/last-card.test.ts`: the dots, and the direction for 3 to 8 players with the platform's seat
+    places (normal play counter-clockwise, reversed clockwise). `scripts/e2e/last_card.py` plays with tap to play on
+    and taps a card once, at a point of it not under its neighbour in the hand.

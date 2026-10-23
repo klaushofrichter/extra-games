@@ -86,7 +86,7 @@ def sling(d, el, board=None, peek=None):
     d.mouse.up()
 
 
-seen = {"burst": False, "wild": False, "bounce": False, "peek": False, "panel": False, "receive": False, "line": False}
+seen = {"burst": False, "wild": False, "bounce": False, "peek": False, "panel": False, "receive": False, "line": False, "tap": False}
 
 # The drawn card's way in on the phone (E-024): a card whose animation is running (it comes in at the top).
 # Script animations only: cards sliding to new places (CSS transitions) don't count.
@@ -157,6 +157,23 @@ def release_above_line(d, el):
 
 def play(d, el, board):
     before = board.evaluate("document.querySelectorAll('.lc-pile > div').length")
+    # A point of the card that is not under its neighbour in the hand (cards overlap), for a tap.
+    spot = el.evaluate("""e => { const r = e.getBoundingClientRect();
+        for (const fy of [0.5, 0.3, 0.7, 0.15, 0.85]) for (const fx of [0.5, 0.3, 0.15, 0.7, 0.85]) {
+          const x = r.left + r.width * fx, y = r.top + r.height * fy, t = document.elementFromPoint(x, y);
+          if (t && e.contains(t)) return [x, y]; }
+        return null; }""")
+    if seen["line"] and not seen["tap"] and spot and el.evaluate("e => !e.querySelector('[aria-label^=Wild]')"):
+        # Once, with Tap a card to play it on (E-025): a tap plays a card that fits.
+        n = d.locator(".lcd-card").count()
+        d.mouse.click(*spot)
+        for _ in range(40):
+            if d.locator(".lcd-card").count() < n:
+                break
+            time.sleep(0.1)
+        assert d.locator(".lcd-card").count() < n, "a tapped card that fits was not played"
+        seen["tap"] = True
+        return True
     if not seen["line"] and el.evaluate("e => !e.querySelector('[aria-label^=Wild]')"):
         # Once: let go above the line, not off the top. The card is played toward the middle.
         n = d.locator(".lcd-card").count()
@@ -201,7 +218,7 @@ def main():
             pick_game(board, "last-card")
             board.locator(".dialog [data-x=yes]").click()
             time.sleep(0.4)
-            a("POST", "/game/settings", {"settings": {"target": 150, "turnSeconds": 60, "roundSeconds": 4}})
+            a("POST", "/game/settings", {"settings": {"target": 150, "turnSeconds": 60, "roundSeconds": 4, "tapToPlay": True}})
             for d in decks:
                 d.click("#ready")
             time.sleep(0.4)
@@ -228,7 +245,7 @@ def main():
             small.locator("[data-rules]").click()
             small.locator(".rules-modal .md h3").first.wait_for()
             assert "Last Card" in small.inner_text(".rules-modal .rules-head h2")
-            assert small.locator(".rules-settings tr").count() == 3, "the three settings at this table"
+            assert small.locator(".rules-settings tr").count() == 4, "the four settings at this table"
             img = small.locator(".rules-modal .md img")
             img.scroll_into_view_if_needed()
             wait(lambda: img.evaluate("i => i.complete && i.naturalWidth > 0"), 10, "the rules illustration")
@@ -279,9 +296,12 @@ def main():
             assert st["phase"] == "finished", f"the game did not finish (phase {st['phase']})"
             assert seen["peek"], "never saw a card at a player's edge while it was being slung"
             assert seen["bounce"], "never tried a card that doesn't fit"
-            assert seen["panel"], "the round's scores never showed"
+            # The scores between rounds show only when there is a next round: a game can end in its first.
+            if st["summary"]["highlights"]["rounds"] > 1:
+                assert seen["panel"], "the round's scores never showed"
             assert seen["receive"], "never drew a card from a phone"
             assert seen["line"], "never let go of a card above the line"
+            assert seen["tap"], "never tapped a card to play it"
             sounds = board.evaluate("window.gameTableSounds || []")
             assert seen["burst"] or "lastCard" in sounds, "never saw Last card!"
             summary = st["summary"]["text"]

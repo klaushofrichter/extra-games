@@ -367,6 +367,8 @@ function publicView(s: State) {
     last: s.results.at(-1) ?? null,
     winners: s.winners,
     drew: s.drewId !== null,
+    /** The pause after a round, for the board's countdown bar. */
+    roundMs: Math.max(1000, s.roundMs),
   };
 }
 

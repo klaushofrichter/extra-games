@@ -6,6 +6,7 @@ import { esc, playSound, remainingMs, seatPlates, useStyles } from "/shared/boar
 import { slingBoard } from "/shared/sling.js";
 import { cardBack, cardFace, FILL, SPEEDS } from "/games/last-card/assets/cards.js";
 import { SOUNDS } from "/games/last-card/assets/sounds.js";
+import { clockwise, upsideDownAmbiguous } from "/games/last-card/assets/table.js";
 
 const CW = 128, CH = 192;
 const PILE = { x: 1030, y: 530 };
@@ -59,14 +60,20 @@ export function mount(root, ctx) {
     const rows = [...v.order].sort((a, b) => v.totals[b] - v.totals[a]);
     const draw = () => {
       const ms = remainingMs(info, "next");
-      const next = v.phase === "roundOver" ? `<div class="lc-next">${info?.boardControl ? `<button type="button" class="lc-go">Next round</button>` : ""}${ms !== null ? `<span>in ${Math.ceil(ms / 1000)} s</span>` : ""}</div>` : "";
-      p.innerHTML = `<h2>Round ${v.last.round}: ${esc(v.names[v.last.out])} played their last card</h2>
+      // The next round comes by itself: a bar runs down to it, and the table can start it now (E-025).
+      const left = ms === null ? 0 : Math.max(0, Math.min(1, ms / (v.roundMs ?? 12000)));
+      const next = v.phase === "roundOver"
+        ? `<div class="lc-next"><div class="lc-bar" aria-hidden="true"><i style="width:${(left * 100).toFixed(1)}%"></i></div>
+            <span>Next round in ${ms === null ? "a moment" : `${Math.ceil(ms / 1000)} s`}</span>
+            ${info?.boardControl ? `<button type="button" class="lc-go">Next round now</button>` : ""}</div>`
+        : "";
+      p.innerHTML = `<h2>Round ${v.last.round}: ${esc(v.names[v.last.out])} played the last card</h2>
         <table><tr><th></th><th>This round</th><th>Total</th></tr>${rows
           .map((s) => `<tr class="${s === v.last.out ? "won" : ""}"><td>${esc(v.names[s])}</td><td>${v.last.scores[s] ? `+${v.last.scores[s]}` : "–"}</td><td>${v.totals[s]}</td></tr>`)
           .join("")}</table><p>${v.phase === "over" ? "Game over" : `First to ${v.target} points wins`}</p>${next}`;
     };
     draw();
-    if (v.phase === "roundOver") panelTimer = setInterval(draw, 500);
+    if (v.phase === "roundOver") panelTimer = setInterval(draw, 250);
     p.style.transform = `translate(-50%, -50%) rotate(${info?.rotation ?? 0}deg)`;
   }
 
@@ -88,7 +95,8 @@ export function mount(root, ctx) {
         box.appendChild(f.el);
         fans.set(seat, f);
       }
-      const r = (at.rot * Math.PI) / 180, d = 74;
+      // The fan's foot tucks under the plate by a fifth of a card (E-025).
+      const r = (at.rot * Math.PI) / 180, d = 24;
       const key = `${at.x},${at.y},${at.rot}`;
       if (f.key !== key) {
         f.key = key;
@@ -100,7 +108,8 @@ export function mount(root, ctx) {
       const step = shown > 1 ? Math.min(7, 84 / (shown - 1)) : 0;
       f.el.innerHTML =
         Array.from({ length: shown }, (_, i) => `<i style="transform:translateX(-50%) rotate(${(i - (shown - 1) / 2) * step}deg)"></i>`).join("") +
-        `<b class="${n === 1 ? "one" : ""}">${n}</b>`;
+        // No cards left: the round's winner (E-025), close above the plate instead of a 0 out on its own.
+        (n === 0 ? `<b class="won">Winner!</b>` : `<b class="${n === 1 ? "one" : ""}${upsideDownAmbiguous(n) ? " turn" : ""}">${n}</b>`);
       f.el.classList.toggle("empty", n === 0);
     }
   }
@@ -156,7 +165,8 @@ export function mount(root, ctx) {
       view = v;
       info = i;
       sling.info(i);
-      box.classList.toggle("ccw", v.dir === -1);
+      // The arrows turn the way play goes on this board (E-025): from the seats in playing order, not assumed.
+      box.classList.toggle("ccw", !clockwise(v.order, i.seatPositions ?? [], v.dir));
       seatPlates(box, i, (seat) => `${v.totals[seat] ?? 0} pts`, { active: v.phase === "playing" ? v.turn : null });
       renderFans();
       $(".lc-left").textContent = `${v.drawPile} cards`;
