@@ -21,10 +21,11 @@ function spots(n) {
   return full.filter(([x, y]) => !(x === 0 && Math.abs(y) > 0.6));
 }
 
-/** One half of a tile, centred on (0,0), side h. */
-function half(n, h, faces) {
+/** One half of a tile, centred on (0,0), side h. A digit is turned by `turn` degrees, so it reads upright. */
+function half(n, h, faces, turn = 0) {
   if (faces === "numbers") {
-    return `<text x="0" y="${(h * 0.18).toFixed(1)}" text-anchor="middle" font-size="${(h * 0.56).toFixed(1)}" font-weight="700" fill="${n ? PIP[n] : "#8a9a96"}" font-family="system-ui,sans-serif">${n}</text>`;
+    const t = ((Math.round(turn) % 360) + 360) % 360;
+    return `<g${t ? ` transform="rotate(${t})"` : ""}><text x="0" y="${(h * 0.18).toFixed(1)}" text-anchor="middle" font-size="${(h * 0.56).toFixed(1)}" font-weight="700" fill="${n ? PIP[n] : "#8a9a96"}" font-family="system-ui,sans-serif">${n}</text></g>`;
   }
   const r = (n > 9 ? 0.075 : 0.09) * h;
   return spots(n)
@@ -34,14 +35,18 @@ function half(n, h, faces) {
 
 /**
  * A tile [a, b] centred at the origin, a on the left, b on the right. A double is turned across (as it lies in a
- * train) unless `flat`. `faces`: "colour" (default), "classic" or "numbers".
+ * train) unless `flat`. `faces`: "colour" (default), "classic" or "numbers". `upright`: the angle, in degrees, at
+ * which digits read upright in the tile's own frame (the board's facing minus the tile's direction), so a tile in a
+ * row running right to left doesn't show its numbers upside down (E-022).
  */
-export function tileSvg(a, b, h, { faces = "colour", flat = false } = {}) {
-  const turn = a === b && !flat ? ` transform="rotate(90)"` : "";
+export function tileSvg(a, b, h, { faces = "colour", flat = false, upright = 0 } = {}) {
+  const across = a === b && !flat;
+  const turn = across ? ` transform="rotate(90)"` : "";
+  const digits = across ? upright - 90 : upright;
   return `<g${turn}><rect x="${-h}" y="${-h / 2}" width="${2 * h}" height="${h}" rx="${(h * 0.16).toFixed(1)}" fill="#fbf6e9" stroke="#c9bd9d" stroke-width="${(h * 0.04).toFixed(1)}"/>
     <rect x="${-h}" y="${-h / 2}" width="${2 * h}" height="${(h * 0.14).toFixed(1)}" rx="${(h * 0.12).toFixed(1)}" fill="#fff" opacity=".7"/>
     <line x1="0" y1="${(-h * 0.38).toFixed(1)}" x2="0" y2="${(h * 0.38).toFixed(1)}" stroke="#b9ab84" stroke-width="${(h * 0.04).toFixed(1)}"/>
-    <g transform="translate(${-h / 2},0)">${half(a, h, faces)}</g><g transform="translate(${h / 2},0)">${half(b, h, faces)}</g></g>`;
+    <g transform="translate(${-h / 2},0)">${half(a, h, faces, digits)}</g><g transform="translate(${h / 2},0)">${half(b, h, faces, digits)}</g></g>`;
 }
 
 /** A tile standing upright (for a hand on a phone), as a whole <svg>. */
