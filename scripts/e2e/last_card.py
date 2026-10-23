@@ -86,7 +86,11 @@ def sling(d, el, board=None, peek=None):
     d.mouse.up()
 
 
-seen = {"burst": False, "wild": False, "bounce": False, "peek": False, "panel": False}
+seen = {"burst": False, "wild": False, "bounce": False, "peek": False, "panel": False, "receive": False, "line": False}
+
+# The drawn card's way in on the phone (E-024): a card whose animation is running (it comes in at the top).
+# Script animations only: cards sliding to new places (CSS transitions) don't count.
+INCOMING = "() => [...document.querySelectorAll('.lcd-card')].filter(el => el.getAnimations().some(a => !(a instanceof CSSTransition) && !(a instanceof CSSAnimation) && (a.playState === 'running' || a.playState === 'pending'))).map(el => el.dataset.sling)"
 
 
 def take_turn(d, board):
@@ -118,12 +122,52 @@ def take_turn(d, board):
         return play(d, ok.first, board)
     if d.locator(".lcd-draw:not([hidden])").count():
         d.locator(".lcd-draw").click()
+        if not seen["receive"]:
+            # The new card comes in at the top of the phone, and keeps coming in through the next updates.
+            moving = []
+            for _ in range(20):
+                time.sleep(0.05)
+                moving = d.evaluate(INCOMING)
+                if moving:
+                    break
+            assert moving, "a drawn card appeared on the phone without coming in"
+            time.sleep(0.5)
+            assert d.evaluate(INCOMING) == moving, "the drawn card's way in was cut short"
+            shot(d, f"deck-receive-{d.label}")
+            seen["receive"] = True
         return True
     return False
 
 
+def release_above_line(d, el):
+    """Drag a card until its middle is just above the release line under the status, and let go there (D-193)."""
+    b = el.bounding_box()
+    x, y = b["x"] + b["width"] / 2, b["y"] + b["height"] / 2
+    line = d.locator(".lcd-line").bounding_box()["y"]
+    d.mouse.move(x, y)
+    d.mouse.down()
+    for i in range(1, 16):
+        d.mouse.move(x, y + (line - 25 - y) * i / 15)
+        time.sleep(0.02)
+    assert d.locator(".lcd.sling-armed").count() == 1, "the line does not light up with a card above it"
+    shot(d, f"deck-line-{d.label}")
+    time.sleep(0.15)
+    d.mouse.up()
+
+
 def play(d, el, board):
     before = board.evaluate("document.querySelectorAll('.lc-pile > div').length")
+    if not seen["line"] and el.evaluate("e => !e.querySelector('[aria-label^=Wild]')"):
+        # Once: let go above the line, not off the top. The card is played toward the middle.
+        n = d.locator(".lcd-card").count()
+        release_above_line(d, el)
+        for _ in range(40):
+            if d.locator(".lcd-card").count() < n:
+                break
+            time.sleep(0.1)
+        assert d.locator(".lcd-card").count() < n, "a card let go above the line was not played"
+        seen["line"] = True
+        return True
 
     def peek():
         if seen["peek"]:
@@ -198,7 +242,9 @@ def main():
                 assert d.locator(".lcd-card").count() == 7, f"{d.label} shows {d.locator('.lcd-card').count()} cards"
                 # The buttons sit right under the status (E-024).
                 st, bar = d.locator(".lcd-status").bounding_box(), d.locator(".lcd-actions").bounding_box()
-                assert bar["y"] - (st["y"] + st["height"]) < 40, f"{d.label}: the buttons are far from the status"
+                assert bar["y"] - (st["y"] + st["height"]) < 80, f"{d.label}: the buttons are far from the status"
+                line = d.locator(".lcd-line").bounding_box()
+                assert 0 <= line["y"] - (st["y"] + st["height"]) < 20, f"{d.label}: the release line is not under the status"
                 check(d, f"{d.label} at the start")
                 shot(d, f"deck-start-{d.label}")
 
@@ -234,6 +280,8 @@ def main():
             assert seen["peek"], "never saw a card at a player's edge while it was being slung"
             assert seen["bounce"], "never tried a card that doesn't fit"
             assert seen["panel"], "the round's scores never showed"
+            assert seen["receive"], "never drew a card from a phone"
+            assert seen["line"], "never let go of a card above the line"
             sounds = board.evaluate("window.gameTableSounds || []")
             assert seen["burst"] or "lastCard" in sounds, "never saw Last card!"
             summary = st["summary"]["text"]

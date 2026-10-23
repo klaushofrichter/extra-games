@@ -312,6 +312,16 @@ Format: **E-nnn · date · decided by** — decision. *Why:* reason.
     the browser). The hand has no limit: rows of overlapping cards with at least 30 px of each showing (10 to a row on
     a 390 px phone, 8 on 320 px), stacked from the bottom into the free space, closing up when there are many (about
     40 cards fill a phone; in 600 AI games, 150 each with 2, 4, 6 and 8 players, the largest hand was 20).
+  - **The release line.** Klaus: "I would like to see the notice "push a card off the top…" closer to the status box
+    … If the card is on the status box … and let go, it should move to the board to the middle direction." A dashed
+    line right under the status, with "Let go of a card above this line to play it" (until the phone has played three
+    cards; then just the line), passed to the sling as `line()` (games-service D-193). It turns gold, and the card
+    glows, while a card is above it; letting go there plays it toward the middle. Then the buttons, the free space and
+    the hand.
+  - **Drawn cards come in on the phone.** Klaus: "When I draw a card, there is animation on the board, but not on the
+    deck." The way in was there, but the phone redrew the whole hand at every update, and the next one (the turn
+    moving on, an AI player's move) replaced the card in the middle of its animation. The hand is now updated in place
+    (cards kept by id, moved, added and removed), so the animation runs to the end, and cards slide to new places.
   - **Awards.** Five more (Klaus: "can you invent at least three more awards?"), ten in all: *Chameleon* (changed the
     colour to play most often: another colour by number or symbol, or a wild calling a new one), *Big Haul* (most
     points in one round), *Comeback* (won a round after holding the most cards in it), *Hoarder* (most cards held at

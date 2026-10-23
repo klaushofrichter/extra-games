@@ -16,9 +16,10 @@ export function mount(root, ctx) {
   root.innerHTML = `<div class="lcd">
     <div class="card lcd-status"><div class="eyebrow lcd-round"></div>
       <div class="lcd-row"><div class="display lcd-big"></div><div class="lcd-top"></div></div></div>
+    <div class="lcd-line"><span class="lcd-hint">↑ Let go of a card above this line to play it</span></div>
     <div class="card lcd-result" hidden></div>
     <div class="lcd-actions"><span class="lcd-me"></span><button type="button" class="primary lcd-draw">Draw a card</button><button type="button" class="lcd-keep" hidden>Keep it</button></div>
-    <div class="lcd-zone"><div class="lcd-hint">Push a card off the top to play it</div><div class="lcd-arrow" aria-hidden="true">↑</div></div>
+    <div class="lcd-space"></div>
     <div class="lcd-hand"></div>
     <div class="lcd-pick" hidden><div class="lcd-pick-box"><div class="eyebrow">Wild card: pick the colour</div>
       <div class="lcd-colors">${Object.entries(NAMES).map(([c, n]) => `<button type="button" data-color="${c}" style="--c:${FILL[c]}">${n}</button>`).join("")}</div>
@@ -72,6 +73,8 @@ export function mount(root, ctx) {
       return !!r?.ok;
     },
     speed,
+    // Let go above the line under the status (D-193): played toward the middle.
+    line: () => $(".lcd-line").getBoundingClientRect().top + 8,
   });
 
   // ---------- drawing ----------
@@ -115,7 +118,9 @@ export function mount(root, ctx) {
     $(".lcd-status").classList.toggle("go", !!v.myTurn);
     $(".lcd-top").innerHTML = v.top ? `${cardFace(v.top, 40, 60, { color: v.top.color })}<span class="lcd-dot" style="--c:${FILL[v.color]}" title="${NAMES[v.color]}"></span>` : "";
     $(".lcd-me").textContent = `${v.totals[v.seat] ?? 0} pts`;
-    $(".lcd-zone").classList.toggle("on", !!v.myTurn && v.playable.length > 0 && slung() < 3);
+    // The release line (games-service D-193): its words until this phone has played three cards, then just the line.
+    $(".lcd-line").classList.toggle("on", !!v.myTurn && v.playable.length > 0);
+    $(".lcd-line").classList.toggle("told", slung() >= 3);
     $(".lcd-draw").hidden = !v.myTurn || !v.canDraw;
     $(".lcd-draw").classList.toggle("primary", !v.playable.length);
     $(".lcd-keep").hidden = !v.canKeep;
@@ -123,12 +128,24 @@ export function mount(root, ctx) {
     const hand = [...v.hand].sort((a, b) => ORDER[a.c] - ORDER[b.c] || KINDS.indexOf(a.k) - KINDS.indexOf(b.k));
     const { at: pos, rows, gap } = layout(hand);
     $(".lcd-hand").style.height = `${CH + 20 + (rows - 1) * gap}px`;
-    $(".lcd-hand").innerHTML = hand
-      .map((c, i) => {
-        const ok = v.myTurn && v.playable.includes(c.id);
-        return `<div class="lcd-card ${ok ? "ok" : v.myTurn ? "no" : ""}" data-sling="${c.id}" style="left:${pos[i].left}px;bottom:${pos[i].bottom}px;z-index:${pos[i].z}">${cardFace(c, CW, CH)}</div>`;
-      })
-      .join("");
+    // Cards are updated in place, not redrawn: a drawn card's way in (an animation) survives the next update, and
+    // cards slide to their new places.
+    const box = $(".lcd-hand");
+    const have = new Map([...box.querySelectorAll(".lcd-card")].map((el) => [el.dataset.sling, el]));
+    hand.forEach((c, i) => {
+      const ok = v.myTurn && v.playable.includes(c.id);
+      let el = have.get(String(c.id));
+      if (el) have.delete(String(c.id));
+      else {
+        el = document.createElement("div");
+        el.dataset.sling = String(c.id);
+        el.innerHTML = cardFace(c, CW, CH);
+        box.appendChild(el);
+      }
+      el.className = `lcd-card ${ok ? "ok" : v.myTurn ? "no" : ""}`;
+      el.style.cssText = `left:${pos[i].left}px;bottom:${pos[i].bottom}px;z-index:${pos[i].z}`;
+    });
+    for (const el of have.values()) el.remove();
     // Drawn cards come in at the top after the board has thrown them (a forced draw waits for the card that forced it).
     const k = speed();
     entering.forEach((id, i) => sling.receive($(`[data-sling="${id}"]`), { delay: (forced ? 700 * k : 0) + i * 240 * k + 500 * k }));
