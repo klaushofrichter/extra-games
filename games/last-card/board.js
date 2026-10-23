@@ -22,6 +22,7 @@ export function mount(root, ctx) {
     <div class="lc-draw"><div class="lc-stack">${cardBack(CW, CH)}</div><div class="lc-stack">${cardBack(CW, CH)}</div><div class="lc-stack">${cardBack(CW, CH)}</div><div class="lc-left"></div></div>
     <div class="lc-pile"></div>
     <div class="lc-called"></div>
+    <div class="lc-fans"></div>
     <div class="lc-bursts"></div>
     <div class="lc-panel" hidden></div></div>`;
   const box = root.querySelector(".lc-root");
@@ -69,10 +70,45 @@ export function mount(root, ctx) {
     p.style.transform = `translate(-50%, -50%) rotate(${info?.rotation ?? 0}deg)`;
   }
 
+  // Each player's hand as a fan of backs between their plate and the middle, with the number on it: as at a real
+  // table, everyone sees at a glance who is nearly out. Redrawn only when a count changes.
+  const fans = new Map();
+  function renderFans() {
+    const box = $(".lc-fans");
+    const seats = new Set(view.order);
+    for (const [seat, f] of fans) if (!seats.has(seat)) (f.el.remove(), fans.delete(seat));
+    for (const seat of view.order) {
+      const at = info?.seatPositions?.[seat];
+      if (!at) continue;
+      const n = view.counts[seat] ?? 0;
+      let f = fans.get(seat);
+      if (!f) {
+        f = { el: document.createElement("div"), n: -1, key: "" };
+        f.el.className = "lc-fan";
+        box.appendChild(f.el);
+        fans.set(seat, f);
+      }
+      const r = (at.rot * Math.PI) / 180, d = 74;
+      const key = `${at.x},${at.y},${at.rot}`;
+      if (f.key !== key) {
+        f.key = key;
+        f.el.style.cssText = `left:${at.x + d * Math.sin(r)}px;top:${at.y - d * Math.cos(r)}px;transform:rotate(${at.rot}deg)`;
+      }
+      if (f.n === n) continue;
+      f.n = n;
+      const shown = Math.min(n, 15);
+      const step = shown > 1 ? Math.min(7, 84 / (shown - 1)) : 0;
+      f.el.innerHTML =
+        Array.from({ length: shown }, (_, i) => `<i style="transform:translateX(-50%) rotate(${(i - (shown - 1) / 2) * step}deg)"></i>`).join("") +
+        `<b class="${n === 1 ? "one" : ""}">${n}</b>`;
+      f.el.classList.toggle("empty", n === 0);
+    }
+  }
+
   function burst(seat) {
     const at = info?.seatPositions?.[seat];
     if (!at) return;
-    const r = (at.rot * Math.PI) / 180, d = 150;
+    const r = (at.rot * Math.PI) / 180, d = 250;
     const el = document.createElement("div");
     el.className = "lc-burst";
     el.style.cssText = `left:${at.x + d * Math.sin(r)}px;top:${at.y - d * Math.cos(r)}px;--rot:${at.rot}deg`;
@@ -121,7 +157,8 @@ export function mount(root, ctx) {
       info = i;
       sling.info(i);
       box.classList.toggle("ccw", v.dir === -1);
-      seatPlates(box, i, (seat) => `${v.counts[seat] ?? 0} ${v.counts[seat] === 1 ? "card" : "cards"} · ${v.totals[seat] ?? 0} pts`, { active: v.phase === "playing" ? v.turn : null });
+      seatPlates(box, i, (seat) => `${v.totals[seat] ?? 0} pts`, { active: v.phase === "playing" ? v.turn : null });
+      renderFans();
       $(".lc-left").textContent = `${v.drawPile} cards`;
       // A forced draw waits for the card that forced it to land.
       const landingMs = 700 * speed();

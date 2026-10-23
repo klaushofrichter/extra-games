@@ -16,9 +16,9 @@ export function mount(root, ctx) {
   root.innerHTML = `<div class="lcd">
     <div class="card lcd-status"><div class="eyebrow lcd-round"></div>
       <div class="lcd-row"><div class="display lcd-big"></div><div class="lcd-top"></div></div></div>
-    <div class="lcd-zone"><div class="lcd-hint">Push a card off the top to play it</div><div class="lcd-arrow" aria-hidden="true">↑</div></div>
     <div class="card lcd-result" hidden></div>
     <div class="lcd-actions"><span class="lcd-me"></span><button type="button" class="primary lcd-draw">Draw a card</button><button type="button" class="lcd-keep" hidden>Keep it</button></div>
+    <div class="lcd-zone"><div class="lcd-hint">Push a card off the top to play it</div><div class="lcd-arrow" aria-hidden="true">↑</div></div>
     <div class="lcd-hand"></div>
     <div class="lcd-pick" hidden><div class="lcd-pick-box"><div class="eyebrow">Wild card: pick the colour</div>
       <div class="lcd-colors">${Object.entries(NAMES).map(([c, n]) => `<button type="button" data-color="${c}" style="--c:${FILL[c]}">${n}</button>`).join("")}</div>
@@ -26,6 +26,20 @@ export function mount(root, ctx) {
   const $ = (s) => root.querySelector(s);
   let view = null, info = null, pending = null, wasMyTurn = false, picking = null, gone = false;
   const speed = () => SPEEDS[info?.prefs?.anim] ?? 1;
+  // The hint to push cards off the top shows until this phone has played three cards that way (remembered).
+  const HINT_KEY = "gametable.last-card.slung";
+  const slung = () => {
+    try {
+      return Number(localStorage.getItem(HINT_KEY)) || 0;
+    } catch {
+      return 0;
+    }
+  };
+  const countSling = () => {
+    try {
+      localStorage.setItem(HINT_KEY, String(slung() + 1));
+    } catch {}
+  };
 
   // ---------- the colour of a wild card ----------
   function pickColor() {
@@ -54,22 +68,35 @@ export function mount(root, ctx) {
         if (!color) return false;
       }
       const r = await ctx.send("play", { id: card.id, ...(color ? { color } : {}) });
+      if (r?.ok) countSling();
       return !!r?.ok;
     },
     speed,
   });
 
   // ---------- drawing ----------
+  /**
+   * Where each card goes: rows of overlapping cards, at least 30 px of each showing (10 to a row on a 390 px phone, 8
+   * on 320 px), from the bottom up into the free space above; rows close up when there are many.
+   */
   function layout(hand) {
     const w = $(".lcd-hand").clientWidth - 16;
-    const rows = Math.max(1, Math.ceil(hand.length / 9));
+    const perMax = Math.max(1, Math.floor((w - CW) / 30) + 1);
+    const rows = Math.max(1, Math.ceil(hand.length / perMax));
     const per = Math.ceil(hand.length / rows);
-    return hand.map((c, i) => {
-      const r = Math.floor(i / per), j = i % per, n = Math.min(per, hand.length - r * per);
-      const step = n > 1 ? Math.min(CW + 6, (w - CW) / (n - 1)) : 0;
-      const start = 8 + Math.max(0, (w - CW - step * (n - 1)) / 2);
-      return { left: start + j * step, bottom: 10 + (rows - 1 - r) * 64, z: i + 1 };
-    });
+    const bar = $(".lcd-actions");
+    const room = Math.max(CH, $(".lcd").clientHeight - (bar.offsetTop + bar.offsetHeight) - 24); // all the space below the buttons
+    const gap = rows > 1 ? Math.max(34, Math.min(64, (room - CH - 20) / (rows - 1))) : 0;
+    return {
+      gap,
+      rows,
+      at: hand.map((c, i) => {
+        const r = Math.floor(i / per), j = i % per, n = Math.min(per, hand.length - r * per);
+        const step = n > 1 ? Math.min(CW + 6, (w - CW) / (n - 1)) : 0;
+        const start = 8 + Math.max(0, (w - CW - step * (n - 1)) / 2);
+        return { left: start + j * step, bottom: 10 + (rows - 1 - r) * gap, z: i + 1 };
+      }),
+    };
   }
 
   function render(entering = [], forced = false) {
@@ -88,14 +115,14 @@ export function mount(root, ctx) {
     $(".lcd-status").classList.toggle("go", !!v.myTurn);
     $(".lcd-top").innerHTML = v.top ? `${cardFace(v.top, 40, 60, { color: v.top.color })}<span class="lcd-dot" style="--c:${FILL[v.color]}" title="${NAMES[v.color]}"></span>` : "";
     $(".lcd-me").textContent = `${v.totals[v.seat] ?? 0} pts`;
-    $(".lcd-zone").classList.toggle("on", !!v.myTurn && v.playable.length > 0);
+    $(".lcd-zone").classList.toggle("on", !!v.myTurn && v.playable.length > 0 && slung() < 3);
     $(".lcd-draw").hidden = !v.myTurn || !v.canDraw;
     $(".lcd-draw").classList.toggle("primary", !v.playable.length);
     $(".lcd-keep").hidden = !v.canKeep;
 
     const hand = [...v.hand].sort((a, b) => ORDER[a.c] - ORDER[b.c] || KINDS.indexOf(a.k) - KINDS.indexOf(b.k));
-    const pos = layout(hand);
-    $(".lcd-hand").style.height = `${CH + 20 + (Math.max(1, Math.ceil(hand.length / 9)) - 1) * 64}px`;
+    const { at: pos, rows, gap } = layout(hand);
+    $(".lcd-hand").style.height = `${CH + 20 + (rows - 1) * gap}px`;
     $(".lcd-hand").innerHTML = hand
       .map((c, i) => {
         const ok = v.myTurn && v.playable.includes(c.id);
@@ -126,6 +153,16 @@ export function mount(root, ctx) {
     render(p.entering, p.forced);
   }
 
+  // The hand fills the space it has: lay it out again when that changes (the styles arriving, turning the phone).
+  let lastH = 0;
+  const resized = new ResizeObserver(() => {
+    const h = $(".lcd").clientHeight;
+    if (h === lastH || !view || sling.busy() || picking) return;
+    lastH = h;
+    render();
+  });
+  resized.observe($(".lcd"));
+
   root.addEventListener("click", (e) => {
     const b = e.target.closest("button");
     if (!b) return;
@@ -148,6 +185,7 @@ export function mount(root, ctx) {
     },
     destroy() {
       gone = true;
+      resized.disconnect();
       sling.destroy();
     },
   };

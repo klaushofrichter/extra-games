@@ -293,3 +293,29 @@ Format: **E-nnn · date · decided by** — decision. *Why:* reason.
     keeping, reshuffling, "Last card!", scoring, the end, privacy, the timer, seats changing hands, the AI, the Game
     Viewer, whole games replaying exactly at 2–8 players); the soak; `scripts/e2e/last_card.py` (a whole game with two
     phones slinging, the back at the edge while dragging, a bounce, a wild's colour, "Last card!", the scores).
+
+## Last Card: hands you can see, a calmer phone (23 Oct 2026)
+
+- **E-024 · 2026-10-23 · Klaus** — After playing Last Card: every player's hand shows on the board as a fan of card
+  backs with its number, the phone's buttons sit right under its status, the push hint goes once you know it, and the
+  hand uses the phone's free space. *Why:* Klaus: "we should see more clearly on the board how many cards a player
+  has. In a real game we would see it also … show on top of the box a spread of cards with the back"; "There is a lot
+  of unused space on the deck between the button "draw a card" and the game status box … How many cards can we have on
+  the deck? … move the button up … We do not need to show the push line after a few moves." (His third point, the
+  warning that moved the status, is the platform's: games-service D-191.) *Implementation (Claude):*
+  - **Board.** A fan of up to 15 backs (plain styled boxes, not SVG, so eight fans stay cheap) between each plate and
+    the middle, turned to face its player, with the number on a badge above it; red and pulsing at one card. Redrawn
+    only when a count changes. The plates show the points; "Last card!" moved further in, past the fan.
+  - **Phone.** Status, then the buttons (points, *Draw a card*, *Keep it*), then the space where cards leave, then the
+    hand. The hint to push a card off the top shows until the phone has played three cards that way (remembered in
+    the browser). The hand has no limit: rows of overlapping cards with at least 30 px of each showing (10 to a row on
+    a 390 px phone, 8 on 320 px), stacked from the bottom into the free space, closing up when there are many (about
+    40 cards fill a phone; in 600 AI games, 150 each with 2, 4, 6 and 8 players, the largest hand was 20).
+  - **Awards.** Five more (Klaus: "can you invent at least three more awards?"), ten in all: *Chameleon* (changed the
+    colour to play most often: another colour by number or symbol, or a wild calling a new one), *Big Haul* (most
+    points in one round), *Comeback* (won a round after holding the most cards in it), *Hoarder* (most cards held at
+    once) and *Light Fingers* (fewest cards drawn). An award shows only when someone stands out (the SDK's
+    `mostAward`/`leastAward`).
+  - **Checks.** `scripts/e2e/last_card.py`: a fan with seven backs and "7" for each player at the start, the buttons
+    under the status, and a card that doesn't fit shows its message without moving the status.
+    `tests/last-card.test.ts`: the awards go to the right players in twelve whole games, and each new one comes up.

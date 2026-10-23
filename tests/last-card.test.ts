@@ -299,6 +299,34 @@ describe("whole games", () => {
     expect(sum.awards.length).toBeGreaterThan(0);
   });
 
+  it("hands out awards for the right players, ten kinds in all (E-024)", () => {
+    const known = ["out-first", "troublemaker", "wild-one", "piled-on", "last-card", "chameleon", "big-haul", "comeback", "hoarder", "light-fingers"];
+    const seen = new Set<string>();
+    for (let seed = 1; seed <= 12; seed++) {
+      const { rt, clock }: any = start(game, 4, { ...quiet, target: 150 }, seed);
+      playOut(rt, clock);
+      const st: State = rt.state;
+      const sum = game.def.isOver(st) as any;
+      for (const a of sum.awards) {
+        expect(known).toContain(a.id);
+        seen.add(a.id);
+        const of = (f: (p: any) => number) => a.seats.map((x: number) => f(st.players[x]));
+        const all = (f: (p: any) => number) => st.order.map((x) => f(st.players[x]));
+        if (a.id === "hoarder") expect(of((p) => p.maxHand)[0]).toBe(Math.max(...all((p) => p.maxHand)));
+        if (a.id === "big-haul") expect(of((p) => p.bestRound)[0]).toBe(Math.max(...st.results.flatMap((r) => Object.values(r.scores))));
+        if (a.id === "light-fingers") expect(of((p) => p.drawn)[0]).toBe(Math.min(...all((p) => p.drawn)));
+        if (a.id === "comeback") for (const x of a.seats) expect(st.players[x].out).toBeGreaterThan(0);
+      }
+      // The counters behind them add up.
+      for (const x of st.order) {
+        const p = st.players[x];
+        expect(p.maxHand).toBeGreaterThanOrEqual(7);
+        expect(p.changes).toBeLessThanOrEqual(p.played);
+      }
+    }
+    for (const id of ["chameleon", "big-haul", "comeback", "hoarder", "light-fingers"]) expect(seen, id).toContain(id);
+  });
+
   it("describes steps for the Game Viewer", () => {
     const { rt, clock }: any = start(game, 3, { ...quiet, target: 50 }, 3);
     playOut(rt, clock);

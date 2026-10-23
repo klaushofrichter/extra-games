@@ -105,9 +105,15 @@ def take_turn(d, board):
         no = d.locator(".lcd-card.no")
         if not seen["bounce"] and no.count():
             n = d.locator(".lcd-card").count()
+            y = d.locator(".lcd-status").bounding_box()["y"]
             sling(d, no.first)
-            time.sleep(0.5)
+            time.sleep(0.4)
             assert d.locator(".lcd-card").count() == n, "a card that doesn't fit left the phone"
+            # Its message floats over the top (games-service D-191) and moves nothing.
+            assert d.locator(".deck-toast.on").count() == 1, "no message for a card that doesn't fit"
+            assert d.locator(".deck-toast.on").bounding_box()["height"] < 120, "the message covers the screen"
+            assert abs(d.locator(".lcd-status").bounding_box()["y"] - y) < 1, "the message moved the status"
+            shot(d, f"deck-bounce-{d.label}")
             seen["bounce"] = True
         return play(d, ok.first, board)
     if d.locator(".lcd-draw:not([hidden])").count():
@@ -167,6 +173,10 @@ def main():
             assert board.locator(".lc-root .kit-plate").count() == 3, "three seat plates"
             assert board.locator(".lc-root .kit-plate.active").count() == 1, "one plate marked for the player on turn"
             assert board.locator(".lc-root .lcd-card").count() == 0, "the board shows a hand"
+            # Every player's hand as a fan of backs with its number (E-024).
+            assert board.locator(".lc-fan").count() == 3, "a fan for each player"
+            assert board.locator(".lc-fan b").all_inner_texts() == ["7", "7", "7"], board.locator(".lc-fan b").all_inner_texts()
+            assert board.locator(".lc-fan i").count() == 21, "seven backs in each fan"
 
             small = decks[1]
             if small.locator("#tab-table").count():
@@ -186,6 +196,9 @@ def main():
 
             for d in decks:
                 assert d.locator(".lcd-card").count() == 7, f"{d.label} shows {d.locator('.lcd-card').count()} cards"
+                # The buttons sit right under the status (E-024).
+                st, bar = d.locator(".lcd-status").bounding_box(), d.locator(".lcd-actions").bounding_box()
+                assert bar["y"] - (st["y"] + st["height"]) < 40, f"{d.label}: the buttons are far from the status"
                 check(d, f"{d.label} at the start")
                 shot(d, f"deck-start-{d.label}")
 
