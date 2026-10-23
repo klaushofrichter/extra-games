@@ -90,7 +90,7 @@ def main():
             board = browser.new_page(viewport={"width": 1920, "height": 1080})
             watch(board, "board")
             board.goto(BASE + "/board/")
-            board.wait_for_selector("button.tile[data-game=chess]")
+            board.wait_for_selector("button.tile")  # the lobby pages its games: pick_game below pages to this one
             ann = phone(browser, "Ann", 390, 844)
             ben = phone(browser, "Ben", 320, 568)
             pick_game(board, "chess")

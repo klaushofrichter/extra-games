@@ -92,7 +92,7 @@ def main():
             board = browser.new_page(viewport={"width": 1920, "height": 1080})
             watch(board, "board")
             board.goto(BASE + "/board/")
-            board.wait_for_selector("button.tile[data-game=liars-dice]")
+            board.wait_for_selector("button.tile")  # the lobby pages its games: pick_game below pages to this one
             shot(board, "lobby")
             decks = [phone(browser, "Klaus", 390, 844), phone(browser, "Mira", 360, 640), phone(browser, "Jo", 320, 568)]
             a("POST", "/ai", {})
