@@ -54,6 +54,19 @@ export function mount(root, ctx) {
     r?.(color);
   }
 
+  /** Play a card (a wild asks for its colour first); true if the table took it. */
+  async function playCard(id) {
+    const card = view?.hand.find((c) => c.id === Number(id));
+    if (!card) return false;
+    let color;
+    if (card.c === "w") {
+      color = await pickColor();
+      if (!color) return false;
+    }
+    const r = await ctx.send("play", { id: card.id, ...(color ? { color } : {}) });
+    return !!r?.ok;
+  }
+
   const sling = slingDeck($(".lcd"), ctx, {
     canSling: (id) => {
       if (!view?.myTurn) return "Wait for your turn";
@@ -61,16 +74,9 @@ export function mount(root, ctx) {
       return true;
     },
     onSling: async (id) => {
-      const card = view.hand.find((c) => c.id === Number(id));
-      if (!card) return false;
-      let color;
-      if (card.c === "w") {
-        color = await pickColor();
-        if (!color) return false;
-      }
-      const r = await ctx.send("play", { id: card.id, ...(color ? { color } : {}) });
-      if (r?.ok) countSling();
-      return !!r?.ok;
+      const ok = await playCard(id);
+      if (ok) countSling();
+      return ok;
     },
     speed,
     // Let go above the line under the status (D-193): played toward the middle.
@@ -179,6 +185,35 @@ export function mount(root, ctx) {
     render();
   });
   resized.observe($(".lcd"));
+
+  // Tap to play (E-025), when the table chose it: a short touch that hardly moves plays a card that fits; it rises off
+  // the top of the phone as if pushed. Pushing works either way.
+  let touch = null;
+  root.addEventListener("pointerdown", (e) => {
+    const el = e.target.closest("[data-sling]");
+    touch = el ? { el, x: e.clientX, y: e.clientY, t: e.timeStamp } : null;
+  }, true);
+  root.addEventListener("pointerup", (e) => {
+    const t = touch;
+    touch = null;
+    if (!t || !info?.settings?.tapToPlay || !view?.myTurn) return;
+    if (Math.hypot(e.clientX - t.x, e.clientY - t.y) > 8 || e.timeStamp - t.t > 450) return;
+    const id = t.el.dataset.sling;
+    if (!view.playable.includes(Number(id))) return; // the sling bounces it back and says why
+    tapped(t.el, id);
+  }, true);
+  async function tapped(el, id) {
+    const box = $(".lcd").getBoundingClientRect(), r = el.getBoundingClientRect();
+    const up = el.animate([{ transform: "none" }, { transform: `translateY(${box.top - r.bottom - 10}px)` }], { duration: 260 * speed(), easing: "cubic-bezier(.4,0,.8,.6)", fill: "forwards" });
+    await up.finished.catch(() => {});
+    if (gone) return;
+    el.style.visibility = "hidden";
+    ctx.vibrate?.(20);
+    if (!(await playCard(id))) {
+      up.cancel();
+      el.style.visibility = "";
+    }
+  }
 
   root.addEventListener("click", (e) => {
     const b = e.target.closest("button");

@@ -5,7 +5,9 @@ import { beforeAll, describe, expect, it } from "vitest";
 import { chooseMove, fits, fullDeck, points, type Card, type Color, type Discard, type State } from "../games/last-card/rules.ts";
 // @ts-ignore: a plain browser module of the game, with no types
 import { cardBack, cardFace } from "../games/last-card/assets/cards.js";
-import { loadGame, replaysExactly, start, type Game } from "./harness.ts";
+// @ts-ignore: a plain browser module of the game, with no types
+import { clockwise, upsideDownAmbiguous } from "../games/last-card/assets/table.js";
+import { loadGame, replaysExactly, seats, start, type Game } from "./harness.ts";
 
 let game: Game;
 beforeAll(async () => {
@@ -332,5 +334,42 @@ describe("whole games", () => {
     playOut(rt, clock);
     const d = game.def.describe!({ kind: "intent", seat: 0, intent: { name: "draw" }, by: "human", accepted: true, events: [], names: { 0: "Ann" }, before: rt.state, after: rt.state } as any);
     expect(d?.text).toBe("draws a card");
+  });
+});
+
+describe("the board (E-025)", () => {
+  it("underlines a hand's number when it reads as another number upside down, as the cards do", () => {
+    for (const n of [6, 9, 16, 18, 19, 61, 66, 68, 86, 99]) expect(upsideDownAmbiguous(n), String(n)).toBe(true);
+    for (const n of [0, 1, 2, 7, 8, 10, 11, 12, 69, 88, 96]) expect(upsideDownAmbiguous(n), String(n)).toBe(false);
+  });
+
+  /** Seat centres as the platform's board kit places them (board-kit.js, seatPositions). */
+  function seatsAt(n: number) {
+    const edges = seats(n).map((x) => x.edge!);
+    const byEdge: Record<string, number[]> = {};
+    edges.forEach((e, i) => (byEdge[e] ??= []).push(i));
+    const pos: { x: number; y: number }[] = [];
+    for (const [edge, list] of Object.entries(byEdge)) {
+      list.forEach((seat, k) => {
+        if (edge === "south" || edge === "north") {
+          let x = (1920 - 1300) / 2 + (1300 * (k + 0.5)) / list.length;
+          if (edge === "north") x = 1920 - x;
+          pos[seat] = { x, y: edge === "south" ? 1080 - 92 : 92 };
+        } else pos[seat] = { x: edge === "east" ? 1920 - 92 : 92, y: 540 };
+      });
+    }
+    return pos;
+  }
+
+  it("turns the direction arrows the way play goes: south, east, north, west is counter-clockwise on the board", () => {
+    for (let n = 3; n <= 8; n++) {
+      const { state }: any = start(game, n, quiet);
+      const order = (state() as State).order;
+      const pos = seatsAt(n);
+      // Play goes from the south edge to the east edge first: right, then up the board.
+      expect(pos[order[1]].x, `${n} players`).toBeGreaterThanOrEqual(pos[order[0]].x);
+      expect(clockwise(order, pos, 1), `${n} players, normal play`).toBe(false);
+      expect(clockwise(order, pos, -1), `${n} players, reversed`).toBe(true);
+    }
   });
 });

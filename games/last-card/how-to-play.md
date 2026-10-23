@@ -44,5 +44,6 @@ The first player to play all their cards wins the round and scores the cards lef
 | Points to win the game | 200 | The game ends when a player reaches it. |
 | Seconds per turn (0 = no limit) | 30 | When time runs out, the table plays a card for you, or draws. |
 | Seconds to show the scores after a round | 12 | The pause before the next round is dealt. |
+| Tap a card to play it (as well as pushing it off) | Off | A short tap on a card that fits plays it, too. |
 
 On the board, **Card animation** in the settings makes cards fly faster or slower.
