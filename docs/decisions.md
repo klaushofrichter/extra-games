@@ -242,3 +242,11 @@ Format: **E-nnn · date · decided by** — decision. *Why:* reason.
     options, privacy, the timer, an exchange, the AI, whole games at 2–8 players replaying exactly, the summary, and
     the layout through real games: every tile inside the play area, no two trains on top of each other);
     `scripts/e2e/mexican_train.py` (a board, three phones and an AI player over two rounds); the soak.
+- **E-021 · 2026-10-23 · Klaus** — Mexican Train's background is one choice: a scene, or *A new one each round*.
+  *Why:* Klaus: "check if you have the right names for the backgrounds... When selecting Starfield, I actually get
+  clouds." The names were right; with the switch *A new background each round* on, the board counted on from the
+  chosen scene from round 1, so in round 2 Starfield showed Clouds while the setting still said Starfield, and picking
+  Starfield again changed nothing (it was already the setting). *Implementation (Claude):* the switch is gone; the
+  Background choice has a last option, *A new one each round*, which shows the scenes in turn from round 1 (an old
+  `rotate` preference is ignored). Any scene picked shows at once. `scripts/e2e/mexican_train.py` picks *A new one each
+  round* and then Starfield in round 2.

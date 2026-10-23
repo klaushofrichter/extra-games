@@ -10,6 +10,7 @@ Checks on the way:
     at least 40 px high;
   - the rules on the smallest phone: title, the five settings, the illustration;
   - after the first round the board shows the scores, and its Next round button deals the next round;
+  - Starfield picked in round 2 shows the starfield, also after "A new one each round";
   - the game ends with a summary.
 
 Starts its own Table Host from .games-service with GAMES_DIR pointing at this repo's games/.
@@ -177,6 +178,14 @@ def main():
                     # The table may deal the next round at once.
                     board.locator(".mt-next").click()
                     wait(lambda: board.locator(".mt-result:not([hidden])").count() == 0, 10, "the next round to be dealt")
+                    # The background choice names what the board shows (E-021): a new one each round, then Starfield
+                    # picked in round 2 is the starfield, not the next scene in the turn.
+                    a("POST", "/game/prefs", {"prefs": {"background": "rotate"}})
+                    time.sleep(0.6)
+                    a("POST", "/game/prefs", {"prefs": {"background": "stars"}})
+                    time.sleep(0.6)
+                    felt = board.evaluate("() => getComputedStyle(document.querySelector('.mt-felt')).backgroundColor")
+                    assert felt == "rgb(7, 10, 28)" and board.locator(".mt-sky").count() == 3, f"Starfield shows {felt}"
                 if not acted:
                     time.sleep(0.2)
             st = a("GET", "/state")
