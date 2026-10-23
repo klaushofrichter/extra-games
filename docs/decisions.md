@@ -359,6 +359,8 @@ Format: **E-nnn · date · decided by** — decision. *Why:* reason.
     it off)*, off by default: then a short tap (under 8 px and half a second) on a card that fits plays it; it rises
     off the top of the phone, and a wild asks for its colour. Pushing works either way; a tap on a card that doesn't
     fit bounces as before. Only the phone reads it (`info.settings`); the rules don't.
+    The phone's listeners on its root (tap, buttons) come off in `destroy()`: the root outlives the game, and a stale
+    tap listener ran after the game ended (a browser error the e2e check caught).
   - **Checks.** `tests/last-card.test.ts`: the dots, and the direction for 3 to 8 players with the platform's seat
     places (normal play counter-clockwise, reversed clockwise). `scripts/e2e/last_card.py` plays with tap to play on
-    and taps a card once.
+    and taps a card once, at a point of it not under its neighbour in the hand.

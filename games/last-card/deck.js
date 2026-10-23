@@ -80,7 +80,7 @@ export function mount(root, ctx) {
     },
     speed,
     // Let go above the line under the status (D-193): played toward the middle.
-    line: () => $(".lcd-line").getBoundingClientRect().top + 8,
+    line: () => ($(".lcd-line")?.getBoundingClientRect().top ?? -Infinity) + 8,
   });
 
   // ---------- drawing ----------
@@ -186,13 +186,16 @@ export function mount(root, ctx) {
   });
   resized.observe($(".lcd"));
 
+  // The root outlives this game (the next screen mounts into it), so destroy() takes these listeners off.
+  const off = new AbortController();
+
   // Tap to play (E-025), when the table chose it: a short touch that hardly moves plays a card that fits; it rises off
   // the top of the phone as if pushed. Pushing works either way.
   let touch = null;
   root.addEventListener("pointerdown", (e) => {
     const el = e.target.closest("[data-sling]");
     touch = el ? { el, x: e.clientX, y: e.clientY, t: e.timeStamp } : null;
-  }, true);
+  }, { capture: true, signal: off.signal });
   root.addEventListener("pointerup", (e) => {
     const t = touch;
     touch = null;
@@ -201,7 +204,7 @@ export function mount(root, ctx) {
     const id = t.el.dataset.sling;
     if (!view.playable.includes(Number(id))) return; // the sling bounces it back and says why
     tapped(t.el, id);
-  }, true);
+  }, { capture: true, signal: off.signal });
   async function tapped(el, id) {
     const box = $(".lcd").getBoundingClientRect(), r = el.getBoundingClientRect();
     const up = el.animate([{ transform: "none" }, { transform: `translateY(${box.top - r.bottom - 10}px)` }], { duration: 260 * speed(), easing: "cubic-bezier(.4,0,.8,.6)", fill: "forwards" });
@@ -222,7 +225,7 @@ export function mount(root, ctx) {
     if (b.classList.contains("lcd-cancel")) return picked(null);
     if (b.classList.contains("lcd-draw")) return void ctx.send("draw");
     if (b.classList.contains("lcd-keep")) return void ctx.send("keep");
-  });
+  }, { signal: off.signal });
 
   return {
     update(v, events, i) {
@@ -237,6 +240,7 @@ export function mount(root, ctx) {
     },
     destroy() {
       gone = true;
+      off.abort();
       resized.disconnect();
       sling.destroy();
     },

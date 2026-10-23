@@ -157,10 +157,16 @@ def release_above_line(d, el):
 
 def play(d, el, board):
     before = board.evaluate("document.querySelectorAll('.lc-pile > div').length")
-    if seen["line"] and not seen["tap"] and el.evaluate("e => !e.querySelector('[aria-label^=Wild]')"):
+    # A point of the card that is not under its neighbour in the hand (cards overlap), for a tap.
+    spot = el.evaluate("""e => { const r = e.getBoundingClientRect();
+        for (const fy of [0.5, 0.3, 0.7, 0.15, 0.85]) for (const fx of [0.5, 0.3, 0.15, 0.7, 0.85]) {
+          const x = r.left + r.width * fx, y = r.top + r.height * fy, t = document.elementFromPoint(x, y);
+          if (t && e.contains(t)) return [x, y]; }
+        return null; }""")
+    if seen["line"] and not seen["tap"] and spot and el.evaluate("e => !e.querySelector('[aria-label^=Wild]')"):
         # Once, with Tap a card to play it on (E-025): a tap plays a card that fits.
         n = d.locator(".lcd-card").count()
-        el.click()
+        d.mouse.click(*spot)
         for _ in range(40):
             if d.locator(".lcd-card").count() < n:
                 break
