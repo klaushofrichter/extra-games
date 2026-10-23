@@ -53,5 +53,7 @@
 /* 6, 9, 16 … are underlined, as on the cards, so they read right from the other side of the table. */
 .lc-fan b.turn { text-decoration: underline; text-decoration-thickness: 3px; text-underline-offset: 4px; }
 .lc-fan b.one { background: #e5484d; color: #fff; animation: lc-one 1s ease-in-out infinite alternate; }
-.lc-fan.empty b { opacity: .6; }
+.lc-fan b.won { bottom: 22px; padding: 4px 18px; background: #f2b81c; color: #1b1407; font-size: 26px; letter-spacing: .02em;
+  box-shadow: 0 0 24px rgba(242,184,28,.6), 0 4px 12px rgba(0,0,0,.45); animation: lc-won 1.2s ease-in-out infinite alternate; }
+@keyframes lc-won { to { transform: translateX(-50%) scale(1.08); } }
 @keyframes lc-one { to { transform: translateX(-50%) scale(1.12); } }

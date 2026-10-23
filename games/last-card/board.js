@@ -108,7 +108,8 @@ export function mount(root, ctx) {
       const step = shown > 1 ? Math.min(7, 84 / (shown - 1)) : 0;
       f.el.innerHTML =
         Array.from({ length: shown }, (_, i) => `<i style="transform:translateX(-50%) rotate(${(i - (shown - 1) / 2) * step}deg)"></i>`).join("") +
-        `<b class="${n === 1 ? "one" : ""}${upsideDownAmbiguous(n) ? " turn" : ""}">${n}</b>`;
+        // No cards left: the round's winner (E-025), close above the plate instead of a 0 out on its own.
+        (n === 0 ? `<b class="won">Winner!</b>` : `<b class="${n === 1 ? "one" : ""}${upsideDownAmbiguous(n) ? " turn" : ""}">${n}</b>`);
       f.el.classList.toggle("empty", n === 0);
     }
   }

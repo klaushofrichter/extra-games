@@ -347,6 +347,9 @@ Format: **E-nnn · date · decided by** — decision. *Why:* reason.
     8, 11 or 10), as the cards do; Klaus first asked for a dot ("6."), then: "the cards use "underline" style to
     differentiate 6 and 9. We should do that as well for consistency." The fan tucks under its plate by a fifth of a
     card (under the plate, not over it).
+  - **Winner.** A hand with no cards left (the round's winner) shows a gold "Winner!" right above the plate, not a 0
+    out where the cards were (Klaus: "the "0" by Zoe is somewhat disconnected from Zoe's player box because there
+    are no cards. In this case, I would like to fill the void with a "Winner!" panel").
   - **Wording.** The round's scores say "Round 1: Anna (AI) played the last card" (was "their last card").
   - **Countdown.** The round's scores already had *Next round* and "in N s"; now a bar runs down to the next round,
     the words read "Next round in N s", and the button "Next round now" (when the board may skip it). The board's
