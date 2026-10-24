@@ -44,9 +44,10 @@ Games here:
 
 ```
 extra-games (this repo, branch production)
-   │  the console fetches the games/ folder as one bundle (a private repository needs GAME_REPO_TOKEN)
+   │  the service fetches the games/ folder as one bundle (a private repository needs GAME_REPO_TOKEN)
    ▼
-games.skylar.technology  — console: Game repositories, and per table a checkbox for each repository
+games.skylar.technology  — the game service; its console at games-console.skylar.technology:
+   │  Game repositories, and per table a checkbox for each repository
    │  the table's heartbeat lists its bundles; the table downloads them over its own authenticated link
    ▼
 table PC  — checks the hash, unpacks into its data folder, adds the games to the lobby between games
