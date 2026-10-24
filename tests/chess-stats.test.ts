@@ -1,4 +1,4 @@
-// Chess statistics for the statistics window (games-service D-136): every piece followed from its starting square.
+// Chess statistics for the statistics window (games-service D-140): every piece followed from its starting square.
 import { describe, expect, it } from "vitest";
 import { chessAwards, chessStats } from "../games/chess/stats.ts";
 

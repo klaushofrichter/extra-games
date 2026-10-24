@@ -6,7 +6,7 @@ Checks on the way:
   - the board draws both piles, the colour ring and the platform's seat plates with the player on turn marked;
   - each phone shows exactly its own seven cards, and the board shows no hand;
   - the phone layout rules of games-service (D-065): no sideways scrolling, buttons at least 40 px high;
-  - the rules on the smallest phone: title, the three settings, the illustration;
+  - the rules on the smallest phone: title, the four settings, the illustration;
   - the sling (games-service D-189): while a card is pushed off a phone, the board shows its back at that player's
     edge; once played it lands on the pile; a card that doesn't fit bounces back; a wild card asks for its colour;
   - "Last card!" shows on the board with its sound when someone is down to one card;

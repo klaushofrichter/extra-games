@@ -35,7 +35,7 @@ A piece takes an opponent's piece by moving onto its square. Only the knight jum
 A king under attack is in **check**: you must get it out of check. No way out is **checkmate**, and the game is lost. The game is also over when:
 
 - a player **resigns** (on the phone: Resign, then confirm),
-- both agree to a **draw** (offer it on your phone and confirm; making a move declines an offer),
+- both agree to a **draw** (once both sides have moved, offer it on your phone and confirm; the other player taps **Accept draw** or **Decline**, and making a move declines it too),
 - the side to move has no legal move but is not in check (**stalemate**: a draw),
 - the same position comes up for the third time, or fifty moves go by without a capture or pawn move (a draw),
 - neither side has enough pieces to mate (a draw),

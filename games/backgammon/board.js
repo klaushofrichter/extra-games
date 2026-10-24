@@ -566,7 +566,7 @@ export function mount(root, ctx) {
       }
       play();
     },
-    /** Resolves once every move sent so far has been shown (games-service D-134, D-137). */
+    /** Resolves once every move sent so far has been shown (games-service D-134, D-141). */
     whenIdle() {
       return playing ?? Promise.resolve();
     },

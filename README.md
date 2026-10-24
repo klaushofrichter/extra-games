@@ -15,7 +15,7 @@ players of such a table see them too, because their board and phone pages come f
 
 **Writing a game?** The contract between games and the platform is games-service's developer guide,
 [`docs/developers/game-development.md`](https://github.com/klaushofrichter/games-service/blob/main/docs/developers/game-development.md)
-(for language models: `https://games.skylar.technology/llms.txt`). This repository shows it at work: three complete
+(for language models: `https://games.skylar.technology/llms.txt`). This repository shows it at work: five complete
 games with board and phone UIs, rules for players, AI players, tests against a real Table Host, browser checks and CI
 against games-service. To start a repository of your own, copy its layout (below).
 
@@ -36,7 +36,8 @@ Games here:
   composes itself, all within the platform (E-020).
 - **Last Card** (2–8 players, the card game of colours and numbers: match the pile's colour, number or symbol, Skip,
   Reverse, Draw Two and wild cards, first to play their last card scores the others' hands). Cards are played by
-  pushing them off the top of the phone onto the board, with games-service's sling (D-189); the board calls "Last
+  pushing them off the top of the phone onto the board, with games-service's sling (D-189), or by letting go above a
+  line on the phone; a setting lets a tap play a card too; the board calls "Last
   card!" with a sound effect when someone is down to one card (E-023).
 
 ## How a game gets onto a table
@@ -64,7 +65,7 @@ D-097 and D-098.
 | `games/<id>/` | One folder per game, exactly like games-service's `games/`: `manifest.json`, `rules.ts`, `board.js`, `deck.js`, optional `board.css`/`deck.css`, `how-to-play.md` (rules for players) and `assets/`. Only this folder goes to tables. |
 | `games-service.ref` | The games-service branch, tag or commit these games are tested against |
 | `scripts/games-service.sh` | Brings games-service into `.games-service/` (git-ignored) for the tests; `npm run setup` runs it |
-| `tests/` | Vitest: rules (`liars-dice.test.ts`, `chess.test.ts`, `backgammon.test.ts`, `mexican-train.test.ts` with the board's layout, `last-card.test.ts`), seats changing hands at any moment in all three games (`seats.test.ts`), a real Table Host with fake phones (`host.test.ts`, `chess-host.test.ts`, `backgammon-host.test.ts`), and the bundle path the console and tables take (`bundle.test.ts`) |
+| `tests/` | Vitest: rules (`liars-dice.test.ts`, `chess.test.ts`, `backgammon.test.ts`, `mexican-train.test.ts` with the board's layout, `last-card.test.ts`), seats changing hands at any moment in Liar's Dice, Chess and Backgammon (`seats.test.ts`), Chess awards (`chess-stats.test.ts`), a real Table Host with fake phones (`host.test.ts`, `chess-host.test.ts`, `backgammon-host.test.ts`), and the bundle path the console and tables take (`bundle.test.ts`) |
 | `scripts/soak.ts` | Many AI-only games per player count and style, through the host's simulation loop (Chess: its two weakest levels, plus a few games at club strength) |
 | `scripts/train-lengths.ts` | Mexican Train: how long trains get, by player count, from AI-only games; the board's layout is sized from it (E-020) |
 | `scripts/chess-ladder.ts` | Chess strength check: matches between Elo levels, or against Stockfish limited to an Elo (Stockfish installed separately) |
@@ -85,7 +86,7 @@ The table host maps that name to its own SDK when it loads the rules, and `tscon
 to `.games-service/` here.
 
 A game's `version` is a calendar version, `YYYY.MM.DD.N`, that changes when, and only when, something in its folder
-changes (games-service D-127, here E-008). Set it in the same pull request as the change, or let
+changes (games-service D-127b, here E-008). Set it in the same pull request as the change, or let
 `node .games-service/scripts/check-game-versions.ts --fix` do it; the PR checks enforce it.
 
 Every game ships rules for players as `how-to-play.md`, with illustrations in `assets/` (games-service D-099): the phones
@@ -104,7 +105,7 @@ npm run setup                         # = scripts/games-service.sh; GAMES_SERVIC
                                       # checkout, GAMES_SERVICE_REF=<ref> another branch or tag
 npm test                              # rules, host, bundle, rules for players
 npm run typecheck
-npm run soak -- 200                   # 200 AI-only games per player count
+npm run soak -- 200                   # 200 AI-only games per game, player count and play style
 pip install -r scripts/e2e/requirements.txt && python -m playwright install chromium
 scripts/e2e/run-all.sh out/           # board + phones in a real browser; screenshots in out/
 ```
@@ -115,7 +116,7 @@ scripts/e2e/run-all.sh out/           # board + phones in a real browser; screen
 feature branch → PR → main → (PR) → production → tables, at the console's next fetch
 ```
 
-`checks.yml` runs `test` (tests, typecheck, a 200-game soak, `npm audit --audit-level=high`), `e2e` and `codeql` on
+`checks.yml` runs `test` (on pull requests the game-version check, then tests, typecheck, a 200-game soak, `npm audit --audit-level=high`), `e2e` and `codeql` on
 every PR to `main` or `production` and every push to `production`, and weekly (Mondays) against games-service `main`
 instead of the pinned ref, so a platform change that breaks these games shows up here first. `production` is the
 branch to protect with those three contexts, since that is what tables run.
