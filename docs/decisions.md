@@ -430,3 +430,24 @@ Records are history: an older record is not edited when a newer one changes it. 
   neighbour (which fitted) was played. The check now presses every card at a point no other card covers (as its tap
   already did, E-025), slings a card that doesn't fit only if it still doesn't a moment later, and draws once on purpose
   (the rules allow drawing when a card fits), so every run sees a drawn card come in.
+- **E-031 · 2026-10-24 · Klaus** — Backgammon, from play at a table with a remote player:
+  - **Board buttons:** the board redraws its buttons whenever the table answers a tap. The new view often arrived
+    before the answer and was drawn with the buttons still disabled, so the board's Done stayed off after the last
+    checker went off (the phone's was on), and a second Undo couldn't be tapped.
+  - **Undo, all or none:** a per-player option. *All moves* (the default, as before) takes back every move of the
+    turn, one at a time. *Off* takes Undo away, and the turn ends by itself once the dice are played.
+  - **Roll for me:** a per-player option, off by default. It rolls as the turn begins, but not when the player could
+    double first: that choice stays theirs.
+  - **Where they are set:** both options are lobby settings (`undo`, `autoRoll`) that set the start for both players,
+    and each player changes their own on the phone (*Your options*, intent `options`) at any time. Turning Undo off
+    after the last move ends the turn; turning Roll for me on during your roll rolls. They are rules, not display
+    preferences, so they live in the state and the log. The state carries them only when they differ from the
+    defaults, so earlier logs keep their replay hash.
+  - **The roll:** a roll tumbles for 1.3 s (it was 0.65 s, and its numbers showed before the animation started). Its
+    numbers, the box's "Move: …", the phone's dice and the phone's move list show only when it lands, and while it
+    tumbles there are always two dice, so a doublet isn't told early. A blocked turn now passes after 2.6 s.
+  - **The double:** a remote player not prompted to take or pass could not be reproduced. A double from the local
+    phone or the local board showed Take and Pass on the remote player's phone and remote board. It was checked
+    with a cloud service, an invite and WebRTC.
+
+  *Why:* Klaus played a match with one remote and one local player.

@@ -7,7 +7,7 @@
 // Static and moving parts are separate layers (the points are drawn once; checkers have their own layer), and a move
 // plays as one animation per checker, so the board stays smooth on a 4K table (games-service's developer guide, section 9).
 import { W, H, esc, html, playerColor, playSound, remainingMs, seatPlates, useStyles } from "/shared/board-kit.js";
-import { COLOR_NAME, ROLL_MS, checkerSound, cubeSound, diceState, dieHtml, hitSound, offSound, ownNumber, rollSound, winSound } from "/games/backgammon/assets/bg-ui.js";
+import { COLOR_NAME, ROLL_MS, checkerSound, cubeSound, diceState, dieHtml, hitSound, offSound, ownNumber, rollSound, setFace, winSound } from "/games/backgammon/assets/bg-ui.js";
 
 // ----- geometry (1920 × 1080 surface, White south) -----
 const FX = 440; // frame
@@ -66,6 +66,9 @@ export function mount(root, ctx) {
   let gone = false;
   const queue = [];
   let playing = null; // the promise of the queue being played
+  // A new roll tumbles until then, its numbers hidden: the dice, the panel and the moves show it only once it lands.
+  let rollingUntil = 0, tumbleTimer = null;
+  const rolling = () => Date.now() < rollingUntil;
   const drawn = new Map();
   const put = (el, markup) => {
     if (drawn.get(el) === markup) return;
@@ -249,6 +252,9 @@ export function mount(root, ctx) {
       inner = rollHere
         ? `<button type="button" class="bg-roll" data-roll aria-label="Roll the dice"><span class="bg-roll-dice">${dieHtml(0, { size: 56, cls: "blank" })}${dieHtml(0, { size: 56, cls: "blank" })}</span><span class="bg-roll-text">Tap to roll</span></button>`
         : `<div class="bg-wait">${v.phase === "double" ? "" : `${esc(nameOf(v.turn))} to roll`}</div>`;
+    } else if (rolling()) {
+      // Always two dice while they tumble: four would tell a doublet before it lands. The faces change in place.
+      inner = `<div class="bg-dice-row">${dieHtml(3, { size: 60 })}${dieHtml(5, { size: 60 })}</div>`;
     } else {
       const ds = diceState(v.dice, v.remaining, v.phase);
       const size = ds.length > 2 ? 50 : 60;
@@ -306,6 +312,7 @@ export function mount(root, ctx) {
     else if (away) status = "The stand-in is playing…";
     else if (ai) status = v.phase === "roll" ? "Rolling…" : "Thinking…";
     else if (v.phase === "roll") status = v.canDouble ? `Your roll: tap the dice, or double${showButtons ? "" : " on your phone"}` : "Your roll: tap the dice";
+    else if (rolling()) status = "Rolling…";
     else if (v.blocked) status = "No move possible: the turn passes";
     else if (v.canDone) status = "<b>All moved: tap Done</b>";
     else status = `Move: ${v.remaining.join(" and ")}${v.legal.some((m) => m.from === "bar") ? " (from the bar first)" : ""}`;
@@ -318,7 +325,8 @@ export function mount(root, ctx) {
       ? `<div class="bg-btns">
           ${v.phase === "roll" && v.canDouble ? `<button type="button" class="${doubling ? "bg-sure" : ""}" data-act="double" ${sending ? "disabled" : ""}>${doubling ? `Double to ${v.cube.value * 2}?` : "Double"}</button>` : ""}
           ${v.phase === "roll" ? `<button type="button" class="primary" data-act="roll" ${sending ? "disabled" : ""}>Roll</button>` : ""}
-          ${v.phase === "move" ? `<button type="button" data-act="undo" ${v.canUndo && !sending ? "" : "disabled"}>Undo</button><button type="button" class="primary" data-act="done" ${v.canDone && !sending ? "" : "disabled"}>Done</button>` : ""}
+          ${v.phase === "move" && v.options?.[color]?.undo !== "none" ? `<button type="button" data-act="undo" ${v.canUndo && !sending && !rolling() ? "" : "disabled"}>Undo</button>` : ""}
+          ${v.phase === "move" ? `<button type="button" class="primary ${v.options?.[color]?.undo === "none" ? "wide" : ""}" data-act="done" ${v.canDone && !sending && !rolling() ? "" : "disabled"}>Done</button>` : ""}
         </div>`
       : "";
     const turnLine = mine && v.phase === "move" && v.turnMoves && v.turnMoves !== "(no move)" ? `<div class="bg-now">${esc(v.turnMoves)}</div>` : "";
@@ -459,9 +467,7 @@ export function mount(root, ctx) {
           const restart = events.some((e) => e.name === "opening" || e.name === "undone");
           if (events.some((e) => e.name === "rolled" || e.name === "opening")) {
             sounds(events.filter((e) => e.name === "rolled" || e.name === "opening"));
-            await wait(ROLL_MS / 2); // the dice land before the first checker moves
-            diceBox.classList.add("rolling");
-            setTimeout(() => diceBox.classList.remove("rolling"), ROLL_MS);
+            await wait(Math.max(0, rollingUntil - Date.now())); // the dice land before the first checker moves
           }
           if (!restart && shown && moves.length) {
             for (const [k, m] of moves.entries()) {
@@ -484,6 +490,23 @@ export function mount(root, ctx) {
     return playing;
   }
 
+  /** A roll arrived: the dice tumble for ROLL_MS with changing faces, then the real ones are drawn. */
+  function tumble() {
+    rollingUntil = Date.now() + ROLL_MS;
+    diceBox.classList.add("rolling");
+    clearInterval(tumbleTimer);
+    tumbleTimer = setInterval(() => {
+      if (gone) return clearInterval(tumbleTimer);
+      if (rolling()) {
+        for (const d of diceBox.querySelectorAll(".bg-die")) setFace(d, 1 + Math.floor(Math.random() * 6));
+        return;
+      }
+      clearInterval(tumbleTimer);
+      diceBox.classList.remove("rolling");
+      if (view) draw();
+    }, 90);
+  }
+
   // ----- touch -----
   // Double asks once more on the same button (as the phone confirms it), for a few seconds.
   function setConfirm(c) {
@@ -502,10 +525,11 @@ export function mount(root, ctx) {
     draw();
     // Take and pass answer for the player the double was offered to, not the one whose turn it is.
     const seat = name === "take" || name === "pass" ? view.seats[view.turn ^ 1] : view.turnSeat;
-    const r = await ctx.act(seat, name, payload);
+    await ctx.act(seat, name, payload); // a refusal is a toast from the platform
     sending = false;
-    if (gone || !view) return;
-    if (!r.ok) draw();
+    // Always redraw: the new view often arrives before this answer, and was drawn with the buttons still disabled
+    // (Done after the last checker went off, a second Undo).
+    if (!gone && view) draw();
   }
 
   box.addEventListener("pointerdown", (e) => {
@@ -557,6 +581,7 @@ export function mount(root, ctx) {
       view = v;
       if (first || !shown) shown = boardOf(v);
       if (selected !== null && !v.targets.some((x) => String(x.from) === String(selected))) selected = null;
+      if (!first && events.some((e) => e.name === "rolled" || e.name === "opening")) tumble();
       if (!first) queue.push({ v, events });
       draw();
       if (first) {
@@ -573,6 +598,7 @@ export function mount(root, ctx) {
     destroy() {
       gone = true;
       clearTimeout(confirmTimer);
+      clearInterval(tumbleTimer);
     },
   };
 }

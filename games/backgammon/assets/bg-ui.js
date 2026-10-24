@@ -4,6 +4,10 @@
 export const PIPS = { 1: [4], 2: [0, 8], 3: [0, 4, 8], 4: [0, 2, 6, 8], 5: [0, 2, 4, 6, 8], 6: [0, 2, 3, 5, 6, 8] };
 
 /** A die as HTML: `used` dims it. */
+/** Shows face n on a die drawn by dieHtml, in place (the dice tumbling while a roll lands). */
+export function setFace(el, n) {
+  el.querySelectorAll("i").forEach((pip, k) => (pip.style.visibility = PIPS[n]?.includes(k) ? "visible" : "hidden"));
+}
 export function dieHtml(n, { size = 56, used = false, cls = "" } = {}) {
   const pips = Array.from({ length: 9 }, (_, k) => `<i style="visibility:${PIPS[n]?.includes(k) ? "visible" : "hidden"}"></i>`).join("");
   return `<span class="bg-die ${used ? "used" : ""} ${cls}" style="--s:${size}px" aria-label="${n}">${pips}</span>`;
@@ -65,7 +69,7 @@ function tone(c, out, t, { from, to = from, dur, gain = 0.25, type = "sine" }) {
   o.stop(t + dur + 0.05);
 }
 
-export const ROLL_MS = 650;
+export const ROLL_MS = 1300;
 /** Two dice shaken in a cup and thrown on the board: rattles, then two landings. */
 export function rollSound(c, t, out) {
   [0, 0.04, 0.08, 0.13, 0.18, 0.24, 0.3].forEach((at, k) => noise(c, out, t + at, { freq: 1600 + ((k * 431) % 900), gain: 0.4, decay: 0.04 }));

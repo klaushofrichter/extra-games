@@ -34,7 +34,8 @@
   background: linear-gradient(145deg, #fffdf6, #e4d9c2); box-shadow: 0 4px 6px rgba(0, 0, 0, .45); transition: opacity .25s, filter .25s; }
 .bg-die i { width: 62%; height: 62%; border-radius: 50%; background: #241a10; }
 .bg-die.used { opacity: .35; filter: grayscale(1); }
-.bg-dice.rolling .bg-die { animation: bg-tumble .65s cubic-bezier(.2, .7, .3, 1); }
+/* As long as ROLL_MS (bg-ui.js): the faces change while it runs, the real ones show when it ends. */
+.bg-dice.rolling .bg-die { animation: bg-tumble 1.3s cubic-bezier(.2, .7, .3, 1); }
 @keyframes bg-tumble {
   0% { transform: translate(-120px, -30px) rotate(-260deg) scale(.7); opacity: .2; }
   70% { transform: translate(6px, 2px) rotate(12deg); opacity: 1; }
