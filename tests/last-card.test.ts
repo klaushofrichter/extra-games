@@ -372,4 +372,13 @@ describe("the board (E-025)", () => {
       expect(clockwise(order, pos, -1), `${n} players, reversed`).toBe(true);
     }
   });
+
+  it("draws only real cards: a face sent by a phone with markup in it is drawn as the back (games-service D-202)", () => {
+    for (const card of [{ c: "r", k: '"><img src=x onerror=alert(1)>' }, { c: '"><b>', k: "7" }, { c: "w", k: "7" }, null]) {
+      const svg = cardFace(card as never, 76, 114);
+      expect(svg).toBe(cardBack(76, 114));
+      expect(svg).not.toMatch(/onerror|<img|<b>/);
+    }
+    expect(cardFace({ c: "r", k: "7" } as never, 76, 114, { color: '"><x' as never })).not.toMatch(/<x/);
+  });
 });
