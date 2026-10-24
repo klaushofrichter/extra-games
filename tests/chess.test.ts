@@ -112,7 +112,7 @@ describe("a game", () => {
     expect(g.rt.over).toBe(true);
     expect(g.rt.summary!.text).toBe("Ben wins with black by checkmate after two moves.");
     expect(g.rt.summary!.highlights).toMatchObject({ winner: 1, reason: "checkmate", moves: 2, pgnMoves: "f3 e5 g4 Qh4#" });
-    // Score, clock, then the statistics window's counts (D-136): captures, material, pawn moves, checks.
+    // Score, clock, then the statistics window's counts (D-140): captures, material, pawn moves, checks.
     expect(g.rt.summary!.table!.rows).toEqual([["Ann", "White", "0", "–", 0, 0, 2, 0], ["Ben", "Black", "1", "–", 0, 0, 1, 1]]);
     // Fool's mate: White pushed more pawns; Black's queen gave the one check.
     const [white, black] = (g.rt.state as { seats: [number, number] }).seats;

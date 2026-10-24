@@ -19,7 +19,7 @@ Be the last player with dice. Everyone rolls in secret; you bid on what is under
 1. Everyone rolls their dice. Only you see yours.
 2. The opening player bids: a number of dice and a face, like "three fives". It means *there are at least three fives on the whole table*, counting everyone's dice.
 3. Turns pass around the table. On your turn you either **raise** or call **Liar!**
-4. A raise is more dice of any face ("four twos" beats "three fives"), or the same number of a higher face ("three sixes" beats "three fives").
+4. A bid can't be higher than the number of dice on the table. A raise is more dice of any face ("four twos" beats "three fives"), or the same number of a higher face ("three sixes" beats "three fives").
 5. Calling **Liar!** ends the round: every cup is opened on the board and the dice that match the bid are counted.
 
 ## Who loses a die
@@ -28,7 +28,7 @@ Be the last player with dice. Everyone rolls in secret; you bid on what is under
 - If there are fewer, the bid was a lie and the **bidder** loses a die.
 - An exact count holds.
 
-The loser opens the next round. Lose your last die and you are out; you can still watch the reveals on the board.
+The loser opens the next round (if they just went out, the next player does). Lose your last die and you are out; you can still watch the reveals on the board.
 
 ![A call on four fives: the matching dice are counted, wild ones included](assets/call.svg)
 
@@ -49,8 +49,8 @@ If **Seconds per turn** runs out:
 |---|---|---|
 | Dice per player | 5 | Dice each player starts with (2 to 6) |
 | Ones are wild | On | Ones count toward every bid on another face |
-| Seconds per turn (0 = no limit) | 45 | Time to bid or call |
-| Seconds to show the dice after a call | 6 | How long the open cups stay up |
+| Seconds per turn (0 = no limit) | 45 | Time to bid or call (up to 120) |
+| Seconds to show the dice after a call | 6 | How long the open cups stay up (2 to 20) |
 
 ## Changing players
 

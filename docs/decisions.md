@@ -6,6 +6,19 @@ choices, which Klaus can overrule.
 
 Format: **E-nnn · date · decided by** — decision. *Why:* reason.
 
+Records are history: an older record is not edited when a newer one changes it. Where that happened:
+
+| Earlier | Changed by | What changed |
+| --- | --- | --- |
+| E-001, E-004 | E-017 | The repository is public, an example for others |
+| E-005 | E-016 | A player who leaves no longer restarts the round |
+| E-006 | E-007, E-009, E-010, E-011, E-016, E-019 | Chess: pieces' facing, Resign, the end without a person, the default clock, the stand-in |
+| E-010 | E-016, E-019 | Chess's stand-in |
+| E-013 | E-015, E-016, E-026 | Backgammon: match length up to 100, the stand-in, doubles answered on the board too |
+| E-020 | E-021, E-022 | Mexican Train: backgrounds each round, seat plate text |
+| E-023 | E-024, E-025 | Last Card: hands on the board, direction arrows |
+| E-024 | E-025 | Last Card: fan placement and counts |
+
 - **E-001 · 2026-10-14 · Klaus** — A private repository for games that are not public yet (private games, early
   releases). Tables get them only when an administrator ticks this repository for them in the games-service console.
 - **E-002 · 2026-10-14 · Claude** — Games import the SDK as `@game-table/sdk`; the table host maps the name to its own
@@ -65,7 +78,7 @@ Format: **E-nnn · date · decided by** — decision. *Why:* reason.
   (about 1470), 1800 scored 9/20 against 1600 (about 1560), 2200 scored 17/20 against 2000 (about 2300). With 20 games
   each estimate is good to about ±150, so the levels stay as they are; their labels are approximate, as the setting
   says.
-- **E-008 · 2026-10-17 · Klaus** — Game versions follow games-service D-127: `YYYY.MM.DD.N` in each game's manifest,
+- **E-008 · 2026-10-17 · Klaus** — Game versions follow games-service D-127b: `YYYY.MM.DD.N` in each game's manifest,
   changed when, and only when, something in the game's folder changes, never by a platform change. Liar's Dice and
   Chess switch to `2026.10.17.1`. *Implementation (Claude):* the `test` check runs games-service's
   `scripts/check-game-versions.ts` from `.games-service` against the branch a pull request goes into;
@@ -81,18 +94,18 @@ Format: **E-nnn · date · decided by** — decision. *Why:* reason.
   panels and the phones say "The game has ended" instead of whose move it is, and the clocks stop; the opponent's panel
   names the stand-in while it moves.
 - **E-011 · 2026-10-17 · Klaus** — Chess: with one player at the table and the other remote or AI, the player at the
-  table sits south (games-service D-128, `"localSeat": "south"`), and the default time control is "no clock" (was
+  table sits south (games-service D-128b, `"localSeat": "south"`), and the default time control is "no clock" (was
   10+5). *Why:* the table's board doesn't turn for a remote player, so the one person at it must sit on the side the
-  board is drawn for; remote boards already turn to their player (D-059). On a table without D-128 the field is
+  board is drawn for; remote boards already turn to their player (D-059). On a table without D-128b the field is
   ignored and seats stay as chosen.
-- **E-012 · 2026-10-18 · Klaus** — Chess sends awards for the statistics window (games-service D-136): *Killer* (most
+- **E-012 · 2026-10-18 · Klaus** — Chess sends awards for the statistics window (games-service D-140): *Killer* (most
   pieces taken), *Pawn Rush* (most pawn moves), *Marathon* (the owner of the piece that travelled farthest),
   *Frequenter* (the owner of the piece that moved most often), *Treasure Hunter* (most material taken), *Check!* (most
   checks), *Crowning* (most promotions) and *Homebody* (the side whose king never moved). *Implementation (Claude):*
   `games/chess/stats.ts` follows every piece from its starting square through the moves at the end of the game (castling
   moves the rook, en passant takes the pawn beside, a promoted pawn keeps its history); distance is in king steps (a
   knight's move is 2). Nothing is kept in the state. The table adds captures, material, pawn moves and checks. The award
-  helper is kept in the game, not taken from the SDK, so Chess still runs on tables before D-136.
+  helper is kept in the game, not taken from the SDK, so Chess still runs on tables before D-140.
 - **E-013 · 2026-10-18 · Klaus** — Third game: Backgammon, for two players. *Implementation (Claude):*
   - **Rules** (`games/backgammon/bg.ts`, `rules.ts`): all the rules of backgammon: the opening roll (each player
     throws one die, the higher plays both), using both dice when possible and the larger one when only one can be
@@ -112,12 +125,12 @@ Format: **E-nnn · date · decided by** — decision. *Why:* reason.
     points, primes, anchors). *beginner* adds noise and never doubles; *average* plays the best move by the
     evaluation and doubles and takes by it; *strong* looks at its best few plays over all 21 replies. In single-game
     matches (`scripts/bg-ladder.ts`, 100 each) strong beat average 59–41 and beginner 59–1; average beats beginner
-    about nine in ten. Moves one checker at a time; the board's `whenIdle` (games-service D-134, D-137) holds the next
+    about nine in ten. Moves one checker at a time; the board's `whenIdle` (games-service D-134, D-141) holds the next
     AI move until the last one has been shown.
   - **Seconds per turn** (0–180, default none): when it runs out, the table plays the turn for the player and takes a
     double for them. A player who leaves is replaced by the stand-in, as Chess's E-010, until someone takes the seat;
     the player at the table sits south (`"localSeat": "south"`, E-011).
-  - **Statistics** (games-service D-136): a table of points, games won and hits per player, and awards *Hitman*,
+  - **Statistics** (games-service D-140): a table of points, games won and hits per player, and awards *Hitman*,
     *Doublets*, *High Roller*, *Back from the Bar*, *Gammon Maker* and *Cube Handler*, the award helper kept in the game
     as Chess does. The table has four columns because the phones' result card (games-service `deck.css`,
     `.summary-table`) neither scrolls nor wraps single-word headers: eight columns made a 320 px phone 486 px wide.
@@ -211,7 +224,7 @@ Format: **E-nnn · date · decided by** — decision. *Why:* reason.
     the fewest points win. Settings chosen when the game is started: *Rounds* (1–13), *First turn of a round: play a
     run of tiles on your own train* (on; Done ends the run), *Double blank counts 50 points* (off), and the turn and
     score times. A slow player's tile is played (or a tile drawn, or the run ended) by the table. Two AI styles:
-    *planner* keeps its longest chain for its own train and sends other tiles elsewhere, heaviest first; *steady*.
+    *planner* keeps its longest chain for its own train and sends other tiles elsewhere, heaviest first; *steady* plays on its own train when it can, else the heaviest tile anywhere.
     No name is a trademark; the tiles, colours, sounds and music are made for the game.
   - **Measured, not guessed** (`scripts/train-lengths.ts`): 3,500 AI-only games through the host's simulation loop.
     The longest train in 99 % of rounds: 47 tiles at two players, 29 at four, 24 at six, 21 at eight; at most 89 tiles
@@ -322,7 +335,8 @@ Format: **E-nnn · date · decided by** — decision. *Why:* reason.
     deck." The way in was there, but the phone redrew the whole hand at every update, and the next one (the turn
     moving on, an AI player's move) replaced the card in the middle of its animation. The hand is now updated in place
     (cards kept by id, moved, added and removed), so the animation runs to the end, and cards slide to new places.
-  - **Awards.** Five more (Klaus: "can you invent at least three more awards?"), ten in all: *Chameleon* (changed the
+  - **Awards.** Five more (Klaus: "can you invent at least three more awards?") beside the first five (*Out First*,
+    *Troublemaker*, *Wild One*, *Piled On*, *Last Card!*), ten in all: *Chameleon* (changed the
     colour to play most often: another colour by number or symbol, or a wild calling a new one), *Big Haul* (most
     points in one round), *Comeback* (won a round after holding the most cards in it), *Hoarder* (most cards held at
     once) and *Light Fingers* (fewest cards drawn). An award shows only when someone stands out (the SDK's
@@ -361,7 +375,7 @@ Format: **E-nnn · date · decided by** — decision. *Why:* reason.
     fit bounces as before. Only the phone reads it (`info.settings`); the rules don't.
     The phone's listeners on its root (tap, buttons) come off in `destroy()`: the root outlives the game, and a stale
     tap listener ran after the game ended (a browser error the e2e check caught).
-  - **Checks.** `tests/last-card.test.ts`: the dots, and the direction for 3 to 8 players with the platform's seat
+  - **Checks.** `tests/last-card.test.ts`: the underlines, and the direction for 3 to 8 players with the platform's seat
     places (normal play counter-clockwise, reversed clockwise). `scripts/e2e/last_card.py` plays with tap to play on
     and taps a card once, at a point of it not under its neighbour in the hand.
 - **E-026 · 2026-10-23 · Klaus** — Backgammon: a double is answered on the board too. Klaus: "when one player
@@ -385,3 +399,19 @@ Format: **E-nnn · date · decided by** — decision. *Why:* reason.
     box only, without "on your phone", and Take there turns the cube to 2; later the cube's owner doubles on the board
     (one tap only asks), and a phone takes. `tests/backgammon-host.test.ts`: the board doubles for one player and takes
     for the other; the doubler's own take is refused.
+- **E-027 · 2026-10-24 · Klaus** — A review of the documentation for accuracy. *Why:* Klaus: "do a complete review for
+  documentation accuracy, ensuring that the README and other documents actually describe the software as it is
+  today", "Review the ADRs for historical correctness". *Implementation (Claude):*
+  - **README:** five games, not three; Last Card's release line and tap-to-play; which games `seats.test.ts` covers
+    and `chess-stats.test.ts`; the soak counts per game, player count and style; the game-version check in `test`.
+    `package.json`'s description no longer says private.
+  - **Rules for players**, checked against each game's rules: Mexican Train (a run stays on your own train, hand
+    sizes, who starts, AI styles, changing players), Last Card (the release line, drawing when a card fits, the deal,
+    awards, changing players, what a timeout does), Chess (a draw only after both have moved; *Accept draw* /
+    *Decline*), Backgammon (the opening roll is thrown for you), Liar's Dice (who opens after going out, the highest
+    bid, the settings' ranges).
+  - **Decision records:** games-service renumbered its duplicate records (D-127b calendar versions, D-128b
+    `localSeat`, D-129b pulldowns), and its statistics window and board pacing are D-140 and D-141; E-008, E-011,
+    E-012, E-013, the README and code comments follow. E-020 says what *steady* does, E-024 names the first five Last
+    Card awards, E-025 checks the underlines (not dots). A table at the top lists records that later ones changed.
+  - Every game's version is set anew (a rules text or a comment changed in each folder).

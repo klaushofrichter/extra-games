@@ -3,7 +3,7 @@ supported size, 320 x 568) play a short game by tapping pieces on the board.
 
 Checks on the way:
   - the board's settings window lists all eight time controls in a pulldown inside the window, and picking 3+2 there
-    sets it (games-service D-129);
+    sets it (games-service D-129b);
   - no browser console error or uncaught exception, on the board or either phone;
   - the board shows 32 pieces, White's first rank toward White's seat (south), every piece facing the board's front;
   - the turn-around button turns every piece to face north;
@@ -96,7 +96,7 @@ def main():
             pick_game(board, "chess")
             board.locator(".dialog [data-x=yes]").click()
             time.sleep(0.4)
-            # The time control from the board's settings window (games-service D-129): all eight in a pulldown inside the
+            # The time control from the board's settings window (games-service D-129b): all eight in a pulldown inside the
             # window, picked there like at the table.
             board.click("#settings-button")
             tc = board.locator(".game-rules select[data-setting-select=timeControl]")

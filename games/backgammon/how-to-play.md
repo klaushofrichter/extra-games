@@ -19,7 +19,7 @@ The game starts with two checkers on your 24-point, five on your 13, three on yo
 
 ## A turn
 
-1. **Roll.** Tap the dice on the board or **Roll** on your phone. The first turn of every game is the opening roll: each player throws one die, and the higher one plays both numbers.
+1. **Roll.** Each game starts with the opening roll, thrown for you: one die each (a tie is thrown again), and the player with the higher die plays both numbers. After that, tap the dice on the board or **Roll** on your phone.
 2. **Move.** Each die moves one checker that many points, to a point that is empty, holds your own checkers, or holds a single opposing checker. Two or more opposing checkers block a point. Doubles move four times.
 3. **Done.** Tap **Done** on the board or the phone. **Undo** takes back your last move until then.
 
