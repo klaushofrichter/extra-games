@@ -388,6 +388,77 @@ describe("timers, the stand-in and the AI", () => {
   });
 });
 
+describe("options: Undo all or none, and Roll for me (E-031)", () => {
+  it("Undo takes back every move of the turn, one at a time, back to the roll", () => {
+    let { s } = newMatch(); // White plays the opening 3-1
+    const w = s.seats[0];
+    expect(s.options).toBeUndefined(); // the defaults stay out of the state (and out of old logs' replay hashes)
+    ({ s } = step(s, w, "move", { from: 8, to: 5 }));
+    ({ s } = step(s, w, "move", { from: 6, to: 5 }));
+    expect((def.view(s, w) as View).canUndo).toBe(true);
+    ({ s } = step(s, w, "undo"));
+    ({ s } = step(s, w, "undo"));
+    expect(s.board).toEqual(startBoard());
+    expect(s.remaining.sort()).toEqual([1, 3]);
+    expect((def.view(s, w) as View).canUndo).toBe(false);
+    expect(refuse(s, w, "undo")).toMatch(/Nothing to take back/);
+  });
+
+  it("with Undo off the turn ends by itself once the dice are played, and Undo is refused", () => {
+    let { s } = newMatch({ undo: "none" });
+    const w = s.seats[0];
+    expect(s.options).toEqual([{ undo: "none", autoRoll: false }, { undo: "none", autoRoll: false }]);
+    ({ s } = step(s, w, "move", { from: 8, to: 5 }));
+    expect((def.view(s, w) as View).canUndo).toBe(false);
+    expect(refuse(s, w, "undo")).toMatch(/Undo is off/);
+    const r = step(s, w, "move", { from: 6, to: 5 });
+    expect(r.s).toMatchObject({ phase: "roll", turn: 1 });
+    expect(r.events.map((e) => e.name)).toEqual(["moved", "turn"]);
+    expect(r.s.plays.at(-1)).toMatchObject({ color: 0, text: "8/5 6/5" });
+  });
+
+  it("a player changes their own options during the match; turning Undo off after the last move ends the turn", () => {
+    let { s } = newMatch();
+    const [w, b] = s.seats;
+    ({ s } = step(s, b, "options", { autoRoll: true })); // any time, also on the other player's turn
+    expect(s.options).toEqual([{ undo: "all", autoRoll: false }, { undo: "all", autoRoll: true }]);
+    expect(refuse(s, w, "options", { undo: "some" })).toMatch(/all or none/);
+    expect(refuse(s, w, "options", { autoRoll: "yes" })).toMatch(/on or off/);
+    expect(refuse(s, 99, "options", { undo: "none" })).toMatch(/not playing/);
+    ({ s } = step(s, w, "move", { from: 8, to: 5 }));
+    ({ s } = step(s, w, "move", { from: 6, to: 5 }));
+    const r = step(s, w, "options", { undo: "none" });
+    expect(r.s).toMatchObject({ phase: "roll", turn: 1 }); // Black could double, so no roll for them
+    expect((def.view(r.s, w) as View).options[0]).toEqual({ undo: "none", autoRoll: false });
+  });
+
+  it("Roll for me rolls as the turn begins, but not when the player could double first", () => {
+    // Without the cube nobody can double: Black's dice are rolled as White ends the turn.
+    let { s } = newMatch({ cube: false, autoRoll: true });
+    const w = s.seats[0];
+    ({ s } = step(s, w, "move", { from: 8, to: 5 }));
+    ({ s } = step(s, w, "move", { from: 6, to: 5 }));
+    const r = step(s, w, "done", undefined, fakeCtx([4, 2]));
+    expect(r.s).toMatchObject({ phase: "move", turn: 1, dice: [4, 2] });
+    expect(r.events.find((e) => e.name === "rolled")?.data).toMatchObject({ color: 1, dice: [4, 2], auto: true });
+    const text = def.describe!({ kind: "intent", seat: w, intent: { name: "done" }, accepted: true, events: r.events, names: {}, before: s, after: r.s } as never);
+    expect(text?.text).toMatch(/rolls 4-2 \(auto-roll\)/);
+    // With the cube in the middle Black may double: the roll waits for them.
+    let m = newMatch({ autoRoll: true }).s;
+    ({ s: m } = step(m, w, "move", { from: 8, to: 5 }));
+    ({ s: m } = step(m, w, "move", { from: 6, to: 5 }));
+    expect(step(m, w, "done").s).toMatchObject({ phase: "roll", turn: 1 });
+  });
+
+  it("turning Roll for me on while it is your roll rolls at once", () => {
+    let s = at(board({ 13: 5, 6: 5, 8: 5 }, { 12: 5, 19: 10 }), 1, { cube: { enabled: false, value: 1, owner: null } });
+    const b = s.seats[1];
+    const r = step(s, b, "options", { autoRoll: true }, fakeCtx([5, 3]));
+    expect(r.s).toMatchObject({ phase: "move", turn: 1, dice: [5, 3] });
+    expect(r.events.map((e) => e.name)).toEqual(["options", "rolled"]);
+  });
+});
+
 describe("on the runtime", () => {
   it("a whole match of AI players finishes and replays exactly, with a move list", async () => {
     const game = await loadGame("backgammon");

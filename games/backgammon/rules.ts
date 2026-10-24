@@ -7,7 +7,9 @@
 //
 // A turn: roll (or double first), move the dice one checker at a time (each move can be taken back until the turn
 // ends), then Done. With no legal move the turn passes by itself after a moment. Bearing off the last checker ends
-// the game at once.
+// the game at once. Each player has two options, set in the lobby for both and changed on their own phone during the
+// match (E-031): Undo all moves of the turn, or none, and then the turn ends by itself once the dice are played; and
+// rolling for them when their turn begins, unless they could double first.
 import { count, defineGame, type GameContext, type StepInfo } from "@game-table/sdk";
 import {
   absolute,
@@ -33,8 +35,8 @@ import {
 } from "./bg.ts";
 import { LEVELS, choosePlay, shouldDouble, shouldTake, type CubeSituation, type Level } from "./ai.ts";
 
-/** How long a turn with no legal move stays on the board before it passes. */
-const PASS_MS = 1800;
+/** How long a turn with no legal move stays on the board before it passes (the dice tumble for 1.3 s of it, E-031). */
+const PASS_MS = 2600;
 /** The stand-in's pause before each of its steps, so the board can be followed. */
 const STAND_IN_MS = 800;
 /** Between the games of a match; the board can skip it ("Next game"). */
@@ -66,6 +68,15 @@ export interface SideStats {
   gammons: number;
   cubes: number;
 }
+
+/** A player's own options (E-031): taking moves back, and rolling for them. */
+export interface Options {
+  /** "all": every move of the turn can be taken back until Done; "none": no Undo, and the turn ends by itself. */
+  undo: "all" | "none";
+  /** Roll for the player as their turn begins, when they could not double first. */
+  autoRoll: boolean;
+}
+const DEFAULT_OPTIONS: Options = { undo: "all", autoRoll: false };
 
 export interface TurnPlay {
   color: Color;
@@ -102,6 +113,8 @@ export interface State {
   turnMs: number;
   /** Seats the stand-in plays because their player left (only in logs from before games-service D-159). */
   standIn: number[];
+  /** Each colour's options (E-031); missing in logs from before, which played as the defaults. */
+  options?: [Options, Options];
   result: null | { winner: Color; reason: "match" };
 }
 
@@ -110,6 +123,7 @@ const colorOf = (s: State, seat: number): Color | null => (s.seats[0] === seat ?
 const seatName = (s: State, c: Color) => s.names[s.seats[c]] ?? COLOR_NAME[c];
 const emptyStats = (): SideStats => ({ hits: 0, doubles: 0, pipsRolled: 0, rolls: 0, entered: 0, gamesWon: 0, gammons: 0, cubes: 0 });
 const NO_RULE: TurnRule = { max: 0, larger: null };
+const optionsOf = (s: State, c: Color): Options => s.options?.[c] ?? DEFAULT_OPTIONS;
 
 type Ev = { name: string; data?: unknown };
 type Out = { state: State; events: Ev[] };
@@ -227,8 +241,12 @@ function move(s: State, subs: Sub[], ctx: GameContext, by: "player" | "auto"): O
     const ended = endGame(record(next), c, kind * s.cube.value, kind === 1 ? "single" : kind === 2 ? "gammon" : "backgammon", ctx);
     return { state: ended.state, events: [...events, ...ended.events] };
   }
-  // The stand-in goes on step by step; a person ends the turn with Done.
+  // The stand-in goes on step by step; a person ends the turn with Done, or without Undo it ends by itself (E-031).
   if (next.standIn.includes(next.seats[c])) arm(next, ctx);
+  else if (by === "player" && optionsOf(next, c).undo === "none" && !legal(next).length) {
+    const end = endTurn(next, ctx);
+    return { state: end.state, events: [...events, ...end.events] };
+  }
   return { state: next, events };
 }
 
@@ -244,7 +262,18 @@ function endTurn(s: State, ctx: GameContext): Out {
   const turn = (s.turn ^ 1) as Color;
   const next: State = { ...done, turn, phase: "roll", remaining: [], rule: NO_RULE, played: 0, turnMoves: [], undo: [], opening: null };
   arm(next, ctx);
-  return { state: next, events: [{ name: "turn", data: { color: turn } }] };
+  return autoRoll({ state: next, events: [{ name: "turn", data: { color: turn } }] }, ctx);
+}
+
+/**
+ * Rolls for the side on roll when their option says so (E-031), but not when they may double first: that choice
+ * stays theirs. Not for a stand-in, which rolls on its own timer.
+ */
+function autoRoll(out: Out, ctx: GameContext): Out {
+  const s = out.state;
+  if (s.phase !== "roll" || !optionsOf(s, s.turn).autoRoll || canDouble(s) || s.standIn.includes(s.seats[s.turn])) return out;
+  const r = roll(s, ctx);
+  return { state: r.state, events: [...out.events, ...r.events.map((e) => (e.name === "rolled" ? { ...e, data: { ...(e.data as object), auto: true } } : e))] };
 }
 
 function endGame(s: State, winner: Color, points: number, kind: Kind, ctx: GameContext): Out {
@@ -336,6 +365,28 @@ function passCube(s: State, ctx: GameContext): Out {
   return { state: r.state, events: [{ name: "passed", data: { by: s.turn ^ 1, value: s.cube.value } }, ...r.events] };
 }
 
+/**
+ * A player changes their own options (E-031), at any time: { undo?: "all" | "none", autoRoll?: boolean }. Turning
+ * Undo off in the middle of a turn whose dice are all played ends it, as it would have ended by itself; turning
+ * auto-roll on while it is their roll rolls for them.
+ */
+function setOptions(s: State, color: Color, payload: unknown, ctx: GameContext): Out | { reject: string } {
+  const o = (payload ?? {}) as { undo?: unknown; autoRoll?: unknown };
+  if (o.undo !== undefined && o.undo !== "all" && o.undo !== "none") return { reject: "Undo is all or none" };
+  if (o.autoRoll !== undefined && typeof o.autoRoll !== "boolean") return { reject: "Auto-roll is on or off" };
+  const mine: Options = { ...optionsOf(s, color), ...(o.undo !== undefined ? { undo: o.undo } : {}), ...(o.autoRoll !== undefined ? { autoRoll: o.autoRoll } : {}) };
+  const options: [Options, Options] = [optionsOf(s, 0), optionsOf(s, 1)];
+  options[color] = mine;
+  const next: State = { ...s, options };
+  const out: Out = { state: next, events: [{ name: "options", data: { color, ...mine } }] };
+  if (s.result || s.turn !== color || s.standIn.includes(s.seats[color])) return out;
+  if (next.phase === "move" && mine.undo === "none" && next.rule.max > 0 && !legal(next).length) {
+    const end = endTurn(next, ctx);
+    return { state: end.state, events: [...out.events, ...end.events] };
+  }
+  return autoRoll(out, ctx);
+}
+
 /** A move from an intent: { from, to, die? } in absolute spots (1–24, "bar", "off"). */
 function subsFromPayload(s: State, payload: unknown): Sub[] | string {
   const o = (payload ?? {}) as { from?: unknown; to?: unknown; die?: unknown };
@@ -378,7 +429,7 @@ function publicView(s: State) {
     legal: lg.map((x) => ({ from: toSpot(x.from, c), to: toSpot(x.to, c), die: x.die, hit: x.hit })),
     targets,
     blocked: s.phase === "move" && s.rule.max === 0,
-    canUndo: s.phase === "move" && s.undo.length > 0,
+    canUndo: s.phase === "move" && s.undo.length > 0 && optionsOf(s, c).undo === "all",
     canDone: s.phase === "move" && s.rule.max > 0 && lg.length === 0,
     canDouble: canDouble(s),
     cube: s.cube,
@@ -388,6 +439,7 @@ function publicView(s: State) {
     games: s.games,
     lastGame: s.games.at(-1) ?? null,
     standIn: s.standIn,
+    options: [optionsOf(s, 0), optionsOf(s, 1)],
     turnMs: s.turnMs,
     result: s.result ? { ...s.result, text: resultText(s) } : null,
   };
@@ -481,6 +533,11 @@ export default defineGame<State>({
       stats: [emptyStats(), emptyStats()],
       turnMs: Math.max(0, Number(settings.turnSeconds ?? 0)) * 1000,
       standIn: [],
+      // Stored only when the lobby changed them, so the state of a game with the defaults (and of every log from
+      // before E-031) stays the same, and so does its replay hash.
+      ...(settings.undo === "none" || settings.autoRoll === true
+        ? { options: [0, 1].map(() => ({ undo: settings.undo === "none" ? "none" : "all", autoRoll: settings.autoRoll === true })) as [Options, Options] }
+        : {}),
       result: null,
     };
     return startGame(base, ctx).state;
@@ -490,6 +547,7 @@ export default defineGame<State>({
     if (s.result) return { reject: "The match is over" };
     const color = colorOf(s, seat);
     if (color === null) return { reject: "You are not playing in this match" };
+    if (intent.name === "options") return setOptions(s, color, intent.payload, ctx);
     if (s.phase === "gameOver") return { reject: "The next game starts in a moment" };
     const mover = s.turn === color;
     switch (intent.name) {
@@ -512,7 +570,7 @@ export default defineGame<State>({
         {
           const r = takeCube(s);
           arm(r.state, ctx); // the doubler rolls now
-          return r;
+          return autoRoll(r, ctx);
         }
       case "move": {
         if (!mover) return { reject: "It's not your turn" };
@@ -526,6 +584,7 @@ export default defineGame<State>({
       }
       case "undo": {
         if (!mover || s.phase !== "move") return { reject: "Nothing to take back" };
+        if (optionsOf(s, color).undo === "none") return { reject: "Undo is off: change it in your options" };
         const last = s.undo.at(-1);
         if (!last) return { reject: "Nothing to take back" };
         const next: State = {
@@ -640,15 +699,22 @@ export default defineGame<State>({
     const ending = a.games.length > b.games.length ? ` ${gameText(a, a.games.at(-1)!)}${a.result ? ` ${resultText(a)}` : ""}` : "";
     const added = a.turnMoves.length > b.turnMoves.length ? playText(a.turnMoves.slice(b.turnMoves.length)) : null;
     const finished = a.plays.length > b.plays.length ? a.plays.at(-1)! : null;
+    // Rolled for the next player as their turn began (E-031).
+    const autoRolled = a.turn !== b.turn && a.phase === "move" && a.dice ? `; ${seatName(a, a.turn)} rolls ${a.dice[0]}-${a.dice[1]} (auto-roll)` : "";
     if (step.kind === "intent") {
       const name = step.intent?.name;
       if (!step.accepted) return { text: `${name} refused: ${step.reason ?? "?"}`, columns };
       if (name === "roll") return { text: `rolls ${a.dice![0]}-${a.dice![1]}${a.rule.max === 0 ? ": no move possible" : ""}`, columns };
-      if (name === "move") return { text: `moves ${added ?? finished?.text ?? "?"}${ending}`, columns };
+      if (name === "move") return { text: `moves ${added ?? finished?.text ?? "?"}${ending}${finished && !ending ? " and the turn ends" : ""}${autoRolled}`, columns };
       if (name === "undo") return { text: "takes back a move", columns };
-      if (name === "done") return { text: `ends the turn: ${finished?.text ?? ""}`, columns };
+      if (name === "done") return { text: `ends the turn: ${finished?.text ?? ""}${autoRolled}`, columns };
+      if (name === "options") {
+        const c = colorOf(a, step.seat ?? -1);
+        const o = c === null ? DEFAULT_OPTIONS : optionsOf(a, c);
+        return { text: `options: Undo ${o.undo === "all" ? "all moves" : "off"}, auto-roll ${o.autoRoll ? "on" : "off"}${finished && a.plays.length > b.plays.length ? `; ends the turn: ${finished.text}` : ""}${autoRolled}`, columns };
+      }
       if (name === "double") return { text: `doubles to ${b.cube.value * 2}`, columns };
-      if (name === "take") return { text: `takes: the cube is at ${a.cube.value}`, columns };
+      if (name === "take") return { text: `takes: the cube is at ${a.cube.value}${a.phase === "move" && a.dice ? `; ${seatName(a, a.turn)} rolls ${a.dice[0]}-${a.dice[1]} (auto-roll)` : ""}`, columns };
       if (name === "pass") return { text: `passes the double.${ending}`, columns };
     }
     if (step.kind === "timer") {
