@@ -418,3 +418,15 @@ Records are history: an older record is not edited when a newer one changes it. 
 - **E-028 · 2026-10-24 · Klaus** — Private repositories by name only (games-service D-200): the configuration comments
   that cited the cluster repository's baseline by its name say *the cluster repository* instead. Earlier records keep
   their wording as history.
+- **E-029 · 2026-10-24 · Klaus** — Last Card draws only real cards (games-service D-202). *Why:* a security review
+  found that a phone could send the board a card face with markup in it during a drag, and the card kit put a card's
+  kind and colour into SVG without escaping, so script could run in the table's board page. Klaus: "Take special care
+  about security concerns." *Implementation (Claude):* `cardFace` accepts only the deck's colours and kinds (and a known
+  colour for a played wild); anything else is drawn as the back. The platform also passes only the sling's own fields
+  of a gesture to the boards. Check: `tests/last-card.test.ts` draws hostile faces and finds the back, no markup.
+- **E-030 · 2026-10-24 · Claude** — Last Card's browser check no longer depends on luck. Two release runs failed: once
+  a card that didn't fit left the phone, once no person happened to draw all game. The first was the check's own
+  finger: it pressed a card at its centre, which in a hand of overlapping cards can be the neighbour's, so the
+  neighbour (which fitted) was played. The check now presses every card at a point no other card covers (as its tap
+  already did, E-025), slings a card that doesn't fit only if it still doesn't a moment later, and draws once on purpose
+  (the rules allow drawing when a card fits), so every run sees a drawn card come in.

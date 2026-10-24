@@ -66,10 +66,23 @@ def phone(browser, name, w, h):
     return d
 
 
+# A point of a card that no other card covers (the hand overlaps): a finger there touches this card, not its neighbour.
+VISIBLE = """e => { const r = e.getBoundingClientRect();
+  for (const fy of [0.5, 0.3, 0.7, 0.15, 0.85]) for (const fx of [0.5, 0.3, 0.15, 0.7, 0.85]) {
+    const x = r.left + r.width * fx, y = r.top + r.height * fy, t = document.elementFromPoint(x, y);
+    if (t && e.contains(t)) return [x, y]; }
+  return null; }"""
+
+
+def grab(el):
+    """Where a finger touches this card, or None when other cards cover all of it."""
+    return el.evaluate(VISIBLE)
+
+
 def sling(d, el, board=None, peek=None):
     """Push a card up and off the top of the phone; with `board`, look at the board while it is a third out."""
     b = el.bounding_box()
-    x, y = b["x"] + b["width"] / 2, b["y"] + b["height"] / 2
+    x, y = grab(el) or (b["x"] + b["width"] / 2, b["y"] + b["height"] / 2)
     top = d.evaluate("document.querySelector('.lcd').getBoundingClientRect().top")
     third = top + b["height"] / 2 - b["height"] / 3
     d.mouse.move(x, y)
@@ -108,9 +121,15 @@ def take_turn(d, board):
         # Once: a card that doesn't fit bounces back.
         no = d.locator(".lcd-card.no")
         if not seen["bounce"] and no.count():
+            # The same card a moment later, if it still doesn't fit: the hand may still be catching up with a new view.
+            nid = no.first.get_attribute("data-sling")
+            time.sleep(0.3)
+            card = d.locator(f'.lcd-card.no[data-sling="{nid}"]')
+            if not card.count() or not d.locator(".lcd-status.go").count() or not grab(card):
+                return False
             n = d.locator(".lcd-card").count()
             y = d.locator(".lcd-status").bounding_box()["y"]
-            sling(d, no.first)
+            sling(d, card)
             time.sleep(0.4)
             assert d.locator(".lcd-card").count() == n, "a card that doesn't fit left the phone"
             # Its message floats over the top (games-service D-191) and moves nothing.
@@ -119,30 +138,38 @@ def take_turn(d, board):
             assert abs(d.locator(".lcd-status").bounding_box()["y"] - y) < 1, "the message moved the status"
             shot(d, f"deck-bounce-{d.label}")
             seen["bounce"] = True
+        # Once, draw although a card fits (the rules allow it), so a game always shows a drawn card coming in.
+        if seen["bounce"] and not seen["receive"] and d.locator(".lcd-draw:not([hidden]):not([disabled])").count():
+            return draw(d)
         return play(d, ok.first, board)
     if d.locator(".lcd-draw:not([hidden])").count():
-        d.locator(".lcd-draw").click()
-        if not seen["receive"]:
-            # The new card comes in at the top of the phone, and keeps coming in through the next updates.
-            moving = []
-            for _ in range(20):
-                time.sleep(0.05)
-                moving = d.evaluate(INCOMING)
-                if moving:
-                    break
-            assert moving, "a drawn card appeared on the phone without coming in"
-            time.sleep(0.5)
-            assert d.evaluate(INCOMING) == moving, "the drawn card's way in was cut short"
-            shot(d, f"deck-receive-{d.label}")
-            seen["receive"] = True
-        return True
+        return draw(d)
     return False
+
+
+def draw(d):
+    """Draw a card; the first time, check that it comes in at the top of the phone (E-024)."""
+    d.locator(".lcd-draw").click()
+    if not seen["receive"]:
+        # The new card comes in at the top of the phone, and keeps coming in through the next updates.
+        moving = []
+        for _ in range(20):
+            time.sleep(0.05)
+            moving = d.evaluate(INCOMING)
+            if moving:
+                break
+        assert moving, "a drawn card appeared on the phone without coming in"
+        time.sleep(0.5)
+        assert d.evaluate(INCOMING) == moving, "the drawn card's way in was cut short"
+        shot(d, f"deck-receive-{d.label}")
+        seen["receive"] = True
+    return True
 
 
 def release_above_line(d, el):
     """Drag a card until its middle is just above the release line under the status, and let go there (D-193)."""
     b = el.bounding_box()
-    x, y = b["x"] + b["width"] / 2, b["y"] + b["height"] / 2
+    x, y = grab(el) or (b["x"] + b["width"] / 2, b["y"] + b["height"] / 2)
     line = d.locator(".lcd-line").bounding_box()["y"]
     d.mouse.move(x, y)
     d.mouse.down()
@@ -158,11 +185,7 @@ def release_above_line(d, el):
 def play(d, el, board):
     before = board.evaluate("document.querySelectorAll('.lc-pile > div').length")
     # A point of the card that is not under its neighbour in the hand (cards overlap), for a tap.
-    spot = el.evaluate("""e => { const r = e.getBoundingClientRect();
-        for (const fy of [0.5, 0.3, 0.7, 0.15, 0.85]) for (const fx of [0.5, 0.3, 0.15, 0.7, 0.85]) {
-          const x = r.left + r.width * fx, y = r.top + r.height * fy, t = document.elementFromPoint(x, y);
-          if (t && e.contains(t)) return [x, y]; }
-        return null; }""")
+    spot = grab(el)
     if seen["line"] and not seen["tap"] and spot and el.evaluate("e => !e.querySelector('[aria-label^=Wild]')"):
         # Once, with Tap a card to play it on (E-025): a tap plays a card that fits.
         n = d.locator(".lcd-card").count()
