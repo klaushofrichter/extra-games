@@ -1,7 +1,7 @@
 version: 2
 
 # Version updates only. The security half (alerts + security updates) is a repository setting, not config:
-# kube-setup docs/repository-baseline.md, requirements 1 and 2. No docker block: this repo has no Dockerfile
+# The repository baseline of the cluster repository, requirements 1 and 2. No docker block: this repo has no Dockerfile
 # (its games run inside the games-service table-host image).
 updates:
   # Test tooling (the games themselves have no npm dependencies).
