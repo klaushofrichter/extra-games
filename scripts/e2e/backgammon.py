@@ -99,6 +99,35 @@ def game():
     return a("GET", "/game/board")["view"]
 
 
+def ann_color():
+    """Ann's colour: she joined first, so she has the first seat."""
+    v = game()
+    return v["seats"].index(min(v["seats"]))
+
+
+def board_tap(board, act, cond, what):
+    """Tap a button in the box of the player to move once it is enabled: no second tap needed (E-031)."""
+    sel = f".bg-panel.active [data-act={act}]:not([disabled])"
+    board.wait_for_selector(sel, timeout=3000)
+    tap(board, sel)
+    wait(cond, 4, what)
+
+
+def board_moves(board):
+    """The dice of this turn by taps: for each die, the first target one die away."""
+    for _ in range(2):
+        v = game()
+        one = [t for t in v["targets"] if t["steps"] == 1]
+        if not one:
+            break
+        t = one[0]
+        n = len(v["remaining"])
+        pick(board, t["from"])
+        tap(board, f'[data-zone="{t["to"]}"]')
+        wait(lambda: len(game()["remaining"]) < n, 5, "a board move")
+        settle(board)
+
+
 def settle(board):
     """Wait until the board has shown every move it was sent (its animations)."""
     board.wait_for_function("() => !document.querySelector('.bg-board[data-busy]')", timeout=30000)
@@ -107,22 +136,24 @@ def settle(board):
 
 def phone_turn(d):
     """Play a whole turn from a phone: roll, the first listed move until none is left, then Done (or the pass)."""
+    turn = game()["turn"]
     if d.locator(".bg-acts [data-act=roll]").count():
         d.locator(".bg-acts [data-act=roll]").click()
         wait(lambda: game()["phase"] != "roll", 5, "the roll")
     for _ in range(5):
         v = game()
-        if v["phase"] != "move" or not v["legal"]:
+        if v["phase"] != "move" or v["turn"] != turn or not v["legal"]:
             break
         before = len(v["remaining"])
         b = d.locator(".bg-moves button:not([disabled])").first
         b.wait_for(timeout=5000)
         b.click()
-        wait(lambda: game()["phase"] != "move" or len(game()["remaining"]) < before, 5, "a phone move")
+        wait(lambda: game()["phase"] != "move" or game()["turn"] != turn or len(game()["remaining"]) < before, 5, "a phone move")
     v = game()
-    if v["phase"] == "move" and v["canDone"]:
-        d.locator(".bg-acts [data-act=done]").click()
-    wait(lambda: game()["phase"] != "move", 6, "the end of the turn")
+    if v["phase"] == "move" and v["turn"] == turn and v["canDone"]:
+        d.locator(".bg-acts [data-act=done]:not([disabled])").click()
+    # The next player's turn may begin already rolled (Roll for me, E-031).
+    wait(lambda: game()["phase"] != "move" or game()["turn"] != turn, 6, "the end of the turn")
 
 
 def main():
@@ -186,23 +217,21 @@ def main():
             wait(lambda: len(game()["remaining"]) < 2, 5, "the board move")
             settle(board)
             shot(board, "board-moved")
-            # Undo on the board takes it back.
-            tap_until(board, ".bg-panel.active [data-act=undo]", lambda: len(game()["remaining"]) == 2, "Undo")
+            # Undo on the board takes it back. Its buttons come back as soon as the table answers: they stayed disabled
+            # when the new view arrived before the answer (E-031: Done after the last checker went off, a second Undo).
+            board_tap(board, "undo", lambda: len(game()["remaining"]) == 2, "Undo")
             settle(board)
-            # Now the whole opening roll by taps: for each die, the first target one die away, then Done.
-            for _ in range(2):
-                v = game()
-                one = [t for t in v["targets"] if t["steps"] == 1]
-                if not one:
-                    break
-                t = one[0]
-                n = len(v["remaining"])
-                pick(board, t["from"])
-                tap(board, f'[data-zone="{t["to"]}"]')
-                wait(lambda: len(game()["remaining"]) < n, 5, "a board move")
-                settle(board)
+            # Now the whole opening roll by taps: for each die, the first target one die away; then both moves taken
+            # back with Undo (every move of the turn can be), played again, and Done.
+            board_moves(board)
             assert game()["canDone"], "all moved, but Done is not offered"
-            tap_until(board, ".bg-panel.active [data-act=done]", lambda: game()["phase"] == "roll", "the turn to pass")
+            board.wait_for_selector(".bg-panel.active [data-act=done]:not([disabled])", timeout=2500)
+            for left in (1, 2):
+                board_tap(board, "undo", lambda: len(game()["remaining"]) == left, f"Undo {left}")
+                settle(board)
+            assert len(game()["remaining"]) == 2 and game()["turnMoves"] in ("", "(no move)"), "two Undos did not take back the turn"
+            board_moves(board)
+            board_tap(board, "done", lambda: game()["phase"] == "roll", "the turn to pass")
             settle(board)
 
             # The other player rolls by tapping the dice on the board, and moves from the phone's list.
@@ -212,7 +241,15 @@ def main():
             dice = board.evaluate("[...document.querySelectorAll('[data-roll] .bg-die')].map((d) => d.getBoundingClientRect().top)")
             assert len(dice) == 2 and abs(dice[0] - dice[1]) < 2, f"the dice to roll are not side by side: {dice}"
             check(other, f"{other.label} on their roll")
-            tap_until(board, "[data-roll]", lambda: game()["phase"] == "move", "the board roll")
+            # The roll tumbles before its numbers show, on the board, in the player's box and on the phone (E-031).
+            tap(board, "[data-roll]")
+            board.locator(".bg-panel.active .bg-status >> text=Rolling…").wait_for(timeout=2000)
+            assert "Move:" not in board.inner_text(".bg-panel.active .bg-status"), "the box shows the roll before it lands"
+            other.locator(".bg-status >> text=Rolling…").wait_for(timeout=2000)
+            assert other.locator(".bg-movecard").is_hidden(), "the phone lists moves before the dice land"
+            shot(board, "board-rolling")
+            wait(lambda: game()["phase"] == "move", 5, "the board roll")
+            board.locator(".bg-panel.active .bg-status >> text=Rolling…").wait_for(state="detached", timeout=4000)
             settle(board)
             shot(board, "board-rolled")
             check(other, f"{other.label} moving")
@@ -251,7 +288,7 @@ def main():
             small.locator("[data-rules]").click()
             small.locator(".rules-modal .md h3").first.wait_for()
             assert "Backgammon" in small.inner_text(".rules-modal .rules-head h2")
-            assert small.locator(".rules-settings tr").count() == 3, "the three settings at this table"
+            assert small.locator(".rules-settings tr").count() == 5, "the five settings at this table"
             img = small.locator(".rules-modal .md img")
             img.scroll_into_view_if_needed()
             wait(lambda: img.evaluate("i => i.complete && i.naturalWidth > 0"), 10, "the rules illustration")
@@ -260,6 +297,16 @@ def main():
             small.wait_for_selector(".rules-modal", state="detached")
             if small.locator("#tab-game").count():
                 small.locator("#tab-game").click()
+
+            # Ann's options on her phone (E-031): Undo off (her turns end by themselves) and Roll for me.
+            ann.locator('.bg-optcard [data-opt=undo][data-val=none]').click()
+            wait(lambda: game()["options"][ann_color()]["undo"] == "none", 5, "Undo off")
+            ann.locator('.bg-optcard [data-opt=autoRoll][data-val=true]').click()
+            wait(lambda: game()["options"][ann_color()]["autoRoll"] is True, 5, "Roll for me")
+            ann.wait_for_selector('.bg-optcard [data-opt=undo][data-val=none].on')
+            ann.wait_for_selector('.bg-optcard [data-opt=autoRoll][data-val=true].on')
+            check(ann, "Ann with her options")
+            shot(ann, "deck-options")
 
             # Play the game on from the phones until it is won.
             end = time.time() + 240

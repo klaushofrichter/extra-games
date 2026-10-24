@@ -2,7 +2,7 @@
 // or Pass when doubled. Moves are made on the board; the phone also lists the moves the dice allow, as buttons, for a
 // player who would rather move from here. Doubling and passing ask for confirmation first.
 import { esc, playerColor, remainingMs } from "/shared/board-kit.js";
-import { COLOR_NAME, diceState, dieHtml, moveText, ownNumber } from "/games/backgammon/assets/bg-ui.js";
+import { COLOR_NAME, ROLL_MS, diceState, dieHtml, moveText, ownNumber, setFace } from "/games/backgammon/assets/bg-ui.js";
 
 export function mount(root, ctx) {
   root.innerHTML = `<style>
@@ -29,6 +29,10 @@ export function mount(root, ctx) {
       .bg-plays .dd { font-family:var(--mono); color:var(--ink-faint) }
       .bg-plays .me { color:var(--ink) } .bg-plays div { color:var(--ink-soft) }
       .bg-clock { font-family:var(--mono); color:var(--ink-soft); font-size:.9em }
+      .bg-opt { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:8px }
+      .bg-seg { display:flex; gap:4px; flex:none }
+      .bg-seg button { min-height:40px; padding:0 12px }
+      .bg-seg button.on { background:var(--brass,#d6a94a); border-color:var(--brass,#d6a94a); color:#1b1407; font-weight:700 }
       .bg-confirm { position:fixed; inset:0; z-index:50; display:grid; place-items:center; padding:16px; background:rgba(0,0,0,.6) }
       .bg-confirm[hidden] { display:none }
       .bg-confirm .box { width:100%; max-width:360px; padding:18px; border-radius:16px; background:var(--felt,#0f2a24); border:2px solid var(--brass,#d6a94a); box-shadow:0 16px 40px rgba(0,0,0,.6) }
@@ -43,6 +47,10 @@ export function mount(root, ctx) {
       <div class="bg-status"></div><div class="bg-dice"></div><div class="muted bg-hint" style="font-size:.85em"></div></div>
     <div class="card bg-actcard"><div class="bg-acts"></div><div class="bg-movecard"><div class="eyebrow" style="margin-top:10px">Or move from here</div><div class="bg-moves"></div></div></div>
     <div class="card"><div class="eyebrow bg-plays-head">This game</div><div class="bg-plays"></div></div>
+    <div class="card bg-optcard" hidden><div class="eyebrow">Your options</div>
+      <div class="bg-opt"><span>Undo</span><div class="bg-seg"><button type="button" data-opt="undo" data-val="all">All moves</button><button type="button" data-opt="undo" data-val="none">Off</button></div></div>
+      <div class="bg-opt"><span>Roll for me</span><div class="bg-seg"><button type="button" data-opt="autoRoll" data-val="false">Off</button><button type="button" data-opt="autoRoll" data-val="true">On</button></div></div>
+      <div class="muted" style="font-size:.85em;margin-top:8px">Undo off: your turn ends as soon as your dice are played. Roll for me: your dice are rolled as your turn begins, unless you could double first.</div></div>
     <div class="bg-confirm" hidden role="dialog" aria-modal="true" aria-labelledby="bg-confirm-title"><div class="box">
       <h3 id="bg-confirm-title"></h3><p></p>
       <div class="btns"><button type="button" data-confirm="no">Cancel</button><button type="button" data-confirm="yes"></button></div></div></div>`;
@@ -52,6 +60,9 @@ export function mount(root, ctx) {
   let busy = false;
   let confirming = null; // "double" or "pass", waiting for the player's confirmation
   let gone = false;
+  // A new roll tumbles until then (as on the board): its numbers and the moves it allows show once it lands.
+  let rollingUntil = 0, tumbleTimer = null;
+  const rolling = () => Date.now() < rollingUntil;
   const $ = (s) => root.querySelector(s);
   const nameOf = (color) => view.names[view.seats[color]] ?? COLOR_NAME[color];
 
@@ -81,6 +92,7 @@ export function mount(root, ctx) {
       return `${esc(nameOf(me ^ 1))} ${ai ? "is thinking…" : v.phase === "roll" ? "to roll" : "is moving"}`;
     }
     if (v.phase === "roll") return `<span style="color:var(--brass)">Your roll</span>`;
+    if (rolling()) return `<span style="color:var(--brass)">Rolling…</span>`;
     if (v.blocked) return "No move possible";
     if (v.canDone) return `<span style="color:var(--brass)">All moved: tap Done</span>`;
     return `<span style="color:var(--brass)">Your move</span>`;
@@ -110,7 +122,38 @@ export function mount(root, ctx) {
       box.innerHTML = v.phase === "roll" && v.turn === v.color && !v.result ? `<span class="muted">Your dice are in the cup</span>` : "";
       return;
     }
+    if (rolling()) {
+      // Two dice while they tumble (four would tell a doublet); the timer changes their faces in place.
+      if (!box.querySelector(".tumbling")) box.innerHTML = `<span class="tumbling" style="display:contents">${dieHtml(3, { size: 52 })}${dieHtml(5, { size: 52 })}</span>`;
+      return;
+    }
     box.innerHTML = diceState(v.dice, v.remaining, v.phase).map((d) => dieHtml(d.n, { size: v.dice[0] === v.dice[1] ? 44 : 52, used: d.used })).join("");
+  }
+
+  function tumble() {
+    rollingUntil = Date.now() + ROLL_MS;
+    clearInterval(tumbleTimer);
+    tumbleTimer = setInterval(() => {
+      if (gone) return clearInterval(tumbleTimer);
+      if (rolling()) {
+        for (const d of root.querySelectorAll(".bg-dice .bg-die")) setFace(d, 1 + Math.floor(Math.random() * 6));
+        return;
+      }
+      clearInterval(tumbleTimer);
+      if (view) draw();
+    }, 90);
+  }
+
+  function drawOptions() {
+    const v = view;
+    const card = $(".bg-optcard");
+    card.hidden = v.color === null || !!v.result || !!info.over;
+    if (card.hidden) return;
+    const o = v.options?.[v.color] ?? { undo: "all", autoRoll: false };
+    for (const b of card.querySelectorAll("[data-opt]")) {
+      b.classList.toggle("on", String(o[b.dataset.opt]) === b.dataset.val);
+      b.disabled = busy;
+    }
   }
 
   function drawActions() {
@@ -123,7 +166,7 @@ export function mount(root, ctx) {
     const mine = (v.phase === "roll" || v.phase === "move") && v.turn === me && !v.standIn.includes(v.seat);
     const show = !v.result && !info.over && me !== null && (answering || mine);
     card.hidden = !show;
-    $(".bg-movecard").hidden = !(show && v.phase === "move" && v.legal.length);
+    $(".bg-movecard").hidden = !(show && v.phase === "move" && v.legal.length && !rolling());
     if (!show) return;
     const dis = busy ? "disabled" : "";
     if (answering) {
@@ -132,7 +175,9 @@ export function mount(root, ctx) {
     } else if (v.phase === "roll") {
       box.innerHTML = `<button type="button" class="primary ${v.cube.enabled ? "" : "wide"}" data-act="roll" ${dis}>Roll</button>${v.cube.enabled ? `<button type="button" data-ask="double" ${dis || (v.canDouble ? "" : "disabled")}>Double to ${v.cube.value * 2}</button>` : ""}`;
     } else {
-      box.innerHTML = `<button type="button" data-act="undo" ${busy || !v.canUndo ? "disabled" : ""}>Undo</button><button type="button" class="primary" data-act="done" ${busy || !v.canDone ? "disabled" : ""}>Done</button>`;
+      const wait = busy || rolling();
+      const undo = v.options?.[me]?.undo !== "none";
+      box.innerHTML = `${undo ? `<button type="button" data-act="undo" ${wait || !v.canUndo ? "disabled" : ""}>Undo</button>` : ""}<button type="button" class="primary ${undo ? "" : "wide"}" data-act="done" ${wait || !v.canDone ? "disabled" : ""}>Done</button>`;
     }
     // The moves the dice allow now, in the player's own numbering (one die each).
     if (v.phase === "move") {
@@ -160,6 +205,7 @@ export function mount(root, ctx) {
     $(".bg-hint").textContent = hint();
     drawDice();
     drawActions();
+    drawOptions();
     $(".bg-plays-head").textContent = `Game ${v.match.game}${v.games.length ? ` · games so far: ${v.games.map((g) => (g.winner === v.color ? "won" : "lost") + " " + g.points).join(", ")}` : ""}`;
     const list = $(".bg-plays");
     const seen = v.color ?? 0;
@@ -217,6 +263,7 @@ export function mount(root, ctx) {
     if (busy || b.disabled) return;
     if (b.dataset.ask) return ask(b.dataset.ask);
     if (b.dataset.act) return void send(b.dataset.act);
+    if (b.dataset.opt) return void send("options", { [b.dataset.opt]: b.dataset.opt === "autoRoll" ? b.dataset.val === "true" : b.dataset.val });
     if (b.dataset.from) {
       const spot = (x) => (x === "bar" || x === "off" ? x : Number(x));
       send("move", { from: spot(b.dataset.from), to: spot(b.dataset.to), die: Number(b.dataset.die) });
@@ -237,6 +284,7 @@ export function mount(root, ctx) {
       const wasMine = view?.myTurn;
       view = v;
       info = i;
+      if (events.some((e) => e.name === "rolled" || e.name === "opening")) tumble();
       draw();
       if (confirming && (v.result || i.over || (confirming === "double" && v.phase !== "roll") || (confirming === "pass" && v.phase !== "double"))) closeDialog();
       if (v.myTurn && !wasMine) ctx.vibrate?.(60);
@@ -245,6 +293,7 @@ export function mount(root, ctx) {
     destroy() {
       gone = true;
       clearInterval(tick);
+      clearInterval(tumbleTimer);
       document.removeEventListener("keydown", onKey);
     },
   };
