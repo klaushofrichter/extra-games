@@ -66,10 +66,23 @@ def phone(browser, name, w, h):
     return d
 
 
+# A point of a card that no other card covers (the hand overlaps): a finger there touches this card, not its neighbour.
+VISIBLE = """e => { const r = e.getBoundingClientRect();
+  for (const fy of [0.5, 0.3, 0.7, 0.15, 0.85]) for (const fx of [0.5, 0.3, 0.15, 0.7, 0.85]) {
+    const x = r.left + r.width * fx, y = r.top + r.height * fy, t = document.elementFromPoint(x, y);
+    if (t && e.contains(t)) return [x, y]; }
+  return null; }"""
+
+
+def grab(el):
+    """Where a finger touches this card, or None when other cards cover all of it."""
+    return el.evaluate(VISIBLE)
+
+
 def sling(d, el, board=None, peek=None):
     """Push a card up and off the top of the phone; with `board`, look at the board while it is a third out."""
     b = el.bounding_box()
-    x, y = b["x"] + b["width"] / 2, b["y"] + b["height"] / 2
+    x, y = grab(el) or (b["x"] + b["width"] / 2, b["y"] + b["height"] / 2)
     top = d.evaluate("document.querySelector('.lcd').getBoundingClientRect().top")
     third = top + b["height"] / 2 - b["height"] / 3
     d.mouse.move(x, y)
@@ -112,7 +125,7 @@ def take_turn(d, board):
             nid = no.first.get_attribute("data-sling")
             time.sleep(0.3)
             card = d.locator(f'.lcd-card.no[data-sling="{nid}"]')
-            if not card.count() or not d.locator(".lcd-status.go").count():
+            if not card.count() or not d.locator(".lcd-status.go").count() or not grab(card):
                 return False
             n = d.locator(".lcd-card").count()
             y = d.locator(".lcd-status").bounding_box()["y"]
@@ -156,7 +169,7 @@ def draw(d):
 def release_above_line(d, el):
     """Drag a card until its middle is just above the release line under the status, and let go there (D-193)."""
     b = el.bounding_box()
-    x, y = b["x"] + b["width"] / 2, b["y"] + b["height"] / 2
+    x, y = grab(el) or (b["x"] + b["width"] / 2, b["y"] + b["height"] / 2)
     line = d.locator(".lcd-line").bounding_box()["y"]
     d.mouse.move(x, y)
     d.mouse.down()
@@ -172,11 +185,7 @@ def release_above_line(d, el):
 def play(d, el, board):
     before = board.evaluate("document.querySelectorAll('.lc-pile > div').length")
     # A point of the card that is not under its neighbour in the hand (cards overlap), for a tap.
-    spot = el.evaluate("""e => { const r = e.getBoundingClientRect();
-        for (const fy of [0.5, 0.3, 0.7, 0.15, 0.85]) for (const fx of [0.5, 0.3, 0.15, 0.7, 0.85]) {
-          const x = r.left + r.width * fx, y = r.top + r.height * fy, t = document.elementFromPoint(x, y);
-          if (t && e.contains(t)) return [x, y]; }
-        return null; }""")
+    spot = grab(el)
     if seen["line"] and not seen["tap"] and spot and el.evaluate("e => !e.querySelector('[aria-label^=Wild]')"):
         # Once, with Tap a card to play it on (E-025): a tap plays a card that fits.
         n = d.locator(".lcd-card").count()

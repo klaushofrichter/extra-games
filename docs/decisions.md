@@ -425,6 +425,8 @@ Records are history: an older record is not edited when a newer one changes it. 
   colour for a played wild); anything else is drawn as the back. The platform also passes only the sling's own fields
   of a gesture to the boards. Check: `tests/last-card.test.ts` draws hostile faces and finds the back, no markup.
 - **E-030 · 2026-10-24 · Claude** — Last Card's browser check no longer depends on luck. Two release runs failed: once
-  a card picked as not fitting was played (the hand was still catching up with a new view), once no person happened to
-  draw all game. The check now picks the card, waits a moment and slings it only if it still doesn't fit, and draws once
-  on purpose (the rules allow drawing when a card fits), so every run sees a drawn card come in.
+  a card that didn't fit left the phone, once no person happened to draw all game. The first was the check's own
+  finger: it pressed a card at its centre, which in a hand of overlapping cards can be the neighbour's, so the
+  neighbour (which fitted) was played. The check now presses every card at a point no other card covers (as its tap
+  already did, E-025), slings a card that doesn't fit only if it still doesn't a moment later, and draws once on purpose
+  (the rules allow drawing when a card fits), so every run sees a drawn card come in.
