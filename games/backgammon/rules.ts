@@ -412,7 +412,7 @@ function resultText(s: State): string {
   return `${seatName(s, w)} wins the match ${a}–${b} after ${count(s.games.length, "game")}.`;
 }
 
-// ---------- awards (games-service D-136; kept here so the game runs on tables before it) ----------
+// ---------- awards (games-service D-140; kept here so the game runs on tables before it) ----------
 interface Award {
   id: string;
   icon: string;

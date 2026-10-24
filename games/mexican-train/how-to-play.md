@@ -18,6 +18,9 @@ The big number on each train is the number its next tile must match.
 
 ## A turn
 
+Everyone gets 15 tiles (12 with five or six players, 10 with seven or eight); the rest is the boneyard to draw
+from. Each round, the next player starts. The lowest total wins; a tie shares the win.
+
 ![The engine in the middle, your train, the Mexican train and a train with a marker](assets/how-to-play.svg)
 
 On your turn you play **one tile** on:
@@ -41,7 +44,8 @@ marker on your train, and the next player must try to cover it.
 
 With the setting **First turn of a round: play a run of tiles on your own train** (on unless the table changes it),
 your first turn of every round may be a whole run: as long as you keep playing on your own train, it stays your turn.
-Tap **Done** to end the run, or play on another train to end it there.
+Once the run has started, only your own train is open to you. Tap **Done** to end it; it also ends when no tile fits
+your train.
 
 ## End of a round
 
@@ -57,6 +61,12 @@ twelve down to double blank.
 **Seconds per turn (0 = no limit)** gives each turn a limit. When your time runs out, the table plays a tile that fits
 for you, or draws one. **Seconds to show the scores after a round** sets how long the scores stay on the board before
 the next round is dealt; the board's **Next round** button deals it at once.
+
+## AI players and changing players
+
+AI players come in two styles: *planner* and *steady*. A game keeps its players. If someone has to go, the board can
+exchange them for another person or an AI player (tap their name in the board's settings, or **Exchange** at their seat
+when their phone is away): the newcomer plays on with the same tiles and score.
 
 ## The table
 

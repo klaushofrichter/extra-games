@@ -1,4 +1,4 @@
-// Chess statistics for the statistics window (games-service D-136), read from the game's moves at the end: every
+// Chess statistics for the statistics window (games-service D-140), read from the game's moves at the end: every
 // piece is followed from its starting square, so "the piece that moved most" is a real piece (the g1 knight), not a
 // kind. Pure; nothing is kept in the state while playing.
 //
@@ -119,7 +119,7 @@ function topPiece(base: Omit<Award, "seats" | "value">, pieces: Piece[], score: 
   return { ...base, seats: [seats[top[0].color]], value: value(top[0], best) };
 }
 
-/** The statistics window's awards (games-service D-136) and extra table columns. */
+/** The statistics window's awards (games-service D-140) and extra table columns. */
 export function chessAwards(ucis: string[], sans: string[], seats: [number, number]) {
   const { sides, pieces } = chessStats(ucis, sans);
   const pair = (f: (s: SideStats) => number): [number, number] => [f(sides[0]), f(sides[1])];

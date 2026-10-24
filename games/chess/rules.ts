@@ -403,7 +403,7 @@ export default defineGame<State>({
     if (!s.result) return null;
     const r = s.result;
     const moves = Math.ceil(s.sans.length / 2);
-    // The statistics window (games-service D-136): awards and counts read from the moves.
+    // The statistics window (games-service D-140): awards and counts read from the moves.
     const { awards, sides } = chessAwards(s.ucis, s.sans, s.seats);
     const rows = s.seats.map((seat, c) => [
       seatName(s, seat),
