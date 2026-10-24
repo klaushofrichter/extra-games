@@ -111,6 +111,13 @@ pip install -r scripts/e2e/requirements.txt && python -m playwright install chro
 scripts/e2e/run-all.sh out/           # board + phones in a real browser; screenshots in out/
 ```
 
+## Playing them locally
+
+On a table of your own, without the game service, from a games-service checkout next to this one:
+`CLOUD_URL= scripts/local-table.sh --extra ../extra-games` (Node 26), or with Docker the games-service runbook
+[`docs/runbooks/local-docker.md`](https://github.com/klaushofrichter/games-service/blob/main/docs/runbooks/local-docker.md),
+Part B1. The board then lists these games beside the built-in ones.
+
 ## Branches and checks
 
 ```
