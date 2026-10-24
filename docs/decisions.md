@@ -415,3 +415,6 @@ Records are history: an older record is not edited when a newer one changes it. 
     E-012, E-013, the README and code comments follow. E-020 says what *steady* does, E-024 names the first five Last
     Card awards, E-025 checks the underlines (not dots). A table at the top lists records that later ones changed.
   - Every game's version is set anew (a rules text or a comment changed in each folder).
+- **E-028 · 2026-10-24 · Klaus** — Private repositories by name only (games-service D-200): the configuration comments
+  that cited the cluster repository's baseline by its name say *the cluster repository* instead. Earlier records keep
+  their wording as history.

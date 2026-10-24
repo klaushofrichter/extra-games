@@ -1,4 +1,4 @@
-# PR checks: test, e2e, codeql (kube-setup docs/repository-baseline.md, requirements 3 and 5b).
+# PR checks: test, e2e, codeql (the cluster repository's baseline, requirements 3 and 5b).
 # Tables get these games from the `production` branch (the console lists klaushofrichter/extra-games@production), so
 # that is the branch to protect with these three contexts. Triggers on PRs to main too, so Dependabot's PRs are checked.
 # Weekly, the same checks run against games-service `main` instead of the pinned ref in games-service.ref: a platform

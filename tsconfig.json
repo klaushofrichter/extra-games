@@ -17,6 +17,6 @@
       "@game-table/sdk/cards": ["./.games-service/packages/sdk/src/cards.ts"]
     }
   },
-  // noEmit over games, tests and scripts: vitest strips types, so nothing else checks them (kube-setup baseline 5b).
+  // noEmit over games, tests and scripts: vitest strips types, so nothing else checks them (repository baseline 5b).
   "include": ["games/*/*.ts", "tests/**/*.ts", "scripts/**/*.ts", "vitest.config.ts"]
 }
