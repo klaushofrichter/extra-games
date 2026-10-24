@@ -418,3 +418,9 @@ Records are history: an older record is not edited when a newer one changes it. 
 - **E-028 · 2026-10-24 · Klaus** — Private repositories by name only (games-service D-200): the configuration comments
   that cited the cluster repository's baseline by its name say *the cluster repository* instead. Earlier records keep
   their wording as history.
+- **E-029 · 2026-10-24 · Klaus** — Last Card draws only real cards (games-service D-202). *Why:* a security review
+  found that a phone could send the board a card face with markup in it during a drag, and the card kit put a card's
+  kind and colour into SVG without escaping, so script could run in the table's board page. Klaus: "Take special care
+  about security concerns." *Implementation (Claude):* `cardFace` accepts only the deck's colours and kinds (and a known
+  colour for a played wild); anything else is drawn as the back. The platform also passes only the sling's own fields
+  of a gesture to the boards. Check: `tests/last-card.test.ts` draws hostile faces and finds the back, no markup.

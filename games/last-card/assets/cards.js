@@ -5,6 +5,8 @@ export const SPEEDS = { fast: 0.7, normal: 1, slow: 1.5 };
 
 export const FILL = { r: "#e5484d", y: "#f2b81c", g: "#2fa35b", b: "#2f7fe0" };
 const DARK = { r: "#9e1f24", y: "#a06d00", g: "#16683a", b: "#174f99" };
+const KINDS = new Set(["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "skip", "rev", "+2"]);
+const WILDS = new Set(["wild", "+4"]);
 
 /** The symbol of a kind, centred at (0, 0) in a box about 40 wide, in `ink`. */
 function symbol(k, ink, big) {
@@ -30,6 +32,10 @@ const quarters = (r) => {
 
 /** A card's face, w × h pixels. `color` tints a wild card that has been played (the colour it called). */
 export function cardFace(card, w, h, { color } = {}) {
+  // A face can come from a phone's gesture on the board (games-service D-202): only known colours and kinds reach the
+  // markup; anything else is drawn as the back.
+  if (!(card?.c === "w" ? WILDS.has(card.k) : Object.hasOwn(FILL, card?.c) && KINDS.has(card.k))) return cardBack(w, h);
+  if (!Object.hasOwn(FILL, color)) color = undefined;
   const wild = card.c === "w";
   const fill = wild ? "#1d1d22" : FILL[card.c];
   const ink = wild ? "#fff" : FILL[card.c];
