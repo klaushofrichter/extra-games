@@ -424,3 +424,7 @@ Records are history: an older record is not edited when a newer one changes it. 
   about security concerns." *Implementation (Claude):* `cardFace` accepts only the deck's colours and kinds (and a known
   colour for a played wild); anything else is drawn as the back. The platform also passes only the sling's own fields
   of a gesture to the boards. Check: `tests/last-card.test.ts` draws hostile faces and finds the back, no markup.
+- **E-030 · 2026-10-24 · Claude** — Last Card's browser check no longer depends on luck. Two release runs failed: once
+  a card picked as not fitting was played (the hand was still catching up with a new view), once no person happened to
+  draw all game. The check now picks the card, waits a moment and slings it only if it still doesn't fit, and draws once
+  on purpose (the rules allow drawing when a card fits), so every run sees a drawn card come in.
