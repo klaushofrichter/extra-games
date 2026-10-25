@@ -242,6 +242,10 @@ def main():
             assert len(dice) == 2 and abs(dice[0] - dice[1]) < 2, f"the dice to roll are not side by side: {dice}"
             check(other, f"{other.label} on their roll")
             # The roll tumbles before its numbers show, on the board, in the player's box and on the phone (E-031).
+            # The real dice never come up while the throw-in animation still runs: that flashed them (E-032).
+            board.evaluate("""() => { window.__diceFlash = 0; new MutationObserver(() => {
+                if (document.querySelector('.bg-dice.rolling .bg-dice-row:not(.tumbling)')) window.__diceFlash++;
+              }).observe(document.querySelector('.bg-dice'), { subtree: true, childList: true, attributes: true }); }""")
             tap(board, "[data-roll]")
             board.locator(".bg-panel.active .bg-status >> text=Rolling…").wait_for(timeout=2000)
             assert "Move:" not in board.inner_text(".bg-panel.active .bg-status"), "the box shows the roll before it lands"
@@ -251,6 +255,7 @@ def main():
             wait(lambda: game()["phase"] == "move", 5, "the board roll")
             board.locator(".bg-panel.active .bg-status >> text=Rolling…").wait_for(state="detached", timeout=4000)
             settle(board)
+            assert board.evaluate("() => window.__diceFlash") == 0, "the real dice were drawn inside the rolling animation"
             shot(board, "board-rolled")
             check(other, f"{other.label} moving")
             shot(other, "deck-moving")

@@ -40,6 +40,25 @@ function pointCol(p) {
 }
 const stepFor = (n, room) => (n <= 1 ? D : Math.min(D, (room - D) / (n - 1)));
 
+/** The mounted board, for the settings window (Undo for the match, E-032). */
+let live = null;
+
+/** The board's settings window: Undo for both players, changed by either of them during the match (E-032). */
+export function settings({ info }) {
+  const v = live?.view();
+  const seat = v && (info?.controlSeats ?? []).find((s) => v.seats.includes(s));
+  if (!v || seat === undefined || v.result) return [];
+  return [
+    {
+      type: "choice",
+      label: "Undo (both players)",
+      value: v.undoMode === "none" ? "none" : "all",
+      options: [{ value: "all", label: "All moves" }, { value: "none", label: "Off: the turn ends by itself" }],
+      onChange: (undo) => live?.act(seat, "undoMode", { undo }),
+    },
+  ];
+}
+
 export function mount(root, ctx) {
   useStyles("/games/backgammon/board.css");
   const box = html(`<div class="bg-board">
@@ -211,8 +230,9 @@ export function mount(root, ctx) {
         }
         const st = stackOf(shown, t.to, c);
         const own = st.color === c ? st.n : 0;
+        const hit = st.n === 1 && st.color !== c;
         const { x, y } = slot(t.to, c, own, own + 1);
-        m += `<div class="bg-target ${t.steps > 1 ? "far" : ""}" data-steps="${t.steps}" style="left:${x - D / 2}px;top:${y - D / 2}px"></div>`;
+        m += `<div class="bg-target ${t.steps > 1 ? "far" : ""} ${hit ? "hit" : ""}" data-steps="${t.steps}" style="left:${x - D / 2}px;top:${y - D / 2}px"></div>`;
       }
     }
     put(marks, m);
@@ -244,6 +264,10 @@ export function mount(root, ctx) {
   }
   function drawDice() {
     const v = view;
+    // The throw-in animation runs only while the roll tumbles. Drawn from anywhere else at its end (the move queue
+    // can be first), the real dice would otherwise come up inside a still "rolling" box and be thrown in once more:
+    // the flash before the final dice (E-032).
+    diceBox.classList.toggle("rolling", rolling());
     if (!v || v.phase === "gameOver" || v.phase === "over") return put(diceBox, "");
     const where = diceAt(v.turn);
     const rollHere = v.phase === "roll" && !v.result && !info.over && ctx?.act && (info.controlSeats ?? []).includes(v.turnSeat);
@@ -254,7 +278,7 @@ export function mount(root, ctx) {
         : `<div class="bg-wait">${v.phase === "double" ? "" : `${esc(nameOf(v.turn))} to roll`}</div>`;
     } else if (rolling()) {
       // Always two dice while they tumble: four would tell a doublet before it lands. The faces change in place.
-      inner = `<div class="bg-dice-row">${dieHtml(3, { size: 60 })}${dieHtml(5, { size: 60 })}</div>`;
+      inner = `<div class="bg-dice-row tumbling">${dieHtml(3, { size: 60 })}${dieHtml(5, { size: 60 })}</div>`;
     } else {
       const ds = diceState(v.dice, v.remaining, v.phase);
       const size = ds.length > 2 ? 50 : 60;
@@ -311,6 +335,7 @@ export function mount(root, ctx) {
     else if (!mine) status = `<span class="muted">${esc(nameOf(color ^ 1))} ${v.phase === "roll" ? "to roll" : "is moving"}${v.standIn.includes(v.seats[color ^ 1]) ? " (stand-in)" : ""}</span>`;
     else if (away) status = "The stand-in is playing…";
     else if (ai) status = v.phase === "roll" ? "Rolling…" : "Thinking…";
+    else if (v.phase === "roll" && v.canDouble && v.options?.[color]?.autoRoll && remainingMs(info, "autoroll") !== null) status = "Rolling for you in a moment, or double";
     else if (v.phase === "roll") status = v.canDouble ? `Your roll: tap the dice, or double${showButtons ? "" : " on your phone"}` : "Your roll: tap the dice";
     else if (rolling()) status = "Rolling…";
     else if (v.blocked) status = "No move possible: the turn passes";
@@ -573,6 +598,9 @@ export function mount(root, ctx) {
     drawMarks();
   });
 
+  const currentView = () => view;
+  live = { view: currentView, act: (seat, name, payload) => ctx.act?.(seat, name, payload) };
+
   return {
     update(v, events, i) {
       info = i;
@@ -597,6 +625,7 @@ export function mount(root, ctx) {
     },
     destroy() {
       gone = true;
+      if (live?.view === currentView) live = null;
       clearTimeout(confirmTimer);
       clearInterval(tumbleTimer);
     },

@@ -7,9 +7,10 @@
 //
 // A turn: roll (or double first), move the dice one checker at a time (each move can be taken back until the turn
 // ends), then Done. With no legal move the turn passes by itself after a moment. Bearing off the last checker ends
-// the game at once. Each player has two options, set in the lobby for both and changed on their own phone during the
-// match (E-031): Undo all moves of the turn, or none, and then the turn ends by itself once the dice are played; and
-// rolling for them when their turn begins, unless they could double first.
+// the game at once. Undo is one setting for the match (E-032): all moves of the turn, or none, and then the turn ends
+// by itself once the dice are played. Roll for me is each player's own: their dice are rolled as their turn begins, or
+// after a short pause in which they can still double, when they could (E-031, E-032). Both are lobby settings and
+// change during the match.
 import { count, defineGame, type GameContext, type StepInfo } from "@game-table/sdk";
 import {
   absolute,
@@ -39,6 +40,8 @@ import { LEVELS, choosePlay, shouldDouble, shouldTake, type CubeSituation, type 
 const PASS_MS = 2600;
 /** The stand-in's pause before each of its steps, so the board can be followed. */
 const STAND_IN_MS = 800;
+/** Roll for me, when the player could double first: the pause in which they still can (E-032). */
+export const AUTO_ROLL_MS = 3000;
 /** Between the games of a match; the board can skip it ("Next game"). */
 export const NEXT_MS = 9000;
 /** The cube stops here. */
@@ -197,6 +200,7 @@ function startGame(s: State, ctx: GameContext): Out {
 }
 
 function roll(s: State, ctx: GameContext): Out {
+  ctx.clearTimer("autoroll");
   const a = ctx.randomInt(1, 6);
   const b = ctx.randomInt(1, 6);
   const stats = s.stats.map((x) => ({ ...x })) as [SideStats, SideStats];
@@ -266,17 +270,26 @@ function endTurn(s: State, ctx: GameContext): Out {
 }
 
 /**
- * Rolls for the side on roll when their option says so (E-031), but not when they may double first: that choice
- * stays theirs. Not for a stand-in, which rolls on its own timer.
+ * Rolls for the side on roll when their option says so (E-031). When they could double first, the roll waits
+ * AUTO_ROLL_MS ("autoroll" timer), so the choice to double stays theirs (E-032). Not for a stand-in, which rolls on
+ * its own timer.
  */
 function autoRoll(out: Out, ctx: GameContext): Out {
   const s = out.state;
-  if (s.phase !== "roll" || !optionsOf(s, s.turn).autoRoll || canDouble(s) || s.standIn.includes(s.seats[s.turn])) return out;
-  const r = roll(s, ctx);
+  if (s.phase !== "roll" || !optionsOf(s, s.turn).autoRoll || s.standIn.includes(s.seats[s.turn])) return out;
+  if (canDouble(s)) {
+    ctx.setTimer("autoroll", AUTO_ROLL_MS);
+    return out;
+  }
+  return rolledFor(out, roll(s, ctx));
+}
+/** A roll made by Roll for me: its "rolled" event says so. */
+function rolledFor(out: Out, r: Out): Out {
   return { state: r.state, events: [...out.events, ...r.events.map((e) => (e.name === "rolled" ? { ...e, data: { ...(e.data as object), auto: true } } : e))] };
 }
 
 function endGame(s: State, winner: Color, points: number, kind: Kind, ctx: GameContext): Out {
+  ctx.clearTimer("autoroll");
   ctx.clearTimer("turn");
   ctx.clearTimer("standin");
   ctx.clearTimer("pass");
@@ -347,6 +360,7 @@ function autoStep(s: State, ctx: GameContext, whole: boolean): Out {
 }
 
 function offer(s: State, ctx: GameContext): Out {
+  ctx.clearTimer("autoroll");
   const stats = s.stats.map((x) => ({ ...x })) as [SideStats, SideStats];
   stats[s.turn].cubes++;
   const next: State = { ...s, phase: "double", stats };
@@ -379,12 +393,29 @@ function setOptions(s: State, color: Color, payload: unknown, ctx: GameContext):
   options[color] = mine;
   const next: State = { ...s, options };
   const out: Out = { state: next, events: [{ name: "options", data: { color, ...mine } }] };
+  if (o.autoRoll === false && s.turn === color) ctx.clearTimer("autoroll");
   if (s.result || s.turn !== color || s.standIn.includes(s.seats[color])) return out;
-  if (next.phase === "move" && mine.undo === "none" && next.rule.max > 0 && !legal(next).length) {
-    const end = endTurn(next, ctx);
-    return { state: end.state, events: [...out.events, ...end.events] };
-  }
-  return autoRoll(out, ctx);
+  return autoRoll(endIfDone(out, ctx), ctx);
+}
+
+/** Undo turned off after the last move of a turn: it ends, as it would have ended by itself. */
+function endIfDone(out: Out, ctx: GameContext): Out {
+  const s = out.state;
+  if (s.phase !== "move" || optionsOf(s, s.turn).undo !== "none" || s.rule.max === 0 || legal(s).length) return out;
+  const end = endTurn(s, ctx);
+  return { state: end.state, events: [...out.events, ...end.events] };
+}
+
+/**
+ * Undo for the whole match (E-032): { undo: "all" | "none" }, from either player, at any time. (The "options" intent
+ * still takes a player's own undo, so logs from E-031 replay as they were played.)
+ */
+function setUndo(s: State, payload: unknown, ctx: GameContext): Out | { reject: string } {
+  const undo = (payload as { undo?: unknown } | null)?.undo;
+  if (undo !== "all" && undo !== "none") return { reject: "Undo is all or none" };
+  const options: [Options, Options] = [{ ...optionsOf(s, 0), undo }, { ...optionsOf(s, 1), undo }];
+  const out: Out = { state: { ...s, options }, events: [{ name: "undoMode", data: { undo } }] };
+  return s.result ? out : endIfDone(out, ctx);
 }
 
 /** A move from an intent: { from, to, die? } in absolute spots (1–24, "bar", "off"). */
@@ -440,6 +471,8 @@ function publicView(s: State) {
     lastGame: s.games.at(-1) ?? null,
     standIn: s.standIn,
     options: [optionsOf(s, 0), optionsOf(s, 1)],
+    /** Undo for the match (E-032); "mixed" only in a match from before, where each player had their own. */
+    undoMode: optionsOf(s, 0).undo === optionsOf(s, 1).undo ? optionsOf(s, 0).undo : "mixed",
     turnMs: s.turnMs,
     result: s.result ? { ...s.result, text: resultText(s) } : null,
   };
@@ -548,6 +581,7 @@ export default defineGame<State>({
     const color = colorOf(s, seat);
     if (color === null) return { reject: "You are not playing in this match" };
     if (intent.name === "options") return setOptions(s, color, intent.payload, ctx);
+    if (intent.name === "undoMode") return setUndo(s, intent.payload, ctx);
     if (s.phase === "gameOver") return { reject: "The next game starts in a moment" };
     const mover = s.turn === color;
     switch (intent.name) {
@@ -613,6 +647,10 @@ export default defineGame<State>({
       return r;
     }
     if (id === "pass" && s.phase === "move" && s.rule.max === 0) return endTurn(s, ctx);
+    if (id === "autoroll") {
+      if (s.phase !== "roll" || !optionsOf(s, s.turn).autoRoll || s.standIn.includes(s.seats[s.turn])) return { state: s };
+      return rolledFor({ state: s, events: [] }, roll(s, ctx));
+    }
     if (id === "standin") {
       const who = actor(s);
       if (who === null || !s.standIn.includes(s.seats[who])) return { state: s };
@@ -708,6 +746,7 @@ export default defineGame<State>({
       if (name === "move") return { text: `moves ${added ?? finished?.text ?? "?"}${ending}${finished && !ending ? " and the turn ends" : ""}${autoRolled}`, columns };
       if (name === "undo") return { text: "takes back a move", columns };
       if (name === "done") return { text: `ends the turn: ${finished?.text ?? ""}${autoRolled}`, columns };
+      if (name === "undoMode") return { text: `Undo for both players: ${a.options?.[0]?.undo === "none" ? "off" : "all moves"}${finished && a.plays.length > b.plays.length ? `; ends the turn: ${finished.text}` : ""}${autoRolled}`, columns };
       if (name === "options") {
         const c = colorOf(a, step.seat ?? -1);
         const o = c === null ? DEFAULT_OPTIONS : optionsOf(a, c);
@@ -720,6 +759,7 @@ export default defineGame<State>({
     if (step.kind === "timer") {
       if (step.timer === "next" && a.opening) return { text: `Game ${a.match.game}: opening roll ${a.opening[0]} for White, ${a.opening[1]} for Black; ${seatName(a, a.turn)} starts`, columns };
       if (step.timer === "pass") return { text: `can't move with ${b.dice?.join("-")}: the turn passes`, columns };
+      if (step.timer === "autoroll") return { text: `Roll for me: ${seatName(a, a.turn)} rolls ${a.dice?.join("-")}`, columns, steps: [{ seat: a.seats[a.turn], text: `rolls ${a.dice?.join("-")}`, auto: true }] };
       if (step.timer === "standin" || step.timer === "turn") {
         const seat = b.seats[actor(b) ?? b.turn];
         const what = step.timer === "standin" ? "Stand-in" : "Out of time: the table";
