@@ -47,10 +47,10 @@ export function mount(root, ctx) {
       <div class="bg-status"></div><div class="bg-dice"></div><div class="muted bg-hint" style="font-size:.85em"></div></div>
     <div class="card bg-actcard"><div class="bg-acts"></div><div class="bg-movecard"><div class="eyebrow" style="margin-top:10px">Or move from here</div><div class="bg-moves"></div></div></div>
     <div class="card"><div class="eyebrow bg-plays-head">This game</div><div class="bg-plays"></div></div>
-    <div class="card bg-optcard" hidden><div class="eyebrow">Your options</div>
-      <div class="bg-opt"><span>Undo</span><div class="bg-seg"><button type="button" data-opt="undo" data-val="all">All moves</button><button type="button" data-opt="undo" data-val="none">Off</button></div></div>
+    <div class="card bg-optcard" hidden><div class="eyebrow">Options</div>
       <div class="bg-opt"><span>Roll for me</span><div class="bg-seg"><button type="button" data-opt="autoRoll" data-val="false">Off</button><button type="button" data-opt="autoRoll" data-val="true">On</button></div></div>
-      <div class="muted" style="font-size:.85em;margin-top:8px">Undo off: your turn ends as soon as your dice are played. Roll for me: your dice are rolled as your turn begins, unless you could double first.</div></div>
+      <div class="bg-opt"><span>Undo <small class="muted">(both players)</small></span><div class="bg-seg"><button type="button" data-opt="undo" data-val="all">All moves</button><button type="button" data-opt="undo" data-val="none">Off</button></div></div>
+      <div class="muted" style="font-size:.85em;margin-top:8px">Roll for me: your dice are rolled as your turn begins; when you could double, after a moment, so you still can. Undo off: every turn ends as soon as its dice are played.</div></div>
     <div class="bg-confirm" hidden role="dialog" aria-modal="true" aria-labelledby="bg-confirm-title"><div class="box">
       <h3 id="bg-confirm-title"></h3><p></p>
       <div class="btns"><button type="button" data-confirm="no">Cancel</button><button type="button" data-confirm="yes"></button></div></div></div>`;
@@ -91,6 +91,7 @@ export function mount(root, ctx) {
       const ai = (info.players ?? []).find((p) => p.seat === v.seats[me ^ 1])?.kind === "ai" || v.standIn.includes(v.seats[me ^ 1]);
       return `${esc(nameOf(me ^ 1))} ${ai ? "is thinking…" : v.phase === "roll" ? "to roll" : "is moving"}`;
     }
+    if (v.phase === "roll" && v.canDouble && v.options?.[me]?.autoRoll && remainingMs(info, "autoroll") !== null) return `<span style="color:var(--brass)">Rolling for you in a moment</span>`;
     if (v.phase === "roll") return `<span style="color:var(--brass)">Your roll</span>`;
     if (rolling()) return `<span style="color:var(--brass)">Rolling…</span>`;
     if (v.blocked) return "No move possible";
@@ -149,7 +150,7 @@ export function mount(root, ctx) {
     const card = $(".bg-optcard");
     card.hidden = v.color === null || !!v.result || !!info.over;
     if (card.hidden) return;
-    const o = v.options?.[v.color] ?? { undo: "all", autoRoll: false };
+    const o = { undo: v.undoMode === "none" ? "none" : "all", autoRoll: !!v.options?.[v.color]?.autoRoll };
     for (const b of card.querySelectorAll("[data-opt]")) {
       b.classList.toggle("on", String(o[b.dataset.opt]) === b.dataset.val);
       b.disabled = busy;
@@ -263,7 +264,8 @@ export function mount(root, ctx) {
     if (busy || b.disabled) return;
     if (b.dataset.ask) return ask(b.dataset.ask);
     if (b.dataset.act) return void send(b.dataset.act);
-    if (b.dataset.opt) return void send("options", { [b.dataset.opt]: b.dataset.opt === "autoRoll" ? b.dataset.val === "true" : b.dataset.val });
+    if (b.dataset.opt === "undo") return void send("undoMode", { undo: b.dataset.val }); // for the match (E-032)
+    if (b.dataset.opt) return void send("options", { autoRoll: b.dataset.val === "true" });
     if (b.dataset.from) {
       const spot = (x) => (x === "bar" || x === "off" ? x : Number(x));
       send("move", { from: spot(b.dataset.from), to: spot(b.dataset.to), die: Number(b.dataset.die) });

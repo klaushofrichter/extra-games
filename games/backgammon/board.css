@@ -7,6 +7,8 @@
 
 /* Moving parts in their own layers above the static board (one paint layer each). */
 .bg-marks, .bg-checkers, .bg-dice, .bg-zones { position: absolute; inset: 0; pointer-events: none; }
+/* Above the checkers: a hit's target ring goes around the opponent's checker, which hid it underneath (E-032). */
+.bg-marks { z-index: 1; }
 .bg-checkers { will-change: transform; }
 .bg-zones { pointer-events: none; }
 .bg-zone { position: absolute; pointer-events: auto; }
@@ -26,6 +28,8 @@
   border: 4px dashed rgba(95, 191, 143, .95); background: rgba(95, 191, 143, .22); }
 .bg-target.far { border-style: dotted; background: rgba(95, 191, 143, .12); }
 .bg-target.off { border-radius: 10px; }
+/* Landing on a lone opposing checker hits it: the ring is red. */
+.bg-target.hit { border-color: #e0564a; background: rgba(224, 86, 74, .16); }
 
 .bg-dice-at { position: absolute; width: max-content; display: grid; justify-items: center; gap: 8px; pointer-events: none; }
 .bg-dice-row { display: flex; gap: 14px; }
