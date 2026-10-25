@@ -21,7 +21,7 @@ import {
   type Sub,
 } from "../games/backgammon/bg.ts";
 import { choosePlay, evaluate, shouldDouble, shouldTake } from "../games/backgammon/ai.ts";
-import def, { aiIntent, canDouble, NEXT_MS, type State, type View } from "../games/backgammon/rules.ts";
+import def, { AUTO_ROLL_MS, aiIntent, canDouble, NEXT_MS, type State, type View } from "../games/backgammon/rules.ts";
 import { loadGame, replaysExactly, seats, start } from "./harness.ts";
 
 /** A board from absolute points: white and black counts by point, and the bar and borne-off counts. */
@@ -432,7 +432,7 @@ describe("options: Undo all or none, and Roll for me (E-031)", () => {
     expect((def.view(r.s, w) as View).options[0]).toEqual({ undo: "none", autoRoll: false });
   });
 
-  it("Roll for me rolls as the turn begins, but not when the player could double first", () => {
+  it("Roll for me rolls as the turn begins, and after a pause when the player could double first", () => {
     // Without the cube nobody can double: Black's dice are rolled as White ends the turn.
     let { s } = newMatch({ cube: false, autoRoll: true });
     const w = s.seats[0];
@@ -443,11 +443,39 @@ describe("options: Undo all or none, and Roll for me (E-031)", () => {
     expect(r.events.find((e) => e.name === "rolled")?.data).toMatchObject({ color: 1, dice: [4, 2], auto: true });
     const text = def.describe!({ kind: "intent", seat: w, intent: { name: "done" }, accepted: true, events: r.events, names: {}, before: s, after: r.s } as never);
     expect(text?.text).toMatch(/rolls 4-2 \(auto-roll\)/);
-    // With the cube in the middle Black may double: the roll waits for them.
+    // With the cube in the middle Black may double: the roll waits AUTO_ROLL_MS for that (E-032), then comes.
     let m = newMatch({ autoRoll: true }).s;
     ({ s: m } = step(m, w, "move", { from: 8, to: 5 }));
     ({ s: m } = step(m, w, "move", { from: 6, to: 5 }));
-    expect(step(m, w, "done").s).toMatchObject({ phase: "roll", turn: 1 });
+    const ctx = fakeCtx([5, 2]);
+    const waiting = step(m, w, "done", undefined, ctx).s;
+    expect(waiting).toMatchObject({ phase: "roll", turn: 1 });
+    expect(ctx.timers.get("autoroll")).toBe(AUTO_ROLL_MS);
+    const t = def.onTimer!(waiting, "autoroll", ctx as never) as { state: State; events?: { name: string; data?: unknown }[] };
+    expect(t.state).toMatchObject({ phase: "move", turn: 1, dice: [5, 2] });
+    expect(t.events?.find((e) => e.name === "rolled")?.data).toMatchObject({ auto: true });
+    // A double in the pause stops it.
+    const ctx2 = fakeCtx();
+    const waiting2 = step(m, w, "done", undefined, ctx2).s;
+    const doubled = step(waiting2, waiting2.seats[1], "double", undefined, ctx2).s;
+    expect(ctx2.timers.has("autoroll")).toBe(false);
+    expect(doubled.phase).toBe("double");
+    expect((def.onTimer!(doubled, "autoroll", fakeCtx() as never) as { state: State }).state).toBe(doubled); // a late timer does nothing
+  });
+
+  it("Undo is one setting for the match: either player turns it on or off for both (E-032)", () => {
+    let { s } = newMatch();
+    const [w, b] = s.seats;
+    ({ s } = step(s, b, "undoMode", { undo: "none" })); // also on the other player's turn
+    expect(s.options?.map((o) => o.undo)).toEqual(["none", "none"]);
+    expect((def.view(s, w) as View).undoMode).toBe("none");
+    expect(refuse(s, w, "undoMode", { undo: "maybe" })).toMatch(/all or none/);
+    expect(refuse(s, w, "undo")).toMatch(/Undo is off/);
+    const r = step(s, w, "move", { from: 8, to: 5 });
+    const end = step(r.s, w, "move", { from: 6, to: 5 });
+    expect(end.s).toMatchObject({ phase: "roll", turn: 1 }); // the turn passes by itself
+    ({ s } = step(end.s, w, "undoMode", { undo: "all" }));
+    expect((def.view(s, w) as View).undoMode).toBe("all");
   });
 
   it("turning Roll for me on while it is your roll rolls at once", () => {

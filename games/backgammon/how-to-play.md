@@ -21,18 +21,18 @@ The game starts with two checkers on your 24-point, five on your 13, three on yo
 
 1. **Roll.** Each game starts with the opening roll, thrown for you: one die each (a tie is thrown again), and the player with the higher die plays both numbers. After that, tap the dice on the board or **Roll** on your phone.
 2. **Move.** Each die moves one checker that many points, to a point that is empty, holds your own checkers, or holds a single opposing checker. Two or more opposing checkers block a point. Doubles move four times.
-3. **Done.** Tap **Done** on the board or the phone. Until then, **Undo** takes back your moves one at a time, all of them if you like. With Undo turned off, the turn ends by itself as soon as your dice are played.
+3. **Done.** Tap **Done** on the board or the phone. Until then, **Undo** takes back your moves one at a time, all of them if you like. With Undo turned off for the match, the turn ends by itself as soon as your dice are played. A target that hits a lone opposing checker lights up red.
 
 You must use both dice if you can, and if only one can be played, the larger one. If no move is possible, the turn passes by itself. The board lights up only the moves that are allowed; a checker can also go several dice at once (tap the far point). The phone lists the single moves too, as buttons, in your own numbering.
 
-## Your options
+## Options
 
-On your phone, under *Your options*, at any time during the match:
+On your phone, under *Options*, at any time during the match:
 
-- **Undo:** *All moves* (the start) lets you take back every move of the turn until Done. *Off* takes Undo away, and your turn ends by itself once your dice are played.
-- **Roll for me:** *On* rolls your dice as your turn begins, unless you could double first: then you roll or double yourself.
+- **Roll for me** (your own): *On* rolls your dice as your turn begins. When you could double, it waits a moment first, so you can still double.
+- **Undo** (for both players): *All moves* (the start) takes back every move of the turn until Done. *Off* takes Undo away, and every turn ends by itself once its dice are played. The board's settings have it too.
 
-The settings before the match, **Undo** (*all* or *none*) and **Roll for me**, choose the start for both players.
+The settings before the match, **Undo** (*all* or *none*) and **Roll for me**, choose the start.
 
 ## Hitting and the bar
 

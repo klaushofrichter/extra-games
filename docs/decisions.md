@@ -451,3 +451,19 @@ Records are history: an older record is not edited when a newer one changes it. 
     with a cloud service, an invite and WebRTC.
 
   *Why:* Klaus played a match with one remote and one local player.
+- **E-032 · 2026-10-25 · Klaus** — Backgammon after a match with a remote player on a hotspot:
+  - **Undo is one setting for the match,** not each player's. Either player changes it on the phone (*Options*,
+    intent `undoMode`) or in the board's settings window. Off: every turn ends by itself once its dice are played,
+    and the next player's Roll for me rolls at once. The lobby setting sets the start. The E-031 `options` intent
+    still takes a player's own undo, so logs from E-031 replay as they were played.
+  - **Roll for me** stays each player's own. When they could double, it now rolls after 3 s ("autoroll" timer)
+    instead of not at all, so the option works with the cube in the middle; a double in those 3 s stops it. The box
+    and the phone say "Rolling for you in a moment".
+  - **The dice flash at the end of a roll:** whichever came first at the end of the tumble, the move queue or the
+    tumble's timer, could draw the real dice while the box was still "rolling", and the throw-in animation started
+    again on them. The rolling class now follows the tumble wherever the dice are drawn. The browser check watches
+    for real dice inside a rolling box.
+  - **Hit targets:** the target ring of a move that hits was drawn under the opponent's checker, so it didn't show.
+    The rings are now drawn above the checkers, and a hit's ring is red.
+
+  *Why:* Klaus's screenshots from that match.
