@@ -1,7 +1,7 @@
 {
   "id": "backgammon",
   "name": "Backgammon",
-  "version": "2026.10.25.1",
+  "version": "2026.10.26.1",
   "sdk": "^0.1",
   "description": "The classic race for two: roll, move your checkers on the board, hit blots and bear off first. Matches to 1–100 points with the doubling cube and the Crawford rule, AI players at three strengths.",
   "players": [2],
@@ -16,8 +16,8 @@
     { "key": "matchLength", "type": "int", "min": 1, "max": 100, "step": 2, "default": 3, "label": "Points to win the match" },
     { "key": "cube", "type": "bool", "default": true, "label": "Doubling cube" },
     { "key": "turnSeconds", "type": "int", "min": 0, "max": 180, "step": 15, "default": 0, "label": "Seconds per turn (0 = no limit)" },
-    { "key": "undo", "type": "enum", "values": ["all", "none"], "default": "all", "label": "Undo" },
-    { "key": "autoRoll", "type": "bool", "default": false, "label": "Roll for me" }
+    { "key": "undo", "type": "enum", "values": ["all", "none"], "default": "all", "label": "Undo at the start" },
+    { "key": "autoRoll", "type": "bool", "default": false, "label": "Roll for me at the start" }
   ],
   "ai": {
     "supported": true,
@@ -33,7 +33,7 @@
     "headless": true
   },
   "remoteBoardControl": true,
-  "boardIntents": ["roll", "move", "undo", "done", "double", "take", "pass"],
+  "boardIntents": ["roll", "move", "undo", "done", "double", "take", "pass", "undoMode"],
   "skipTimers": ["next"],
   "lobbyButton": "top-right",
   "viewer": { "columns": [{ "key": "dice", "label": "Dice" }, { "key": "score", "label": "Score" }] },

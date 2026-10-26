@@ -303,12 +303,17 @@ def main():
             if small.locator("#tab-game").count():
                 small.locator("#tab-game").click()
 
-            # Ann's options on her phone (E-031): Undo off (her turns end by themselves) and Roll for me.
-            ann.locator('.bg-optcard [data-opt=undo][data-val=none]').click()
-            wait(lambda: game()["options"][ann_color()]["undo"] == "none", 5, "Undo off")
+            # Undo off for both players in the board's settings (E-032, E-033): the turns end by themselves.
+            assert ann.locator('.bg-optcard [data-opt=undo]').count() == 0, "Undo is a board setting, not on the phone"
+            board.locator("#settings-button").click()
+            off = board.locator('.game-settings .row:has-text("Undo (both players)") button[data-val="1"]')
+            off.click()
+            wait(lambda: game()["undoMode"] == "none", 5, "Undo off")
+            shot(board, "board-settings-undo")
+            board.locator(".overlay [data-close-overlay]").first.click()
+            # Ann's own option on her phone: Roll for me.
             ann.locator('.bg-optcard [data-opt=autoRoll][data-val=true]').click()
             wait(lambda: game()["options"][ann_color()]["autoRoll"] is True, 5, "Roll for me")
-            ann.wait_for_selector('.bg-optcard [data-opt=undo][data-val=none].on')
             ann.wait_for_selector('.bg-optcard [data-opt=autoRoll][data-val=true].on')
             check(ann, "Ann with her options")
             shot(ann, "deck-options")

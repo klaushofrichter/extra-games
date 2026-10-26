@@ -47,10 +47,9 @@ export function mount(root, ctx) {
       <div class="bg-status"></div><div class="bg-dice"></div><div class="muted bg-hint" style="font-size:.85em"></div></div>
     <div class="card bg-actcard"><div class="bg-acts"></div><div class="bg-movecard"><div class="eyebrow" style="margin-top:10px">Or move from here</div><div class="bg-moves"></div></div></div>
     <div class="card"><div class="eyebrow bg-plays-head">This game</div><div class="bg-plays"></div></div>
-    <div class="card bg-optcard" hidden><div class="eyebrow">Options</div>
+    <div class="card bg-optcard" hidden><div class="eyebrow">Your option</div>
       <div class="bg-opt"><span>Roll for me</span><div class="bg-seg"><button type="button" data-opt="autoRoll" data-val="false">Off</button><button type="button" data-opt="autoRoll" data-val="true">On</button></div></div>
-      <div class="bg-opt"><span>Undo <small class="muted">(both players)</small></span><div class="bg-seg"><button type="button" data-opt="undo" data-val="all">All moves</button><button type="button" data-opt="undo" data-val="none">Off</button></div></div>
-      <div class="muted" style="font-size:.85em;margin-top:8px">Roll for me: your dice are rolled as your turn begins; when you could double, after a moment, so you still can. Undo off: every turn ends as soon as its dice are played.</div></div>
+      <div class="muted" style="font-size:.85em;margin-top:8px">Your dice are rolled as your turn begins; when you could double, after a moment, so you still can. Undo for both players is in the board's settings.</div></div>
     <div class="bg-confirm" hidden role="dialog" aria-modal="true" aria-labelledby="bg-confirm-title"><div class="box">
       <h3 id="bg-confirm-title"></h3><p></p>
       <div class="btns"><button type="button" data-confirm="no">Cancel</button><button type="button" data-confirm="yes"></button></div></div></div>`;
@@ -150,11 +149,20 @@ export function mount(root, ctx) {
     const card = $(".bg-optcard");
     card.hidden = v.color === null || !!v.result || !!info.over;
     if (card.hidden) return;
-    const o = { undo: v.undoMode === "none" ? "none" : "all", autoRoll: !!v.options?.[v.color]?.autoRoll };
+    const o = { autoRoll: !!v.options?.[v.color]?.autoRoll };
     for (const b of card.querySelectorAll("[data-opt]")) {
       b.classList.toggle("on", String(o[b.dataset.opt]) === b.dataset.val);
       b.disabled = busy;
     }
+  }
+
+  /** Why the cube can't be turned now (E-033): the rule, not a greyed-out button. */
+  function noDouble(v, me) {
+    if (v.match.crawford) return "No doubling in the Crawford game.";
+    if (v.cube.owner !== null && v.cube.owner !== me) return `The cube is on ${nameOf(v.cube.owner)}'s side: only they can double now.`;
+    if (v.cube.value >= 64) return "The cube is at its highest.";
+    if (v.match.score[me] + v.cube.value >= v.match.length) return `No double: winning this game at ${v.cube.value} already wins you the match.`;
+    return "";
   }
 
   function drawActions() {
@@ -174,7 +182,8 @@ export function mount(root, ctx) {
       box.innerHTML = `<button type="button" class="primary" data-act="take" ${dis}>Take (cube ${v.cube.value * 2})</button><button type="button" data-ask="pass" ${dis}>Pass</button>
         <div class="muted wide" style="font-size:.85em">Take: play on for ${v.cube.value * 2} points, and the cube is yours. Pass: give up this game for ${v.cube.value} point${v.cube.value === 1 ? "" : "s"}.</div>`;
     } else if (v.phase === "roll") {
-      box.innerHTML = `<button type="button" class="primary ${v.cube.enabled ? "" : "wide"}" data-act="roll" ${dis}>Roll</button>${v.cube.enabled ? `<button type="button" data-ask="double" ${dis || (v.canDouble ? "" : "disabled")}>Double to ${v.cube.value * 2}</button>` : ""}`;
+      const why = v.cube.enabled && !v.canDouble ? noDouble(v, me) : "";
+      box.innerHTML = `<button type="button" class="primary ${v.canDouble ? "" : "wide"}" data-act="roll" ${dis}>Roll</button>${v.canDouble ? `<button type="button" data-ask="double" ${dis}>Double to ${v.cube.value * 2}</button>` : ""}${why ? `<div class="muted wide" style="font-size:.85em">${esc(why)}</div>` : ""}`;
     } else {
       const wait = busy || rolling();
       const undo = v.options?.[me]?.undo !== "none";
@@ -264,7 +273,6 @@ export function mount(root, ctx) {
     if (busy || b.disabled) return;
     if (b.dataset.ask) return ask(b.dataset.ask);
     if (b.dataset.act) return void send(b.dataset.act);
-    if (b.dataset.opt === "undo") return void send("undoMode", { undo: b.dataset.val }); // for the match (E-032)
     if (b.dataset.opt) return void send("options", { autoRoll: b.dataset.val === "true" });
     if (b.dataset.from) {
       const spot = (x) => (x === "bar" || x === "off" ? x : Number(x));

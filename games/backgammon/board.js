@@ -88,6 +88,9 @@ export function mount(root, ctx) {
   // A new roll tumbles until then, its numbers hidden: the dice, the panel and the moves show it only once it lands.
   let rollingUntil = 0, tumbleTimer = null;
   const rolling = () => Date.now() < rollingUntil;
+  // Rolls that arrived but wait in the queue behind moves still being shown (E-033): blank dice until their turn.
+  let rollsQueued = 0;
+  const pending = () => rollsQueued > 0 && !rolling();
   const drawn = new Map();
   const put = (el, markup) => {
     if (drawn.get(el) === markup) return;
@@ -232,7 +235,7 @@ export function mount(root, ctx) {
         const own = st.color === c ? st.n : 0;
         const hit = st.n === 1 && st.color !== c;
         const { x, y } = slot(t.to, c, own, own + 1);
-        m += `<div class="bg-target ${t.steps > 1 ? "far" : ""} ${hit ? "hit" : ""}" data-steps="${t.steps}" style="left:${x - D / 2}px;top:${y - D / 2}px"></div>`;
+        m += `<div class="bg-target ${t.steps > 1 ? "far" : ""} ${hit ? "hit" : ""}" data-steps="${t.steps}" style="left:${x - D / 2}px;top:${y - D / 2}px">${hit ? '<i class="n"></i><i class="s"></i><i class="e"></i><i class="w"></i>' : ""}</div>`;
       }
     }
     put(marks, m);
@@ -276,6 +279,9 @@ export function mount(root, ctx) {
       inner = rollHere
         ? `<button type="button" class="bg-roll" data-roll aria-label="Roll the dice"><span class="bg-roll-dice">${dieHtml(0, { size: 56, cls: "blank" })}${dieHtml(0, { size: 56, cls: "blank" })}</span><span class="bg-roll-text">Tap to roll</span></button>`
         : `<div class="bg-wait">${v.phase === "double" ? "" : `${esc(nameOf(v.turn))} to roll`}</div>`;
+    } else if (pending()) {
+      // A roll is on its way, after the moves before it: no numbers yet, and no tumble before those moves are shown.
+      inner = `<div class="bg-dice-row">${dieHtml(0, { size: 60, cls: "blank" })}${dieHtml(0, { size: 60, cls: "blank" })}</div>`;
     } else if (rolling()) {
       // Always two dice while they tumble: four would tell a doublet before it lands. The faces change in place.
       inner = `<div class="bg-dice-row tumbling">${dieHtml(3, { size: 60 })}${dieHtml(5, { size: 60 })}</div>`;
@@ -337,7 +343,7 @@ export function mount(root, ctx) {
     else if (ai) status = v.phase === "roll" ? "Rolling…" : "Thinking…";
     else if (v.phase === "roll" && v.canDouble && v.options?.[color]?.autoRoll && remainingMs(info, "autoroll") !== null) status = "Rolling for you in a moment, or double";
     else if (v.phase === "roll") status = v.canDouble ? `Your roll: tap the dice, or double${showButtons ? "" : " on your phone"}` : "Your roll: tap the dice";
-    else if (rolling()) status = "Rolling…";
+    else if (rolling() || pending()) status = "Rolling…";
     else if (v.blocked) status = "No move possible: the turn passes";
     else if (v.canDone) status = "<b>All moved: tap Done</b>";
     else status = `Move: ${v.remaining.join(" and ")}${v.legal.some((m) => m.from === "bar") ? " (from the bar first)" : ""}`;
@@ -488,16 +494,19 @@ export function mount(root, ctx) {
       while (queue.length && !gone) {
         const { v, events } = queue.shift();
         try {
-          const moves = events.filter((e) => e.name === "moved").map((e) => e.data);
+          // In the order they happened (E-033): a turn's last move, then the next player's roll (Roll for me, Undo
+          // off), or a roll, then the moves made with it (the turn timer). The dice land before a checker moves.
           const restart = events.some((e) => e.name === "opening" || e.name === "undone");
-          if (events.some((e) => e.name === "rolled" || e.name === "opening")) {
-            sounds(events.filter((e) => e.name === "rolled" || e.name === "opening"));
-            await wait(Math.max(0, rollingUntil - Date.now())); // the dice land before the first checker moves
-          }
-          if (!restart && shown && moves.length) {
-            for (const [k, m] of moves.entries()) {
-              if (k) await wait(90);
-              await playMove(m);
+          let moved = 0;
+          for (const e of events) {
+            if (e.name === "rolled" || e.name === "opening") {
+              rollsQueued = Math.max(0, rollsQueued - 1);
+              sounds([e]);
+              tumble();
+              await wait(ROLL_MS);
+            } else if (e.name === "moved" && !restart && shown) {
+              if (moved++) await wait(90);
+              await playMove(e.data);
             }
           }
         } catch (err) {
@@ -518,7 +527,8 @@ export function mount(root, ctx) {
   /** A roll arrived: the dice tumble for ROLL_MS with changing faces, then the real ones are drawn. */
   function tumble() {
     rollingUntil = Date.now() + ROLL_MS;
-    diceBox.classList.add("rolling");
+    // Drawn now: the class and the tumbling dice change together (the blank dice of a queued roll never tumble).
+    if (view) (drawDice(), drawPanels());
     clearInterval(tumbleTimer);
     tumbleTimer = setInterval(() => {
       if (gone) return clearInterval(tumbleTimer);
@@ -609,7 +619,7 @@ export function mount(root, ctx) {
       view = v;
       if (first || !shown) shown = boardOf(v);
       if (selected !== null && !v.targets.some((x) => String(x.from) === String(selected))) selected = null;
-      if (!first && events.some((e) => e.name === "rolled" || e.name === "opening")) tumble();
+      if (!first) rollsQueued += events.filter((e) => e.name === "rolled" || e.name === "opening").length;
       if (!first) queue.push({ v, events });
       draw();
       if (first) {
