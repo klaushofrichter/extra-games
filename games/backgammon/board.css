@@ -25,11 +25,19 @@
 .bg-off.w { background: linear-gradient(#fffaf0, #cdbb96); }
 .bg-off.b { background: linear-gradient(#5a4a40, #15100c); border: 1px solid #6c5a4c; }
 .bg-target { position: absolute; width: 64px; height: 64px; border-radius: 50%; box-sizing: border-box; pointer-events: none;
-  border: 4px dashed rgba(95, 191, 143, .95); background: rgba(95, 191, 143, .22); }
+  border: 4px dashed rgba(95, 191, 143, .95); background: rgba(95, 191, 143, .22);
+  /* A dark edge inside and out: the ring stays visible next to checkers of any player colour, green ones too. */
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, .55), inset 0 0 0 2px rgba(0, 0, 0, .55); }
 .bg-target.far { border-style: dotted; background: rgba(95, 191, 143, .12); }
 .bg-target.off { border-radius: 10px; }
-/* Landing on a lone opposing checker hits it: the ring is red. */
-.bg-target.hit { border-color: #e0564a; background: rgba(224, 86, 74, .16); }
+/* Landing on a lone opposing checker hits it. A shape no checker has, in white on dark, so it shows on any player
+   colour (red was lost on a red player's checker, E-033): a larger ring and crosshair ticks around the blot. */
+.bg-target.hit { width: 92px; height: 92px; margin: -14px 0 0 -14px; border: 5px dashed #fff; background: none;
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, .7), inset 0 0 0 3px rgba(0, 0, 0, .7); }
+.bg-target.hit i { position: absolute; background: #fff; box-shadow: 0 0 0 2px rgba(0, 0, 0, .7); border-radius: 2px; }
+.bg-target.hit i.n, .bg-target.hit i.s { left: 50%; width: 6px; height: 16px; margin-left: -3px; }
+.bg-target.hit i.e, .bg-target.hit i.w { top: 50%; height: 6px; width: 16px; margin-top: -3px; }
+.bg-target.hit i.n { top: -24px; } .bg-target.hit i.s { bottom: -24px; } .bg-target.hit i.w { left: -24px; } .bg-target.hit i.e { right: -24px; }
 
 .bg-dice-at { position: absolute; width: max-content; display: grid; justify-items: center; gap: 8px; pointer-events: none; }
 .bg-dice-row { display: flex; gap: 14px; }
