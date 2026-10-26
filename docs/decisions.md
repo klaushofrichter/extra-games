@@ -467,3 +467,17 @@ Records are history: an older record is not edited when a newer one changes it. 
     The rings are now drawn above the checkers, and a hit's ring is red.
 
   *Why:* Klaus's screenshots from that match.
+- **E-033 · 2026-10-26 · Klaus** — Backgammon, from a match the morning after E-032:
+  - **Undo** is only in the board's settings window (and the lobby); `undoMode` is now a board intent, without which the
+    E-032 switch there did nothing. The phone keeps only Roll for me, the player's
+    own option. The lobby settings are labelled *Undo at the start* and *Roll for me at the start*, since the
+    board's settings list them read-only during the match.
+  - **Double:** when the cube can't be turned, the phone says why instead of greying the button out: the Crawford
+    game, the cube on the other side, the cube at its top, or a dead cube. In Klaus's screenshot it was a dead cube:
+    winning that game at 4 already won the match to 3.
+  - **The hit marker** is a shape, not a colour: a larger ring, white and dashed on a dark edge, with crosshair
+    ticks around the blot. Red was lost on a red player's checkers. The landing rings got a dark edge too.
+  - **A roll waits for the moves before it:** the board plays an update's events in their order. A turn that ends
+    by itself shows its last move first, then the next player's Roll for me roll tumbles; the turn timer's roll
+    comes before its moves. Until its turn the roll shows blank dice, and the box says "Rolling…". The 3 s to
+    double before an automatic roll stay.
