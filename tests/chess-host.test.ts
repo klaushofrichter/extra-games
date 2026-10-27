@@ -29,7 +29,9 @@ describe("chess on a table host", () => {
     const g = (await t.ok("GET", "/games")).find((x: { id: string }) => x.id === "chess");
     expect(g).toMatchObject({ name: "Chess", players: [2], ai: true, simulation: true, seatLayouts: [2] });
     expect(g.settings.map((s: { key: string }) => s.key)).toEqual(["timeControl", "whiteSeat"]);
-    expect(g.aiOptions[0]).toMatchObject({ key: "elo", min: 400, max: 2200 });
+    expect(g.aiOptions.map((o: { key: string }) => o.key)).toEqual(["engine", "elo"]);
+    expect(g.aiNotice).toMatch(/stockfish.online/);
+    expect(g.aiOptions[1]).toMatchObject({ key: "elo", min: 400, max: 2200 });
     for (const f of ["board.js", "board.css", "deck.js", "assets/pieces.js", "assets/how-to-move.svg", "how-to-play.md"]) expect((await fetch(`${t.base}/games/chess/${f}`)).status, f).toBe(200);
     for (const f of ["rules.ts", "chess.ts", "engine.ts", "manifest.json"]) expect((await fetch(`${t.base}/games/chess/${f}`)).status, f).toBe(404);
   });

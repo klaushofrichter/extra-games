@@ -9,6 +9,7 @@
 import { count, defineGame, type GameContext, type StepInfo } from "@game-table/sdk";
 import { BLACK, F_CAPTURE, F_CASTLE, Position, WHITE, moveFlags, moveFrom, movePromo, moveTo, sqName, uci } from "./chess.ts";
 import { ELO_MAX, ELO_MIN, Engine, level, pickMove } from "./engine.ts";
+import { ONLINE_MS, askOnline, serviceOf } from "./online.ts";
 import { chessAwards } from "./stats.ts";
 
 /** How long the stand-in waits before moving, so a move on the board can be followed. */
@@ -267,6 +268,17 @@ function aiElo(options: Record<string, unknown>) {
   return Number.isFinite(e) ? Math.max(ELO_MIN, Math.min(ELO_MAX, e)) : 1200;
 }
 
+/** A service's move as a legal move here (Lichess may write castling as the king taking its rook: e1h1), or null. A
+ *  move that would repeat the position a third time is left to the own engine, which knows the game's history. */
+export function onlineMove(v: View, text: string | null): string | null {
+  if (!text) return null;
+  const p = positionOf(v.fen, v.keys);
+  const castle: Record<string, string> = { e1h1: "e1g1", e1a1: "e1c1", e8h8: "e8g8", e8a8: "e8c8" };
+  const m = p.findUci(text) ?? (castle[text] ? p.findUci(castle[text]) : null);
+  if (m === null || !p.make(m)) return null;
+  return p.repetitions() >= 2 ? null : uci(m);
+}
+
 /** How long the AI may think about this move (ms): its level's time, but no more than the clock can spare. */
 export function thinkBudget(v: View, levelMs: number): number {
   if (!v.clock || v.color === null) return levelMs;
@@ -433,9 +445,19 @@ export default defineGame<State>({
       return { name: r.score <= 30 ? "acceptDraw" : "declineDraw" };
     }
     if (!v.myTurn) return null;
-    const budget = Math.min(thinkBudget(v, level(elo).thinkMs), Math.max(100, ctx.deadline - Date.now() - 1500));
-    const r = pickMove(positionOf(v.fen, v.keys), { elo, random: ctx.random, until: Date.now() + budget, signal: ctx.signal, engine: aiEngine });
-    return r.move ? { name: "move", payload: { uci: uci(r.move) } } : null;
+    const own = () => {
+      const budget = Math.min(thinkBudget(v, level(elo).thinkMs), Math.max(100, ctx.deadline - Date.now() - 1500));
+      const r = pickMove(positionOf(v.fen, v.keys), { elo, random: ctx.random, until: Date.now() + budget, signal: ctx.signal, engine: aiEngine });
+      return r.move ? { name: "move", payload: { uci: uci(r.move) } } : null;
+    };
+    // An engine on the internet (E-040), with the own engine when it has no move in time.
+    const service = serviceOf(options);
+    const wait = Math.min(thinkBudget(v, ONLINE_MS), ctx.deadline - Date.now() - 3000);
+    if (!service || wait < 300) return own();
+    return askOnline(service, v.fen, elo, wait).then((text) => {
+      const m = onlineMove(v, text);
+      return m ? { name: "move", payload: { uci: m } } : own();
+    });
   },
 
   aiFallback(view, _seat, ctx, options) {

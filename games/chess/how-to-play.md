@@ -51,7 +51,7 @@ With one player at the table and the other remote or an AI, the player at the ta
 
 ## AI players and changing players
 
-An AI player's strength is set as an approximate Elo rating (400 for a beginner, 2200 for a strong club player) in its settings on the board.
+An AI player's strength is set as an approximate Elo rating (400 for a beginner, 2200 for a strong club player) in its settings on the board. Its **Engine** is the game's own (the default), Stockfish at stockfish.online, or the Lichess cloud: the online ones need the table on the internet, and when they don't answer within a few seconds, or know nothing about the position (Lichess knows mostly openings), the game's own engine moves at the Elo chosen. Stockfish's search depth follows the Elo.
 
 A game keeps its two players. If someone has to go, the board can exchange them for another person or an AI player (tap their name in the board's settings, or **Exchange** at their seat when their phone is away): the newcomer plays on with the same colour, position and clock. While a phone is away, that player's clock keeps running.
 

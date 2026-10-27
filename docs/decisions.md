@@ -585,3 +585,20 @@ Records are history: an older record is not edited when a newer one changes it. 
   positions the port's chances match wildbg's Rust engine to 3e-7 and its best plays in 265 of 267 cases (the other two
   are ties in a lost position); `tests/wildbg.test.ts` keeps reference values. A move takes about 2 ms (club, expert)
   and 0.3 s on average for master. `scripts/backgammon-tournament.ts` plays one level against another.
+
+- **E-040 · 2026-10-27 · Klaus** — Chess's AI players can use an engine on the internet: a new AI option **Engine**
+  offers the game's own engine (the default), Stockfish at stockfish.online, or the Lichess cloud. When the service
+  doesn't answer within 4 s (less on a short clock), answers with an error, or with a move that isn't legal, the own
+  engine moves at the Elo chosen. The notice under the AI options credits both services and their licences
+  (games-service D-224).
+  *Why:* stronger and more varied opponents without shipping an engine; the own engine keeps every game playable
+  offline.
+  *How (Claude):* `games/chess/online.ts` asks only from `ai()` (in the AI's worker), never from the rules: the move is
+  logged, so games replay without the network. stockfish.online's free REST API (`/api/s/v2.php?fen=…&depth=…`, the
+  move in `bestmove`) has its depth follow the Elo, 1 at 400 to 15 (its most) at 2200. Lichess's
+  `/api/cloud-eval` has evaluations only for positions players have analysed (mostly openings) and answers 404
+  elsewhere, so the own engine plays most middlegames; Lichess's castling as king-takes-rook (e1h1) is read too. After
+  a 429 the AI leaves that service alone for a minute, as Lichess asks. A service's move that would repeat the
+  position a third time is left to the own engine, which knows the game's history; draw offers are always answered by
+  the own engine. Neither host was reachable from the build environment, so the answers' shapes follow the services'
+  documentation and the tests use a stand-in network.
