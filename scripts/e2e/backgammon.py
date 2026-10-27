@@ -113,6 +113,18 @@ def board_tap(board, act, cond, what):
     wait(cond, 4, what)
 
 
+def drag(board, frm, to):
+    """Drag the top checker of the side to move from one spot to another, as a finger would (E-034)."""
+    pos = board.evaluate("""([f, t, c]) => {
+      const cs = [...document.querySelectorAll(f === "bar" ? `.bg-ck[data-spot="bar"][data-color="${c}"]` : `.bg-ck[data-spot="${f}"]`)].sort((a, b) => b.dataset.k - a.dataset.k);
+      const r = cs[0].getBoundingClientRect(), z = document.querySelector(`[data-zone="${t}"]`).getBoundingClientRect();
+      return { x: r.x + r.width / 2, y: r.y + r.height / 2, tx: z.x + z.width / 2, ty: z.y + z.height / 2 }; }""", [str(frm), str(to), game()["turn"]])
+    board.mouse.move(pos["x"], pos["y"])
+    board.mouse.down()
+    board.mouse.move(pos["tx"], pos["ty"], steps=12)
+    board.mouse.up()
+
+
 def board_moves(board):
     """The dice of this turn by taps: for each die, the first target one die away."""
     for _ in range(2):
@@ -230,6 +242,22 @@ def main():
                 board_tap(board, "undo", lambda: len(game()["remaining"]) == left, f"Undo {left}")
                 settle(board)
             assert len(game()["remaining"]) == 2 and game()["turnMoves"] in ("", "(no move)"), "two Undos did not take back the turn"
+            # Drag and drop (E-034): dropped where it can't go, a checker slides back with a "not a good move" sound;
+            # dropped on a lit target, it moves there.
+            v = game()
+            t = [x for x in v["targets"] if x["steps"] == 1][0]
+            bad = next(p for p in range(1, 25) if str(p) != str(t["from"]) and not any(str(x["from"]) == str(t["from"]) and str(x["to"]) == str(p) for x in v["targets"]))
+            heard = board.evaluate("() => (window.gameTableSounds ?? []).length")
+            drag(board, t["from"], bad)
+            time.sleep(0.6)
+            assert len(game()["remaining"]) == 2, "a checker dropped where it can't go moved"
+            assert board.evaluate("() => !document.querySelector('.bg-ck.dragging') && ![...document.querySelectorAll('.bg-ck')].some((e) => e.style.transform)"), "the checker did not slide back"
+            sounds = board.evaluate("() => window.gameTableSounds ?? []")
+            assert len(sounds) == heard or "bg-bad" in sounds[heard:], f"no 'not a good move' sound: {sounds[heard:]}"
+            drag(board, t["from"], t["to"])
+            wait(lambda: len(game()["remaining"]) < 2, 5, "the dragged move")
+            settle(board)
+            shot(board, "board-dragged")
             board_moves(board)
             board_tap(board, "done", lambda: game()["phase"] == "roll", "the turn to pass")
             settle(board)
@@ -262,6 +290,17 @@ def main():
             phone_turn(other)
             settle(board)
 
+            # Doubling by a tap on the cube on the board, and withdrawing it from the doubler's phone (E-034).
+            board.wait_for_selector(".bg-cube.tap")
+            tap(board, ".bg-cube.tap")
+            wait(lambda: game()["phase"] == "double", 5, "the double from the cube")
+            mover.locator(".bg-acts [data-act=withdraw]").wait_for()
+            check(mover, f"{mover.label} may withdraw the double")
+            shot(mover, "deck-withdraw")
+            mover.locator(".bg-acts [data-act=withdraw]").click()
+            wait(lambda: game()["phase"] == "roll", 5, "the withdrawal")
+            assert game()["cube"]["value"] == 1, "the cube changed by a withdrawn double"
+            settle(board)
             # The first mover doubles from the phone: Cancel first, then confirm; the other phone takes.
             mover.locator("[data-ask=double]").click()
             mover.locator(".bg-confirm:not([hidden])").wait_for()

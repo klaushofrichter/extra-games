@@ -172,13 +172,18 @@ export function mount(root, ctx) {
     const moves = $(".bg-moves");
     const me = v.color;
     const answering = v.phase === "double" && v.turn !== me;
+    const doubled = v.phase === "double" && v.turn === me;
     const mine = (v.phase === "roll" || v.phase === "move") && v.turn === me && !v.standIn.includes(v.seat);
-    const show = !v.result && !info.over && me !== null && (answering || mine);
+    const show = !v.result && !info.over && me !== null && (answering || mine || doubled);
     card.hidden = !show;
     $(".bg-movecard").hidden = !(show && v.phase === "move" && v.legal.length && !rolling());
     if (!show) return;
     const dis = busy ? "disabled" : "";
-    if (answering) {
+    if (doubled) {
+      // A double by mistake (a tap on the cube, or someone else's at the board) can be taken back until answered (E-034).
+      box.innerHTML = `<button type="button" class="wide" data-act="withdraw" ${dis}>Withdraw the double</button>
+        <div class="muted wide" style="font-size:.85em">Until ${esc(nameOf(me ^ 1))} takes or passes. Then the roll is yours again.</div>`;
+    } else if (answering) {
       box.innerHTML = `<button type="button" class="primary" data-act="take" ${dis}>Take (cube ${v.cube.value * 2})</button><button type="button" data-ask="pass" ${dis}>Pass</button>
         <div class="muted wide" style="font-size:.85em">Take: play on for ${v.cube.value * 2} points, and the cube is yours. Pass: give up this game for ${v.cube.value} point${v.cube.value === 1 ? "" : "s"}.</div>`;
     } else if (v.phase === "roll") {

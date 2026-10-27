@@ -99,6 +99,11 @@ export function cubeSound(c, t, out) {
   tone(c, out, t + 0.05, { from: 330, dur: 0.6, gain: 0.18 });
   tone(c, out, t + 0.05, { from: 495, dur: 0.5, gain: 0.08 });
 }
+/** A move that isn't allowed (a checker dropped where it can't go): a low "uh-uh", and it slides back (E-034). */
+export function badSound(c, t, out) {
+  tone(c, out, t, { from: 220, to: 196, dur: 0.14, gain: 0.2, type: "square" });
+  tone(c, out, t + 0.18, { from: 175, to: 147, dur: 0.22, gain: 0.2, type: "square" });
+}
 /** A game won: three rising notes. */
 export function winSound(c, t, out) {
   [523, 659, 784, 1047].forEach((f, k) => tone(c, out, t + k * 0.13, { from: f, dur: 0.5, gain: 0.16 }));

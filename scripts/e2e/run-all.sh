@@ -7,7 +7,7 @@ OUT=${1:-e2e-out}
 mkdir -p "$OUT"
 [ -d .games-service ] || { echo "run scripts/games-service.sh first" >&2; exit 1; }
 status=0
-for check in scripts/e2e/liars_dice.py scripts/e2e/chess.py scripts/e2e/backgammon.py scripts/e2e/mexican_train.py scripts/e2e/last_card.py; do
+for check in scripts/e2e/liars_dice.py scripts/e2e/chess.py scripts/e2e/backgammon.py scripts/e2e/backgammon_seats.py scripts/e2e/mexican_train.py scripts/e2e/last_card.py; do
   echo "== $check"
   python3 "$check" "$OUT" || status=1
 done
