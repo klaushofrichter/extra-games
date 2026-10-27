@@ -4,7 +4,7 @@ Checkmate the other king: attack it so that it cannot escape.
 
 ## In short
 
-- White moves first, then you take turns. Make your move **on the board**: tap one of your pieces, then the square it goes to.
+- White moves first, then you take turns. Make your move **on the board**: tap or drag one of your pieces to its square.
 - Your phone shows both clocks and every move, and lets you offer a draw or resign.
 - With a clock, your time runs only while it is your turn; run out and you lose.
 - Checkmate wins. Stalemate, a position seen three times, or too little material to mate is a draw.
@@ -55,4 +55,4 @@ An AI player's strength is set as an approximate Elo rating (400 for a beginner,
 
 A game keeps its two players. If someone has to go, the board can exchange them for another person or an AI player (tap their name in the board's settings, or **Exchange** at their seat when their phone is away): the newcomer plays on with the same colour, position and clock. While a phone is away, that player's clock keeps running.
 
-> Tip: tap a picked-up piece again to put it back, or tap another of your pieces instead.
+> Tip: tap a picked-up piece again to put it back, or tap another of your pieces instead. A piece dragged to a square it can't go to slides back, with a low "not a good move" sound. The board moves only the pieces of the player to move, and only when that player sits at this board: a remote player moves on their own board, an AI player by itself.

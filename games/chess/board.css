@@ -1,5 +1,5 @@
 /* Chess board: a wooden board in the middle of the 1920 × 1080 surface, a panel at each player's right hand. */
-.ch-board { position: absolute; inset: 0; }
+.ch-board { position: absolute; inset: 0; user-select: none; -webkit-user-select: none; touch-action: none; }
 .ch-frame { position: absolute; border-radius: 14px; background: linear-gradient(135deg, #4a3220, #2c1d12);
   box-shadow: 0 30px 80px rgba(0, 0, 0, .55), inset 0 0 0 2px rgba(255, 220, 160, .18); }
 .ch-sq { position: absolute; }
@@ -20,6 +20,7 @@
 .ch-pc > div { display: grid; place-items: center; transition: transform .4s; }
 .ch-pc svg { filter: drop-shadow(0 3px 3px rgba(0, 0, 0, .45)); }
 .ch-pc.movable { cursor: pointer; }
+.ch-pc.dragging { z-index: 4; pointer-events: none; }
 .ch-pc.lifted svg { filter: drop-shadow(0 10px 8px rgba(0, 0, 0, .5)); transform: scale(1.08); }
 .ch-promo { position: absolute; display: flex; gap: 8px; padding: 10px; border-radius: 16px; z-index: 5;
   background: rgba(8, 22, 19, .94); border: 2px solid var(--brass); box-shadow: 0 16px 40px rgba(0, 0, 0, .6); }

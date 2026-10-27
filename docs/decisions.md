@@ -502,3 +502,25 @@ Records are history: an older record is not edited when a newer one changes it. 
   and the double withdrawn) and the new `scripts/e2e/backgammon_seats.py` (a local player, a remote player through an
   invite, then an AI: which board drags whose checkers and taps the cube; it fails when the board's seat check is
   removed). A game needs a player at the table, so the AI plays the local player, not the remote one.
+
+## Chess: drag and drop (27 Oct 2026)
+
+- **E-035 · 2026-10-27 · Klaus** — Chess pieces can be dragged on the board as well as tapped, as Backgammon's
+  checkers (E-034): a piece that may move follows the finger and its squares light up; dropped on one, it moves and
+  settles from where it was let go (a pawn dropped on the last rank asks which piece, as a tap does); dropped anywhere
+  else, it slides back with a low two-note "not a good move" sound (`ch-bad`). Only the pieces the board may already
+  move by tapping: the player to move, when this board acts for them (`controlSeats`).
+  *Why (Claude, implementation):* no platform helper for dragging. What the two games share is small (the pointer in
+  the board's 1920 × 1080 coordinates, an 8 px threshold, the slide back), and a new `board-kit.js` export would
+  need tables on the newest games-service before these games load there; each game keeps its own copy, a few lines.
+  `scripts/e2e/chess.py` drags in White's turn (Black's pawn: nothing; a bishop to a blocked square: back, with the
+  sound; to c4: moves) and Black's knight; both games' checks now require the bad-move sound.
+- **E-035 (cont.) · 2026-10-27 · Klaus** — In both games, while a piece is carried its targets light up exactly as
+  for a tap, and a dropped piece never jumps: it stays where it was let go until the table answers, then glides to
+  its square (or back, if refused). Before, Backgammon redrew the checker on its point while the move was on its way
+  and Chess slid it back first, so on a slow link it went back and then forward again.
+  *Why (Claude, implementation):* the board draws a dropped piece at its drop position (`dropAt`) through every
+  redraw until its move is shown, and the move's animation starts there. The browser checks hold the board's intents
+  400 ms on the socket, as a slow link would, follow the dropped piece frame by frame and require that it only comes
+  closer to where it ends and never shows where it started; both fail on the earlier boards. They also count the lit
+  targets mid-drag.

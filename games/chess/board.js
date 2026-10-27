@@ -1,10 +1,10 @@
 // Chess board: the 8 × 8 board in the middle of the table, White's first rank toward White's seat, all pieces standing
 // up toward the edge the board faces (the turn-around button turns them). At each player's right hand a panel faces them: their clock, what they have
 // captured, the last moves and what is going on (check, a draw offer). Moves are made here: tap a piece of
-// yours, then its square; a promotion asks which piece. The phones only show clocks and moves and offer a draw or
+// yours, then its square, or drag it there; a promotion asks which piece. The phones only show clocks and moves and offer a draw or
 // resignation.
 import { W, H, ROT, esc, html, ping, playerColor, playSound, remainingMs, seatPlates, useStyles } from "/shared/board-kit.js";
-import { clockLeft, clockText, materialEdge, movePairs, moveSound, pieceSvg } from "/games/chess/assets/pieces.js";
+import { badSound, clockLeft, clockText, materialEdge, movePairs, moveSound, pieceSvg } from "/games/chess/assets/pieces.js";
 
 const S = 92; // square size
 const LEFT = (W - 8 * S) / 2;
@@ -90,7 +90,9 @@ export function mount(root, ctx) {
         const { x, y } = sqXY(sq);
         const c = colorOfPiece(ch);
         const movable = mySeatToMove() && c === view.turn && targetsFrom(sq).length > 0;
-        return `<div class="ch-pc ${movable ? "movable" : ""} ${sq === selected ? "lifted" : ""}" data-sq="${sq}" style="left:${x}px;top:${y}px;width:${S}px;height:${S}px">
+        // A dropped piece stays where it was let go until its move comes back, then slides on from there.
+        const held = dropAt?.from === sq ? `;transform:translate(${dropAt.shift.x}px,${dropAt.shift.y}px)` : "";
+        return `<div class="ch-pc ${movable ? "movable" : ""} ${sq === selected ? "lifted" : ""}" data-sq="${sq}" style="left:${x}px;top:${y}px;width:${S}px;height:${S}px${held}">
           <div style="transform:rotate(${pieceFacing()}deg)">${pieceSvg(ch, S - 10)}</div></div>`;
       })
       .join(""));
@@ -259,17 +261,98 @@ export function mount(root, ctx) {
       if (options.length === 1) return void send(options[0]);
       if (options.length > 1) return void showPromotion(selected, sq);
     }
-    if (ch && colorOfPiece(ch) === view.turn && targetsFrom(sq).length) selected = sq === selected ? null : sq;
-    else selected = null;
+    const mine = ch && colorOfPiece(ch) === view.turn && targetsFrom(sq).length > 0;
+    selected = mine && sq !== selected ? sq : null;
     drawPieces();
     drawMarks();
+    if (mine) startDrag(e, sq);
   });
+
+  // ----- drag and drop (E-035): a piece that may move follows the finger; dropped on a lit square it moves, anywhere
+  // else it slides back with a "not a good move" sound. A tap without moving stays a tap (pick up, then tap a square).
+  let drag = null; // { id, from, el, start, startClient, moved }
+  let dropAt = null; // where a dropped piece lies, so its move starts there instead of sliding from its square again
+  /** A pointer's position in the board's own 1920 × 1080 coordinates, whatever the platform's turning and scaling. */
+  function toSurface(e) {
+    const r = box.getBoundingClientRect();
+    const deg = ((info?.rotation ?? 0) % 360 + 360) % 360;
+    const a = (deg * Math.PI) / 180;
+    const dx = e.clientX - (r.left + r.width / 2);
+    const dy = e.clientY - (r.top + r.height / 2);
+    const scale = r.width / (deg % 180 === 0 ? W : H);
+    return { x: W / 2 + (dx * Math.cos(a) + dy * Math.sin(a)) / scale, y: H / 2 + (-dx * Math.sin(a) + dy * Math.cos(a)) / scale };
+  }
+  const pieceAt = (sq) => pieces.querySelector(`.ch-pc[data-sq="${sq}"]`);
+  function startDrag(e, from) {
+    e.preventDefault(); // no text selection or native drag, which would cancel this one
+    drag = { id: e.pointerId, from, el: pieceAt(from), start: toSurface(e), startClient: { x: e.clientX, y: e.clientY }, moved: false };
+    try {
+      box.setPointerCapture(e.pointerId);
+    } catch {
+      /* a synthetic event */
+    }
+  }
+  function snapBack(el) {
+    if (!el?.isConnected) return;
+    const from = el.style.transform || "none";
+    el.style.transform = "";
+    el.classList.remove("dragging");
+    el.animate([{ transform: from }, { transform: "none" }], { duration: 220, easing: "cubic-bezier(.3,.7,.3,1)" });
+  }
+  box.addEventListener("pointermove", (e) => {
+    if (!drag || e.pointerId !== drag.id) return;
+    if (!drag.moved) {
+      if (Math.hypot(e.clientX - drag.startClient.x, e.clientY - drag.startClient.y) < 8) return;
+      drag.moved = true;
+      selected = drag.from; // its squares light up while it is carried
+      drawPieces();
+      drawMarks();
+      drag.el = pieceAt(drag.from);
+      if (!drag.el) return void (drag = null);
+    }
+    if (!drag.el.isConnected) drag.el = pieceAt(drag.from); // an update redrew the pieces
+    const p = toSurface(e);
+    drag.el?.style.setProperty("transform", `translate(${p.x - drag.start.x}px,${p.y - drag.start.y}px)`);
+    drag.el?.classList.add("dragging");
+  });
+  const endDrag = (e) => {
+    if (!drag || e.pointerId !== drag.id) return;
+    const d = drag;
+    drag = null;
+    if (!d.moved) return; // a tap: handled on pointerdown
+    const p = toSurface(e);
+    const to = e.type === "pointercancel" ? null : document.elementsFromPoint(e.clientX, e.clientY).find((x) => x.classList.contains("ch-sq"))?.dataset.sq ?? null;
+    if (to === d.from) return snapBack(d.el); // put back where it was: no attempt
+    const options = to && mySeatToMove() && !sending ? targetsFrom(d.from).filter((u) => u.slice(2, 4) === to) : [];
+    if (options.length !== 1) {
+      snapBack(d.el);
+      if (options.length > 1) return showPromotion(d.from, to); // which piece, as for a tap
+      playSound(info, "ch-bad", badSound);
+      selected = null;
+      drawPieces();
+      drawMarks();
+      return;
+    }
+    const o = sqXY(d.from);
+    const shift = { x: p.x - d.start.x, y: p.y - d.start.y };
+    dropAt = { from: d.from, to, shift, xy: { x: o.x + shift.x, y: o.y + shift.y } };
+    const moveCount = view.moveCount;
+    send(options[0]).then(() => {
+      if (dropAt?.from !== d.from || view?.moveCount !== moveCount) return;
+      dropAt = null; // refused: the held piece slides back to its square
+      snapBack(pieceAt(d.from));
+    });
+  };
+  box.addEventListener("pointerup", endDrag);
+  box.addEventListener("pointercancel", endDrag);
 
   // ----- animation and sound for a move -----
   function animate(ev) {
     const el = pieces.querySelector(`.ch-pc[data-sq="${ev.to}"]`);
     if (!el) return;
-    const a = sqXY(ev.from);
+    // A dropped piece settles from where it was let go, not from its old square.
+    const a = dropAt && dropAt.from === ev.from && dropAt.to === ev.to ? dropAt.xy : sqXY(ev.from);
+    dropAt = null;
     const b = sqXY(ev.to);
     el.animate([{ transform: `translate(${a.x - b.x}px,${a.y - b.y}px)` }, { transform: "none" }], { duration: 260, easing: "cubic-bezier(.3,.7,.3,1)" });
     if (ev.castle) {
