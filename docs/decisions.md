@@ -565,3 +565,21 @@ Records are history: an older record is not edited when a newer one changes it. 
   and gammons happen. Moves are unchanged (the order of plays follows the plain score). A test plays every opening
   move and every reply: uncalibrated, 98 of those 315 positions were doubled and 40 passed; now none is doubled. A
   stronger engine as an extra AI level is being looked into separately.
+
+## Backgammon: wildbg's AI players beside the game's own (27 Oct 2026)
+
+- **E-039 · 2026-10-27 · Klaus** — Backgammon gets three more AI strengths from wildbg, the open-source neural-network
+  engine by Carsten Wenderdel (https://github.com/carsten-wenderdel/wildbg), beside its own beginner, average and
+  strong: *wildbg club* (its best play by the networks, with some noise), *wildbg expert* (its best play) and *wildbg
+  master* (looks one roll ahead among its five best plays). The cube follows wildbg's money-game rule (Janowski, cube
+  efficiency 2/3) with the match cases the own AI knows (a dead cube, a free drop). The AI options window shows the
+  credit and licence (games-service D-224). The game's own AI stays: it is the stand-in and the out-of-time fallback.
+  *Why:* the own AI is rule-conforming but weak; wildbg is stronger. In 400 single cubeless games each (points per game,
+  gammons counting; about ±0.07): strong against average +0.13 (55 % of games), wildbg club against strong +0.24 (54 %),
+  wildbg expert against strong +0.55 (64 %); in 60 matches to 7 with the cube, wildbg expert won 80 % against strong.
+  *How (Claude):* `games/backgammon/wildbg/` ports wildbg's Rust code (inputs, contact/race phases, evaluation, best
+  play, cube) to TypeScript, under its MIT licence; the networks of its "nets" branch (CC0-1.0, about 0.75 MB each) are
+  base64 modules made by `scripts/wildbg-nets.py`, loaded only when a wildbg level first plays. On 89 self-play
+  positions the port's chances match wildbg's Rust engine to 3e-7 and its best plays in 265 of 267 cases (the other two
+  are ties in a lost position); `tests/wildbg.test.ts` keeps reference values. A move takes about 2 ms (club, expert)
+  and 0.3 s on average for master. `scripts/backgammon-tournament.ts` plays one level against another.

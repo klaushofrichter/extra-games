@@ -24,6 +24,7 @@
     "options": [
       { "key": "level", "type": "enum", "values": ["beginner", "average", "strong", "wildbg club", "wildbg expert", "wildbg master"], "default": "average", "label": "Strength" }
     ],
+    "notice": "The wildbg strengths use wildbg, the neural-network backgammon engine by Carsten Wenderdel (https://github.com/carsten-wenderdel/wildbg), ported to TypeScript under its MIT licence; its trained networks are in the public domain (CC0-1.0, https://github.com/carsten-wenderdel/wildbg-training). Beginner, average and strong are this game's own AI.",
     "hostConfig": [],
     "timeoutSeconds": 20,
     "worker": true

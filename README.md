@@ -27,8 +27,9 @@ Games here:
   every game (games-service D-159). Its clocks need games-service with game time (`ctx.now()`, D-126); on an older table
   it plays without a clock and says so.
 - **Backgammon** (2 players, checkers moved on the board by tapping, rolls, doubles and Done on the phones too, matches
-  to 1–100 points with the doubling cube and the Crawford rule, an optional time per turn, AI players at three
-  strengths).
+  to 1–100 points with the doubling cube and the Crawford rule, an optional time per turn, AI players at six
+  strengths: three of its own and three of wildbg, a neural-network engine ported to TypeScript in
+  `games/backgammon/wildbg/`).
 - **Mexican Train** (2–8 players, dominoes with a double-twelve set, your tiles on your phone only, your own train
   plus the shared Mexican train, markers, doubles to cover, an optional opening run and a double blank worth 50, two AI
   styles). Its board is the most customised here: tiles that size themselves to the room, screensaver-style animated
