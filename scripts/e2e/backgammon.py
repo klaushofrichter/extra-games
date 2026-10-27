@@ -253,7 +253,7 @@ def main():
             assert len(game()["remaining"]) == 2, "a checker dropped where it can't go moved"
             assert board.evaluate("() => !document.querySelector('.bg-ck.dragging') && ![...document.querySelectorAll('.bg-ck')].some((e) => e.style.transform)"), "the checker did not slide back"
             sounds = board.evaluate("() => window.gameTableSounds ?? []")
-            assert len(sounds) == heard or "bg-bad" in sounds[heard:], f"no 'not a good move' sound: {sounds[heard:]}"
+            assert "bg-bad" in sounds[heard:], f"no 'not a good move' sound: {sounds[heard:]}"
             drag(board, t["from"], t["to"])
             wait(lambda: len(game()["remaining"]) < 2, 5, "the dragged move")
             settle(board)

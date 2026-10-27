@@ -8,6 +8,8 @@ Checks on the way:
   - the board shows 32 pieces, White's first rank toward White's seat (south), every piece facing the board's front;
   - the turn-around button turns every piece to face north;
   - tapping a piece shows its moves, tapping a target moves it, and only the player to move can pick up pieces;
+  - dragging a piece to a lit square moves it; dropped where it can't go, it slides back with a "not a good move"
+    sound; the other side's pieces can't be dragged (E-035);
   - the phones show both clocks (the running one counting down), the moves, a draw offer and its answer, and Resign
     both asking for confirmation first;
   - the phone layout rules of games-service (D-065) on both phones;
@@ -64,6 +66,22 @@ def tap(board, selector):
         shot(board, "failed-tap")
     assert box, f"{selector} is not on the board"
     board.mouse.click(box["x"] + box["width"] / 2, box["y"] + box["height"] / 2)
+
+
+def drag(board, frm, to):
+    """Drag a piece from one square to another, as a finger would (E-035)."""
+    a_ = board.locator(f'.ch-pc[data-sq="{frm}"]').bounding_box()
+    b_ = board.locator(f'.ch-sq[data-sq="{to}"]').bounding_box()
+    board.mouse.move(a_["x"] + a_["width"] / 2, a_["y"] + a_["height"] / 2)
+    board.mouse.down()
+    board.mouse.move(b_["x"] + b_["width"] / 2, b_["y"] + b_["height"] / 2, steps=12)
+    board.mouse.up()
+
+
+def nothing_moved(board, count, what):
+    time.sleep(0.6)
+    assert len(moves()) == count, f"{what}: a move was made"
+    assert board.evaluate("() => !document.querySelector('.ch-pc.dragging') && ![...document.querySelectorAll('.ch-pc')].some((e) => e.style.transform)"), f"{what}: the piece did not slide back"
 
 
 def moves():
@@ -178,8 +196,22 @@ def main():
             ben.keyboard.press("Escape")
             ben.wait_for_selector(".ch-confirm", state="hidden")
             assert a("GET", "/state")["phase"] == "active", "Escape resigned the game"
-            play(board, "f1", "c4", 3)
-            play(board, "b8", "c6", 4)
+            # Drag and drop (E-035): Black's pieces don't follow in White's turn; a bishop dropped where it can't go
+            # slides back with a "not a good move" sound; dropped on a lit square, it moves; then Black drags too.
+            board.wait_for_selector('.ch-pc.movable[data-sq="f1"]')
+            drag(board, "d7", "d6")
+            nothing_moved(board, 2, "Black's pawn dragged in White's turn")
+            heard = board.evaluate("() => (window.gameTableSounds ?? []).length")
+            drag(board, "f1", "f3")
+            nothing_moved(board, 2, "the bishop dropped on f3")
+            sounds = board.evaluate("() => window.gameTableSounds ?? []")
+            assert "ch-bad" in sounds[heard:], f"no 'not a good move' sound: {sounds[heard:]}"
+            drag(board, "f1", "c4")
+            wait(lambda: len(moves()) == 3, 10, "the dragged Bc4")
+            shot(board, "board-dragged")
+            board.wait_for_selector('.ch-pc.movable[data-sq="b8"]')
+            drag(board, "b8", "c6")
+            wait(lambda: len(moves()) == 4, 10, "the dragged Nc6")
             play(board, "d1", "h5", 5)
             play(board, "g8", "f6", 6)
             assert "Your move" in ann.inner_text(".ch-status")
