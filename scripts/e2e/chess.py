@@ -68,14 +68,54 @@ def tap(board, selector):
     board.mouse.click(box["x"] + box["width"] / 2, box["y"] + box["height"] / 2)
 
 
-def drag(board, frm, to):
-    """Drag a piece from one square to another, as a finger would (E-035)."""
+# A slow link for the board's intents (held 400 ms on the socket): what a dropped piece does while it waits shows.
+SLOW_INTENTS = """(on) => { const ws = WebSocket.prototype; ws.__send ??= ws.send;
+  ws.send = on ? function (d) { if (typeof d === "string" && d.includes('"intent"')) return void setTimeout(() => ws.__send.call(this, d), 400);
+    return ws.__send.call(this, d); } : ws.__send; }"""
+
+
+# Follows a dropped piece frame by frame (the piece nearest to where it was last seen, starting at the drop): it must
+# only ever come closer to where it ends, never slide back toward where it came from first; and no piece may show where
+# the dragged one started, which is a jump back (E-035).
+PATH_WATCH = """([sel, x, y, ox, oy]) => { const path = (window.__path = []); window.__home = 0; let p = { x, y };
+  const until = performance.now() + 1200;
+  const look = () => { let best = null, bd = Infinity;
+    for (const e of document.querySelectorAll(sel)) { const r = e.getBoundingClientRect(), c = { x: r.x + r.width / 2, y: r.y + r.height / 2 };
+      if (Math.hypot(c.x - ox, c.y - oy) < 6) window.__home++;
+      const d = Math.hypot(c.x - p.x, c.y - p.y); if (d < bd) { bd = d; best = c; } }
+    if (best) path.push((p = best));
+    if (performance.now() < until) requestAnimationFrame(look); };
+  requestAnimationFrame(look); }"""
+
+
+def settles_smoothly(board, what):
+    time.sleep(1.3)
+    path = board.evaluate("() => window.__path")
+    end = path[-1]
+    d = [((q["x"] - end["x"]) ** 2 + (q["y"] - end["y"]) ** 2) ** 0.5 for q in path]
+    back = max((b - a for a, b in zip(d, d[1:])), default=0)
+    assert back <= 3, f"{what}: moved {back:.0f}px away from where it ends, after the drop"
+    assert board.evaluate("() => window.__home") == 0, f"{what}: jumped back to where it started"
+
+
+def drag(board, frm, to, legal=False):
+    """Drag a piece from one square to another, as a finger would (E-035). For a legal move, also: its squares are lit
+    while it is carried, as for a tap, and once dropped it slides on to its square without a jump back."""
     a_ = board.locator(f'.ch-pc[data-sq="{frm}"]').bounding_box()
     b_ = board.locator(f'.ch-sq[data-sq="{to}"]').bounding_box()
-    board.mouse.move(a_["x"] + a_["width"] / 2, a_["y"] + a_["height"] / 2)
+    ax, ay = a_["x"] + a_["width"] / 2, a_["y"] + a_["height"] / 2
+    board.mouse.move(ax, ay)
     board.mouse.down()
     board.mouse.move(b_["x"] + b_["width"] / 2, b_["y"] + b_["height"] / 2, steps=12)
+    if legal:
+        assert board.locator(f'.ch-mark.target[data-sq="{to}"]').count() == 1, "the target is not lit while dragging"
+        assert board.locator(".ch-mark.target").count() == len({u[2:4] for u in a("GET", "/game/board")["view"]["legal"] if u.startswith(frm)}), "not all targets lit while dragging"
+        board.evaluate(SLOW_INTENTS, True)
+        board.evaluate(PATH_WATCH, [".ch-pc", b_["x"] + b_["width"] / 2, b_["y"] + b_["height"] / 2, ax, ay])
     board.mouse.up()
+    if legal:
+        settles_smoothly(board, "the dropped piece")
+        board.evaluate(SLOW_INTENTS, False)
 
 
 def nothing_moved(board, count, what):
@@ -206,11 +246,11 @@ def main():
             nothing_moved(board, 2, "the bishop dropped on f3")
             sounds = board.evaluate("() => window.gameTableSounds ?? []")
             assert "ch-bad" in sounds[heard:], f"no 'not a good move' sound: {sounds[heard:]}"
-            drag(board, "f1", "c4")
+            drag(board, "f1", "c4", legal=True)
             wait(lambda: len(moves()) == 3, 10, "the dragged Bc4")
             shot(board, "board-dragged")
             board.wait_for_selector('.ch-pc.movable[data-sq="b8"]')
-            drag(board, "b8", "c6")
+            drag(board, "b8", "c6", legal=True)
             wait(lambda: len(moves()) == 4, 10, "the dragged Nc6")
             play(board, "d1", "h5", 5)
             play(board, "g8", "f6", 6)

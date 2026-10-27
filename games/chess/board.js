@@ -90,7 +90,9 @@ export function mount(root, ctx) {
         const { x, y } = sqXY(sq);
         const c = colorOfPiece(ch);
         const movable = mySeatToMove() && c === view.turn && targetsFrom(sq).length > 0;
-        return `<div class="ch-pc ${movable ? "movable" : ""} ${sq === selected ? "lifted" : ""}" data-sq="${sq}" style="left:${x}px;top:${y}px;width:${S}px;height:${S}px">
+        // A dropped piece stays where it was let go until its move comes back, then slides on from there.
+        const held = dropAt?.from === sq ? `;transform:translate(${dropAt.shift.x}px,${dropAt.shift.y}px)` : "";
+        return `<div class="ch-pc ${movable ? "movable" : ""} ${sq === selected ? "lifted" : ""}" data-sq="${sq}" style="left:${x}px;top:${y}px;width:${S}px;height:${S}px${held}">
           <div style="transform:rotate(${pieceFacing()}deg)">${pieceSvg(ch, S - 10)}</div></div>`;
       })
       .join(""));
@@ -322,19 +324,23 @@ export function mount(root, ctx) {
     const to = e.type === "pointercancel" ? null : document.elementsFromPoint(e.clientX, e.clientY).find((x) => x.classList.contains("ch-sq"))?.dataset.sq ?? null;
     if (to === d.from) return snapBack(d.el); // put back where it was: no attempt
     const options = to && mySeatToMove() && !sending ? targetsFrom(d.from).filter((u) => u.slice(2, 4) === to) : [];
-    snapBack(d.el);
-    if (!options.length) {
+    if (options.length !== 1) {
+      snapBack(d.el);
+      if (options.length > 1) return showPromotion(d.from, to); // which piece, as for a tap
       playSound(info, "ch-bad", badSound);
       selected = null;
       drawPieces();
       drawMarks();
       return;
     }
-    if (options.length > 1) return showPromotion(d.from, to);
     const o = sqXY(d.from);
-    dropAt = { from: d.from, to, xy: { x: o.x + p.x - d.start.x, y: o.y + p.y - d.start.y } };
+    const shift = { x: p.x - d.start.x, y: p.y - d.start.y };
+    dropAt = { from: d.from, to, shift, xy: { x: o.x + shift.x, y: o.y + shift.y } };
+    const moveCount = view.moveCount;
     send(options[0]).then(() => {
-      if (dropAt?.from === d.from) dropAt = null; // refused: the piece is back on its square already
+      if (dropAt?.from !== d.from || view?.moveCount !== moveCount) return;
+      dropAt = null; // refused: the held piece slides back to its square
+      snapBack(pieceAt(d.from));
     });
   };
   box.addEventListener("pointerup", endDrag);

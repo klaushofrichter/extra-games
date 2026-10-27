@@ -515,3 +515,12 @@ Records are history: an older record is not edited when a newer one changes it. 
   need tables on the newest games-service before these games load there; each game keeps its own copy, a few lines.
   `scripts/e2e/chess.py` drags in White's turn (Black's pawn: nothing; a bishop to a blocked square: back, with the
   sound; to c4: moves) and Black's knight; both games' checks now require the bad-move sound.
+- **E-035 (cont.) · 2026-10-27 · Klaus** — In both games, while a piece is carried its targets light up exactly as
+  for a tap, and a dropped piece never jumps: it stays where it was let go until the table answers, then glides to
+  its square (or back, if refused). Before, Backgammon redrew the checker on its point while the move was on its way
+  and Chess slid it back first, so on a slow link it went back and then forward again.
+  *Why (Claude, implementation):* the board draws a dropped piece at its drop position (`dropAt`) through every
+  redraw until its move is shown, and the move's animation starts there. The browser checks hold the board's intents
+  400 ms on the socket, as a slow link would, follow the dropped piece frame by frame and require that it only comes
+  closer to where it ends and never shows where it started; both fail on the earlier boards. They also count the lit
+  targets mid-drag.
