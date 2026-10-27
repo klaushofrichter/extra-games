@@ -597,6 +597,16 @@ export default defineGame<State>({
         if (s.cube.owner !== null && s.cube.owner !== color) return { reject: "The cube is on the other side" };
         if (!canDouble(s)) return { reject: "Doubling can't change this match any more" };
         return offer(s, ctx);
+      case "withdraw": {
+        // The doubler takes an unanswered double back (E-034): a tap on the cube by mistake, or by someone else at the
+        // board. The roll is theirs again, the cube as it was.
+        if (s.phase !== "double" || !mover) return { reject: "There is no double of yours to withdraw" };
+        const stats = s.stats.map((x) => ({ ...x })) as [SideStats, SideStats];
+        stats[color].cubes = Math.max(0, stats[color].cubes - 1);
+        const next: State = { ...s, phase: "roll", stats };
+        arm(next, ctx);
+        return { state: next, events: [{ name: "withdrawn", data: { by: color, value: s.cube.value * 2 } }] };
+      }
       case "take":
       case "pass":
         if (s.phase !== "double" || mover) return { reject: "There is no double to answer" };
@@ -753,6 +763,7 @@ export default defineGame<State>({
         return { text: `options: Undo ${o.undo === "all" ? "all moves" : "off"}, auto-roll ${o.autoRoll ? "on" : "off"}${finished && a.plays.length > b.plays.length ? `; ends the turn: ${finished.text}` : ""}${autoRolled}`, columns };
       }
       if (name === "double") return { text: `doubles to ${b.cube.value * 2}`, columns };
+      if (name === "withdraw") return { text: `withdraws the double to ${b.cube.value * 2}`, columns };
       if (name === "take") return { text: `takes: the cube is at ${a.cube.value}${a.phase === "move" && a.dice ? `; ${seatName(a, a.turn)} rolls ${a.dice[0]}-${a.dice[1]} (auto-roll)` : ""}`, columns };
       if (name === "pass") return { text: `passes the double.${ending}`, columns };
     }

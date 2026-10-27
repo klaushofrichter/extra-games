@@ -7,7 +7,7 @@
 // Static and moving parts are separate layers (the points are drawn once; checkers have their own layer), and a move
 // plays as one animation per checker, so the board stays smooth on a 4K table (games-service's developer guide, section 9).
 import { W, H, esc, html, playerColor, playSound, remainingMs, seatPlates, useStyles } from "/shared/board-kit.js";
-import { COLOR_NAME, ROLL_MS, checkerSound, cubeSound, diceState, dieHtml, hitSound, offSound, ownNumber, rollSound, setFace, winSound } from "/games/backgammon/assets/bg-ui.js";
+import { COLOR_NAME, ROLL_MS, badSound, checkerSound, cubeSound, diceState, dieHtml, hitSound, offSound, ownNumber, rollSound, setFace, winSound } from "/games/backgammon/assets/bg-ui.js";
 
 // ----- geometry (1920 × 1080 surface, White south) -----
 const FX = 440; // frame
@@ -314,7 +314,11 @@ export function mount(root, ctx) {
     } else rot = info?.rotation ?? 0;
     const value = v.phase === "double" ? v.cube.value * 2 : v.cube.value;
     const label = v.match.crawford ? "<small>Crawford</small>" : value === 1 ? "64" : String(value);
-    cube.className = `bg-cube ${v.phase === "double" ? "offered" : ""} ${v.match.crawford ? "crawford" : ""}`;
+    // The player on roll may double by tapping the cube, where this board may act for them (E-034).
+    const tap = v.phase === "roll" && v.canDouble && !v.result && !info?.over && !!ctx?.act && (info.controlSeats ?? []).includes(v.turnSeat) && !sending;
+    cube.className = `bg-cube ${v.phase === "double" ? "offered" : ""} ${v.match.crawford ? "crawford" : ""} ${tap ? "tap" : ""}`;
+    cube.toggleAttribute("data-cube", tap);
+    cube.title = tap ? `Tap to double to ${v.cube.value * 2}` : "";
     cube.style.left = `${x}px`;
     cube.style.top = `${y}px`;
     cube.style.transform = `translate(-50%,-50%) rotate(${rot}deg)`;
@@ -448,7 +452,9 @@ export function mount(root, ctx) {
     const b = shown;
     const c = e.color;
     const src = stackOf(b, e.from, c);
-    const fromXY = slot(e.from, c, src.n - 1, src.n);
+    // A dropped checker goes on from where it was let go (E-034), not from its point again.
+    const fromXY = dropAt && String(dropAt.from) === String(e.from) ? dropAt.xy : slot(e.from, c, src.n - 1, src.n);
+    dropAt = null;
     let hitFrom = null;
     if (e.from === "bar") b.bar[c]--;
     else b.pts[e.from] -= c === 0 ? 1 : -1;
@@ -551,20 +557,21 @@ export function mount(root, ctx) {
     if (view) drawPanels();
   }
 
-  async function act(name, payload) {
-    if (sending || !view) return;
-    if (name === "double" && confirmDouble !== view.turn) return setConfirm(view.turn);
+  async function act(name, payload, confirmed = false) {
+    if (sending || !view) return null;
+    if (name === "double" && !confirmed && confirmDouble !== view.turn) return setConfirm(view.turn);
     if (confirmDouble !== null) setConfirm(null);
     sending = true;
     selected = null;
     draw();
     // Take and pass answer for the player the double was offered to, not the one whose turn it is.
     const seat = name === "take" || name === "pass" ? view.seats[view.turn ^ 1] : view.turnSeat;
-    await ctx.act(seat, name, payload); // a refusal is a toast from the platform
+    const r = await ctx.act(seat, name, payload); // a refusal is a toast from the platform
     sending = false;
     // Always redraw: the new view often arrives before this answer, and was drawn with the buttons still disabled
     // (Done after the last checker went off, a second Undo).
     if (!gone && view) draw();
+    return r;
   }
 
   box.addEventListener("pointerdown", (e) => {
@@ -584,6 +591,11 @@ export function mount(root, ctx) {
     if (e.target.closest("[data-roll]")) {
       e.preventDefault();
       return void act("roll");
+    }
+    if (e.target.closest("[data-cube]")) {
+      // Tapping the cube doubles at once; a double by mistake can be withdrawn from the doubler's phone (E-034).
+      e.preventDefault();
+      return void act("double", undefined, true);
     }
     if (!mayMove()) return;
     // The zone under the finger: a point's half of the board, the bar or the tray.
@@ -606,7 +618,87 @@ export function mount(root, ctx) {
     selected = can && s !== selected ? s : null;
     drawCheckers(shown);
     drawMarks();
+    if (can) startDrag(e, s);
   });
+
+  // ----- drag and drop (E-034): a checker that may move follows the finger; dropped on a lit target it moves, anywhere
+  // else it slides back with a "not a good move" sound. A tap without moving stays a tap (pick up, then tap a target).
+  let drag = null; // { id, from, el, origin, start, startClient, moved }
+  let dropAt = null; // where a dropped checker lies, so its move starts there instead of flying from its point again
+  /** A pointer's position in the board's own 1920 × 1080 coordinates, whatever the platform's turning and scaling. */
+  function toSurface(e) {
+    const r = box.getBoundingClientRect();
+    const deg = ((info?.rotation ?? 0) % 360 + 360) % 360;
+    const a = (deg * Math.PI) / 180;
+    const dx = e.clientX - (r.left + r.width / 2);
+    const dy = e.clientY - (r.top + r.height / 2);
+    const scale = r.width / (deg % 180 === 0 ? W : H);
+    return { x: W / 2 + (dx * Math.cos(a) + dy * Math.sin(a)) / scale, y: H / 2 + (-dx * Math.sin(a) + dy * Math.cos(a)) / scale };
+  }
+  function topChecker(spot, c) {
+    // A point holds one colour, so only the bar's checkers say theirs.
+    const all = [...checkers.querySelectorAll(spot === "bar" ? `.bg-ck[data-spot="bar"][data-color="${c}"]` : `.bg-ck[data-spot="${spot}"]`)];
+    return all.sort((a, b) => Number(b.dataset.k) - Number(a.dataset.k))[0] ?? null;
+  }
+  function startDrag(e, from) {
+    const c = view.turn;
+    const el = topChecker(from, c);
+    if (!el) return;
+    const st = stackOf(shown, from, c);
+    e.preventDefault(); // no text selection or native drag, which would cancel this one
+    drag = { id: e.pointerId, from, el, origin: slot(from, c, st.n - 1, st.n), start: toSurface(e), startClient: { x: e.clientX, y: e.clientY }, moved: false };
+    try {
+      box.setPointerCapture(e.pointerId);
+    } catch {
+      /* a synthetic event */
+    }
+  }
+  function snapBack(el) {
+    if (!el?.isConnected) return;
+    const from = el.style.transform || "none";
+    el.style.transform = "";
+    el.classList.remove("dragging");
+    el.animate([{ transform: from }, { transform: "none" }], { duration: 220, easing: "cubic-bezier(.3,.7,.3,1)" });
+  }
+  box.addEventListener("pointermove", (e) => {
+    if (!drag || e.pointerId !== drag.id) return;
+    if (!drag.moved) {
+      if (Math.hypot(e.clientX - drag.startClient.x, e.clientY - drag.startClient.y) < 8) return;
+      drag.moved = true;
+      if (!drag.el.isConnected) drag.el = topChecker(drag.from, view.turn);
+      if (!drag.el) return void (drag = null);
+      drag.el.classList.add("dragging");
+      selected = drag.from; // its targets light up while it is carried
+      drawMarks();
+    }
+    const p = toSurface(e);
+    drag.el.style.transform = `translate(${p.x - drag.start.x}px,${p.y - drag.start.y}px)`;
+  });
+  const endDrag = async (e) => {
+    if (!drag || e.pointerId !== drag.id) return;
+    const d = drag;
+    drag = null;
+    if (!d.moved) return; // a tap: handled on pointerdown
+    const p = toSurface(e);
+    const zone = e.type === "pointercancel" ? null : document.elementsFromPoint(e.clientX, e.clientY).find((x) => x.dataset?.zone)?.dataset.zone ?? null;
+    const to = zone === null ? null : zone === "bar" || zone === "off" ? zone : Number(zone);
+    if (to !== null && String(to) === String(d.from)) return snapBack(d.el); // put back where it was: no attempt
+    const legal = to !== null && mayMove() && view.targets.some((x) => String(x.from) === String(d.from) && String(x.to) === String(to));
+    if (!legal) {
+      playSound(info, "bg-bad", badSound);
+      selected = null;
+      drawMarks();
+      return snapBack(d.el);
+    }
+    dropAt = { from: d.from, xy: { x: d.origin.x + p.x - d.start.x, y: d.origin.y + p.y - d.start.y } };
+    const r = await act("move", { from: d.from, to });
+    if (!r?.ok) {
+      dropAt = null;
+      snapBack(d.el);
+    }
+  };
+  box.addEventListener("pointerup", endDrag);
+  box.addEventListener("pointercancel", endDrag);
 
   const currentView = () => view;
   live = { view: currentView, act: (seat, name, payload) => ctx.act?.(seat, name, payload) };

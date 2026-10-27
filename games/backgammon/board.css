@@ -1,5 +1,5 @@
 /* Backgammon board: a wooden board in the middle of the 1920 × 1080 surface, a panel at each player's right hand. */
-.bg-board { position: absolute; inset: 0; }
+.bg-board { position: absolute; inset: 0; user-select: none; -webkit-user-select: none; touch-action: none; }
 .bg-static { position: absolute; inset: 0; pointer-events: none; }
 .bg-frame { filter: drop-shadow(0 30px 40px rgba(0, 0, 0, .55)); }
 .bg-point { opacity: .92; }
@@ -66,6 +66,10 @@
   background: linear-gradient(145deg, #fbf5e6, #d8cba8); color: #241a10; font: 700 26px var(--mono); box-shadow: 0 4px 8px rgba(0, 0, 0, .5); }
 .bg-cube small { font: 700 9px var(--text); letter-spacing: .3px; }
 .bg-cube.offered { box-shadow: 0 0 0 4px var(--brass), 0 0 30px rgba(214, 169, 74, .7); }
+/* The player to move may double by tapping the cube (E-034). */
+.bg-cube.tap { pointer-events: auto; cursor: pointer; box-shadow: 0 0 0 3px rgba(214, 169, 74, .8); }
+/* A checker being dragged: above everything, a little lifted. */
+.bg-ck.dragging { z-index: 5; pointer-events: none; filter: drop-shadow(0 10px 12px rgba(0, 0, 0, .55)); transition: none; }
 .bg-cube.crawford { opacity: .55; }
 .bg-cube[hidden] { display: none; }
 
