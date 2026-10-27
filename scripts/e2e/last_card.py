@@ -143,7 +143,8 @@ def release_above_line(d, el):
     for i in range(1, 16):
         d.mouse.move(x, y + (line - 25 - y) * i / 15)
         time.sleep(0.02)
-    assert d.locator(".lcd.sling-armed").count() == 1, "the line does not light up with a card above it"
+    # The line lights up on the deck's next frame, not within the last move event (it failed in CI now and then).
+    wait(lambda: d.locator(".lcd.sling-armed").count() == 1, 2, "the line does not light up with a card above it")
     shot(d, f"deck-line-{d.label}")
     time.sleep(0.15)
     d.mouse.up()
