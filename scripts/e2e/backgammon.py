@@ -113,8 +113,39 @@ def board_tap(board, act, cond, what):
     wait(cond, 4, what)
 
 
-def drag(board, frm, to):
-    """Drag the top checker of the side to move from one spot to another, as a finger would (E-034)."""
+# A slow link for the board's intents (held 400 ms on the socket): what a dropped piece does while it waits shows.
+SLOW_INTENTS = """(on) => { const ws = WebSocket.prototype; ws.__send ??= ws.send;
+  ws.send = on ? function (d) { if (typeof d === "string" && d.includes('"intent"')) return void setTimeout(() => ws.__send.call(this, d), 400);
+    return ws.__send.call(this, d); } : ws.__send; }"""
+
+
+# Follows a dropped piece frame by frame (the piece nearest to where it was last seen, starting at the drop): it must
+# only ever come closer to where it ends, never slide back toward where it came from first; and no piece may show where
+# the dragged one started, which is a jump back (E-035).
+PATH_WATCH = """([sel, x, y, ox, oy]) => { const path = (window.__path = []); window.__home = 0; let p = { x, y };
+  const until = performance.now() + 1200;
+  const look = () => { let best = null, bd = Infinity;
+    for (const e of document.querySelectorAll(sel)) { const r = e.getBoundingClientRect(), c = { x: r.x + r.width / 2, y: r.y + r.height / 2 };
+      if (Math.hypot(c.x - ox, c.y - oy) < 6) window.__home++;
+      const d = Math.hypot(c.x - p.x, c.y - p.y); if (d < bd) { bd = d; best = c; } }
+    if (best) path.push((p = best));
+    if (performance.now() < until) requestAnimationFrame(look); };
+  requestAnimationFrame(look); }"""
+
+
+def settles_smoothly(board, what):
+    time.sleep(1.3)
+    path = board.evaluate("() => window.__path")
+    end = path[-1]
+    d = [((q["x"] - end["x"]) ** 2 + (q["y"] - end["y"]) ** 2) ** 0.5 for q in path]
+    back = max((b - a for a, b in zip(d, d[1:])), default=0)
+    assert back <= 3, f"{what}: moved {back:.0f}px away from where it ends, after the drop"
+    assert board.evaluate("() => window.__home") == 0, f"{what}: jumped back to where it started"
+
+
+def drag(board, frm, to, legal=False):
+    """Drag the top checker of the side to move from one spot to another, as a finger would (E-034). For a legal move,
+    also: the targets are lit while it is carried, as for a tap, and once dropped it flies on without a jump back."""
     pos = board.evaluate("""([f, t, c]) => {
       const cs = [...document.querySelectorAll(f === "bar" ? `.bg-ck[data-spot="bar"][data-color="${c}"]` : `.bg-ck[data-spot="${f}"]`)].sort((a, b) => b.dataset.k - a.dataset.k);
       const r = cs[0].getBoundingClientRect(), z = document.querySelector(`[data-zone="${t}"]`).getBoundingClientRect();
@@ -122,7 +153,15 @@ def drag(board, frm, to):
     board.mouse.move(pos["x"], pos["y"])
     board.mouse.down()
     board.mouse.move(pos["tx"], pos["ty"], steps=12)
+    if legal:
+        lit = board.locator(".bg-target").count()
+        assert lit == len([t for t in game()["targets"] if str(t["from"]) == str(frm)]), f"{lit} targets lit while dragging"
+        board.evaluate(SLOW_INTENTS, True)
+        board.evaluate(PATH_WATCH, [".bg-ck", pos["tx"], pos["ty"], pos["x"], pos["y"]])
     board.mouse.up()
+    if legal:
+        settles_smoothly(board, "the dropped checker")
+        board.evaluate(SLOW_INTENTS, False)
 
 
 def board_moves(board):
@@ -253,8 +292,8 @@ def main():
             assert len(game()["remaining"]) == 2, "a checker dropped where it can't go moved"
             assert board.evaluate("() => !document.querySelector('.bg-ck.dragging') && ![...document.querySelectorAll('.bg-ck')].some((e) => e.style.transform)"), "the checker did not slide back"
             sounds = board.evaluate("() => window.gameTableSounds ?? []")
-            assert len(sounds) == heard or "bg-bad" in sounds[heard:], f"no 'not a good move' sound: {sounds[heard:]}"
-            drag(board, t["from"], t["to"])
+            assert "bg-bad" in sounds[heard:], f"no 'not a good move' sound: {sounds[heard:]}"
+            drag(board, t["from"], t["to"], legal=True)
             wait(lambda: len(game()["remaining"]) < 2, 5, "the dragged move")
             settle(board)
             shot(board, "board-dragged")

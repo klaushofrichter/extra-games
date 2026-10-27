@@ -103,3 +103,20 @@ export function moveSound(capture) {
     }
   };
 }
+
+/** "Not a good move": two low falling square-wave notes, for a piece dropped where it can't go (E-035). */
+export function badSound(c, t, out) {
+  for (const [at, from, to, dur] of [[0, 220, 196, 0.14], [0.18, 175, 147, 0.22]]) {
+    const o = c.createOscillator();
+    const g = c.createGain();
+    o.type = "square";
+    o.frequency.setValueAtTime(from, t + at);
+    o.frequency.exponentialRampToValueAtTime(to, t + at + dur);
+    g.gain.setValueAtTime(0.0001, t + at);
+    g.gain.exponentialRampToValueAtTime(0.2, t + at + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + at + dur);
+    o.connect(g).connect(out);
+    o.start(t + at);
+    o.stop(t + at + dur + 0.05);
+  }
+}

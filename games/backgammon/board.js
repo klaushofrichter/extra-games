@@ -169,10 +169,13 @@ export function mount(root, ctx) {
   }
 
   // ----- the checkers -----
-  function checkerHtml(color, x, y, cls = "", attrs = "") {
+  function checkerHtml(color, x, y, cls = "", attrs = "", shift = "") {
     const seat = view?.seats?.[color];
-    return `<div class="bg-ck ${color ? "b" : "w"} ${cls}" style="left:${x - D / 2}px;top:${y - D / 2}px;--ring:${playerColor(info, seat)}" ${attrs}></div>`;
+    return `<div class="bg-ck ${color ? "b" : "w"} ${cls}" style="left:${x - D / 2}px;top:${y - D / 2}px;--ring:${playerColor(info, seat)}${shift}" ${attrs}></div>`;
   }
+  /** A dropped checker stays where it was let go until its move is shown (E-035): no jump back to its point first. */
+  const held = (spot, color) =>
+    dropAt && String(dropAt.from) === String(spot) && view?.turn === color ? `;transform:translate(${dropAt.shift.x}px,${dropAt.shift.y}px)` : "";
   function offHtml(color, x, y) {
     return `<div class="bg-off ${color ? "b" : "w"}" style="left:${x - 28}px;top:${y - 6}px"></div>`;
   }
@@ -195,7 +198,7 @@ export function mount(root, ctx) {
         const { x, y } = slot(p, color, k, n);
         const top = k === n - 1;
         const cls = top && movable.has(String(p)) ? (String(p) === String(selected) ? "movable lifted" : "movable") : "";
-        m += checkerHtml(color, x, y, cls, `data-spot="${p}" data-k="${k}"`);
+        m += checkerHtml(color, x, y, cls, `data-spot="${p}" data-k="${k}"`, top ? held(p, color) : "");
       }
       // A tall stack shows its count on the top checker.
       if (n > 5) {
@@ -209,7 +212,7 @@ export function mount(root, ctx) {
         const { x, y } = slot("bar", color, k, n);
         const top = k === n - 1;
         const cls = top && movable.has("bar") && view.turn === color ? (selected === "bar" ? "movable lifted" : "movable") : "";
-        m += checkerHtml(color, x, y, cls, `data-spot="bar" data-color="${color}" data-k="${k}"`);
+        m += checkerHtml(color, x, y, cls, `data-spot="bar" data-color="${color}" data-k="${k}"`, top ? held("bar", color) : "");
       }
       for (let k = 0; k < b.off[color]; k++) {
         const { x, y } = slot("off", color, k, b.off[color]);
@@ -515,6 +518,7 @@ export function mount(root, ctx) {
               await playMove(e.data);
             }
           }
+          if (restart) dropAt = null; // an Undo or a new game came first: let a held checker go
         } catch (err) {
           console.error("backgammon board:", err); // never leave the queue stuck: show the latest board instead
         }
@@ -690,11 +694,13 @@ export function mount(root, ctx) {
       drawMarks();
       return snapBack(d.el);
     }
-    dropAt = { from: d.from, xy: { x: d.origin.x + p.x - d.start.x, y: d.origin.y + p.y - d.start.y } };
+    // The checker stays where it was dropped, through the redraws before its move comes back, and flies on from there.
+    const shift = { x: p.x - d.start.x, y: p.y - d.start.y };
+    dropAt = { from: d.from, shift, xy: { x: d.origin.x + shift.x, y: d.origin.y + shift.y } };
     const r = await act("move", { from: d.from, to });
-    if (!r?.ok) {
+    if (!r?.ok && dropAt?.from === d.from) {
       dropAt = null;
-      snapBack(d.el);
+      snapBack(topChecker(d.from, view.turn));
     }
   };
   box.addEventListener("pointerup", endDrag);
