@@ -27,7 +27,7 @@ You must use both dice if you can, and if only one can be played, the larger one
 
 ## Options
 
-- **Roll for me** is each player's own, on their phone under *Your option*, at any time: *On* rolls your dice as your turn begins. When you could double, it waits a moment first, so you can still double.
+- **Roll for me** is each player's own, on their phone under *Your option*, at any time: *On* rolls your dice as your turn begins. When you could double, it waits a moment first, so you can still double; the board's roll button says **Auto-Roll** meanwhile (a tap rolls at once).
 - **Undo** is for both players, in the board's settings (the gear): *All moves* takes back every move of the turn until Done; *Off* takes Undo away, and every turn ends by itself once its dice are played.
 
 Before the match, the settings **Undo at the start** (*all* or *none*) and **Roll for me at the start** set both for everyone.

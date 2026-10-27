@@ -279,8 +279,11 @@ export function mount(root, ctx) {
     const rollHere = v.phase === "roll" && !v.result && !info.over && ctx?.act && (info.controlSeats ?? []).includes(v.turnSeat);
     let inner;
     if (v.phase === "roll" || v.phase === "double") {
+      // With auto-roll on, the dice roll by themselves (after the chance to double, E-032): the button says so, and a
+      // tap still rolls at once.
+      const auto = !!v.options?.[v.turn]?.autoRoll;
       inner = rollHere
-        ? `<button type="button" class="bg-roll" data-roll aria-label="Roll the dice"><span class="bg-roll-dice">${dieHtml(0, { size: 56, cls: "blank" })}${dieHtml(0, { size: 56, cls: "blank" })}</span><span class="bg-roll-text">Tap to roll</span></button>`
+        ? `<button type="button" class="bg-roll" data-roll aria-label="${auto ? "Auto-roll: the dice roll by themselves, or tap to roll now" : "Roll the dice"}"><span class="bg-roll-dice">${dieHtml(0, { size: 56, cls: "blank" })}${dieHtml(0, { size: 56, cls: "blank" })}</span><span class="bg-roll-text">${auto ? "Auto-Roll" : "Tap to roll"}</span></button>`
         : `<div class="bg-wait">${v.phase === "double" ? "" : `${esc(nameOf(v.turn))} to roll`}</div>`;
     } else if (pending()) {
       // A roll is on its way, after the moves before it: no numbers yet, and no tumble before those moves are shown.
