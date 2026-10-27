@@ -162,6 +162,7 @@ def main():
             rdeck, rboard = remote.frame_locator("#deck"), remote.frame_locator("#board")
             rdeck.locator("text=Rita").first.wait_for(timeout=20000)
             board.wait_for_selector(".overlay .invite", state="detached", timeout=10000)
+            board.wait_for_selector("button.tile")
 
             pick_game(board, "backgammon")
             board.locator(".dialog [data-x=yes]").click()
@@ -243,6 +244,7 @@ def main():
                 a("POST", "/game/close", {})
             a("DELETE", f"/players/{player('Rita')['id']}")
             remote.close()
+            board.wait_for_selector("button.tile")  # the lobby again, after the game: its tiles first, then the pager
             pick_game(board, "backgammon")
             board.locator(".dialog [data-x=yes]").click()
             time.sleep(0.4)
