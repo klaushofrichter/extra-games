@@ -1,7 +1,7 @@
 // Chess phone: moves are made on the board, so the phone shows both clocks, whose move it is, the moves so far, and
 // offers a draw or resignation, each after a confirmation dialog.
 import { esc, playerColor, remainingMs } from "/shared/board-kit.js";
-import { clockLeft, clockText, materialEdge, movePairs, pieceSvg } from "/games/chess/assets/pieces.js";
+import { clockLeft, clockText, materialEdge, movePairs, pieceSvg, sourceTag } from "/games/chess/assets/pieces.js";
 
 export function mount(root, ctx) {
   root.innerHTML = `<style>
@@ -31,6 +31,7 @@ export function mount(root, ctx) {
       .ch-moves { display:grid; grid-template-columns:3ch 1fr 1fr; gap:3px 10px; font-family:var(--mono); max-height:40vh; overflow:auto }
       .ch-moves .n { color:var(--ink-faint) }
       .ch-moves .cur { color:var(--brass); font-weight:700 }
+      .ch-src { font-size:.7em; font-weight:400; color:var(--ink-faint); margin-left:3px }
     </style>
     <div class="card"><div class="ch-them"></div><div class="ch-took ch-them-took"></div></div>
     <div class="card"><div class="eyebrow ch-head"></div><div class="ch-status"></div><div class="ch-me" style="margin-top:6px"></div>
@@ -116,11 +117,11 @@ export function mount(root, ctx) {
     }
     $(".ch-hint").textContent = v.result ? v.result.text : v.clockMissing ? "This table's software is too old for chess clocks: the game is played without." : v.color === null ? "" : "Move on the board: tap a piece, then where it goes.";
     drawActions();
-    const pairs = movePairs(v.sans);
+    const pairs = movePairs(v.sans, v.engines);
     const last = v.sans.length - 1;
     const list = $(".ch-moves");
     list.innerHTML = pairs.length
-      ? pairs.map((p, k) => `<span class="n">${p.n}.</span><span class="${2 * k === last ? "cur" : ""}">${esc(p.w)}</span><span class="${2 * k + 1 === last ? "cur" : ""}">${esc(p.b)}</span>`).join("")
+      ? pairs.map((p, k) => `<span class="n">${p.n}.</span><span class="${2 * k === last ? "cur" : ""}">${esc(p.w)}${sourceTag(p.we)}</span><span class="${2 * k + 1 === last ? "cur" : ""}">${esc(p.b)}${sourceTag(p.be)}</span>`).join("")
       : `<span class="muted" style="grid-column:1/-1">No moves yet</span>`;
     list.scrollTop = list.scrollHeight;
   }

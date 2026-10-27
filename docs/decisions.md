@@ -631,3 +631,10 @@ Records are history: an older record is not edited when a newer one changes it. 
   *How (Claude):* `askOnline` sends Lichess requests with 7 pieces or fewer to the tablebase, otherwise to the cloud;
   both share the 429 back-off. The tablebase's `dtm` (plies, the side to move's) becomes a mate in moves from White's
   side; draws, cursed wins and blessed losses read 0.00; an unknown result, or none, leaves the move to the own engine.
+
+- **E-043 · 2026-10-27 · Klaus** — Every AI move in the move lists (both panels on the board and the phones) carries a
+  tag for the engine that made it: SF (Stockfish), LC (Lichess cloud), TB (Lichess tablebase), own (the game's
+  engine); the full name shows on hover. A person's moves have none.
+  *Why:* with E-040's fallback the engine changes from move to move; the panel line (E-041) shows only the last one.
+  *How (Claude):* the rules keep `engines`, one entry per move beside `sans` (null for a person's move), from the same
+  checked note as E-041; games from before have none and show no tags. The Game Viewer's move details name the engine.

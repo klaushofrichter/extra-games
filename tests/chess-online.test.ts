@@ -157,6 +157,9 @@ describe("the note of the engine that made an AI player's move (E-041)", () => {
     rt.submit(1, { name: "move", payload: { uci: "f8c5", engine: "chatgpt" } } as never, "ai");
     expect(state().notes).toEqual({});
     expect((rt.view(0) as { showEval: boolean }).showEval).toBe(true);
+    // E-043: every move keeps its engine, a person's none; the view's list is as long as the moves.
+    expect(state().engines).toEqual([null, "own", null, "lichess", null, "tablebase", null, null]);
+    expect((rt.view(0) as { engines: unknown[] }).engines).toHaveLength(8);
     rt.submit(0, { name: "resign" } as never, "human");
     expect(replaysExactly(game, rt)).toBe(true);
     const off = start(game, 2, { timeControl: "no clock" }, 3, { seats: seats as never });

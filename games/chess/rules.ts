@@ -53,6 +53,8 @@ export interface State {
   result: null | { winner: Color | null; reason: Reason; by?: number };
   /** Per AI seat, the engine of its last move (E-041); absent in logs from before it. */
   notes?: Record<number, EngineNote>;
+  /** Per move (as `sans`), the engine that made it when an AI player did, else null (E-043); absent before. */
+  engines?: (EngineNote["engine"] | null)[];
   /** The "AI's evaluation" setting: the panels show the evaluation with the engine. */
   showEval?: boolean;
 }
@@ -67,6 +69,9 @@ export interface EngineNote {
 
 const SOURCES: readonly string[] = ["stockfish", "lichess", "tablebase"];
 const int = (x: unknown, max: number) => (typeof x === "number" && Number.isInteger(x) && Math.abs(x) <= max ? x : undefined);
+
+/** `engines` as long as the moves, null where a move has no engine (a person's, or one from before E-043). */
+const enginesOf = (s: State) => Array.from({ length: s.sans.length }, (_, i) => s.engines?.[i] ?? null);
 
 /** The engine note in an AI's move payload, checked: the payload is the AI's, but the rules trust only its shape. */
 function noteOf(payload: unknown): EngineNote | null {
@@ -268,6 +273,7 @@ function publicView(s: State) {
     standInElo: s.standInElo,
     captured: captured(p),
     notes: s.notes ?? {},
+    engines: enginesOf(s),
     showEval: !!s.showEval,
     result: s.result ? { ...s.result, text: resultText(s) } : null,
   };
@@ -352,6 +358,7 @@ export default defineGame<State>({
       standInElo: Math.max(ELO_MIN, Math.min(ELO_MAX, Number(settings.standInElo) || 1200)),
       result: null,
       notes: {},
+      engines: [],
       showEval: settings.aiEval === "on",
     };
     startFlag(s, ctx);
@@ -370,13 +377,14 @@ export default defineGame<State>({
         const m = moveFromPayload(p, intent.payload);
         if (m === null) return { reject: "That move isn't legal" };
         const r = play(s, m, ctx, "player");
-        // An AI player's move says which engine made it (E-041); a person's move clears an old note for the seat.
+        // An AI player's move says which engine made it (E-041), kept per move too (E-043); a person's move clears an
+        // old note for the seat.
         const note = ctx.seats.find((x) => x.seat === seat)?.kind === "ai" ? noteOf(intent.payload) : null;
-        if (!note && !s.notes?.[seat]) return r;
         const notes = { ...s.notes };
         if (note) notes[seat] = note;
         else delete notes[seat];
-        return { ...r, state: { ...r.state, notes } };
+        const engines = r.state.sans.length > s.sans.length ? [...enginesOf(s), note?.engine ?? null] : enginesOf(s);
+        return { ...r, state: { ...r.state, notes, engines } };
       }
       case "resign": {
         const result = { winner: (color ^ 1) as Color, reason: "resignation" as const, by: seat };
@@ -528,7 +536,7 @@ export default defineGame<State>({
     if (step.kind === "intent") {
       const name = step.intent?.name;
       if (!step.accepted) return { text: `${name} refused: ${step.reason ?? "?"}`, columns };
-      if (name === "move") return { text: `${label} ${san ?? "(no move: the flag had fallen)"}${ending}`, columns, details: { fen: after.fen, uci: after.ucis.at(-1) } };
+      if (name === "move") return { text: `${label} ${san ?? "(no move: the flag had fallen)"}${ending}`, columns, details: { fen: after.fen, uci: after.ucis.at(-1), ...(after.engines?.at(-1) ? { engine: after.engines.at(-1) } : {}) } };
       if (name === "resign") return { text: `Resigns.${ending}`, columns };
       if (name === "offerDraw") return { text: after.result ? `Offers a draw too.${ending}` : "Offers a draw.", columns };
       if (name === "acceptDraw") return { text: `Accepts the draw.${ending}`, columns };
