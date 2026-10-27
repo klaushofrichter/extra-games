@@ -226,6 +226,8 @@ describe("a turn", () => {
     ({ s } = step(s, s.seats[0], "roll", undefined, ctx));
     expect(s.rule.max).toBe(0);
     expect(ctx.timers.has("pass")).toBe(true);
+    // An AI there sends nothing, not Done: the pass timer ends its turn too, so its throw stays on the board (E-037).
+    expect(aiIntent(def.view(s, s.seats[0]) as View, "strong", () => 0.5)).toBeNull();
     const r = def.onTimer!(s, "pass", fakeCtx() as never);
     expect("state" in r && r.state).toMatchObject({ phase: "roll", turn: 1 });
   });
