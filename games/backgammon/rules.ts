@@ -30,11 +30,13 @@ import {
   winKind,
   type Board,
   type Color,
+  type Persp,
   type Spot,
   type Sub,
   type TurnRule,
 } from "./bg.ts";
 import { LEVELS, choosePlay, shouldDouble, shouldTake, type CubeSituation, type Level } from "./ai.ts";
+import { WILDBG_LEVELS, wildbgBrain, type WildbgLevel } from "./wildbg/brain.ts";
 
 /** How long a turn with no legal move stays on the board before it passes (the dice tumble for 1.3 s of it, E-031). */
 const PASS_MS = 2600;
@@ -516,12 +518,29 @@ function most(id: string, icon: string, title: string, blurb: string, s: State, 
   return { id, icon, title, blurb, seats: [s.seats[c]], value: value(best) };
 }
 
-function aiLevel(options: Record<string, unknown>): Level {
-  return LEVELS.includes(options?.level as Level) ? (options.level as Level) : "average";
+function aiLevel(options: Record<string, unknown>): Level | WildbgLevel {
+  const l = options?.level;
+  return LEVELS.includes(l as Level) || WILDBG_LEVELS.includes(l as WildbgLevel) ? (l as Level | WildbgLevel) : "average";
 }
 
-/** The AI's intent for a view, at a level. */
+/** What an AI decides with: whether to double, whether to take (from the taker's side, the doubler to roll), a play. */
+export interface Brain {
+  double(p: Persp, cube: CubeSituation): boolean;
+  take(p: Persp, cube: CubeSituation): boolean;
+  play(p: Persp, dice: number[]): Sub[];
+}
+
+/** The AI's intent for a view, at one of this game's own levels. */
 export function aiIntent(v: View, level: Level, random: () => number) {
+  return intentWith(v, {
+    double: (p, cube) => shouldDouble(p, level, cube),
+    take: (p, cube) => shouldTake(p, level, cube),
+    play: (p, dice) => choosePlay(p, dice, level, random).play.moves,
+  });
+}
+
+/** The AI's intent for a view, decided by `brain`. */
+export function intentWith(v: View, brain: Brain) {
   if (v.result || v.color === null) return null;
   const me = v.color;
   const board: Board = { pts: v.points, bar: v.bar, off: v.off };
@@ -530,15 +549,15 @@ export function aiIntent(v: View, level: Level, random: () => number) {
     value: v.cube.value,
     freeDrop: v.match.postCrawford && v.match.length - v.match.score[me ^ 1] === 1 && v.match.length - v.match.score[me] > 1,
   };
-  if (v.phase === "double" && v.actorSeat === v.seat) return { name: shouldTake(persp(board, me), level, situation) ? "take" : "pass" };
+  if (v.phase === "double" && v.actorSeat === v.seat) return { name: brain.take(persp(board, me), situation) ? "take" : "pass" };
   if (!v.myTurn) return null;
-  if (v.phase === "roll") return { name: v.canDouble && shouldDouble(persp(board, me), level, situation) ? "double" : "roll" };
+  if (v.phase === "roll") return { name: v.canDouble && brain.double(persp(board, me), situation) ? "double" : "roll" };
   if (v.phase === "move") {
     // A roll with no move: no Done, the turn passes by itself after a moment (PASS_MS), as a person's does, so the
     // throw can be seen on the board (E-037).
     if (v.blocked) return null;
     if (!v.legal.length) return { name: "done" };
-    const first = choosePlay(persp(board, me), v.remaining, level, random).play.moves[0];
+    const first = brain.play(persp(board, me), v.remaining)[0];
     if (!first) return { name: "done" };
     return { name: "move", payload: { from: toSpot(first.from, me), to: toSpot(first.to, me), die: first.die } };
   }
@@ -738,7 +757,10 @@ export default defineGame<State>({
   },
 
   ai(view, _seat, ctx, options) {
-    return aiIntent(view as View, aiLevel(options), ctx.random);
+    const level = aiLevel(options);
+    // wildbg's levels (E-039) load its networks first, so they answer with a promise.
+    if (WILDBG_LEVELS.includes(level as WildbgLevel)) return wildbgBrain(level as WildbgLevel, ctx.random).then((brain) => intentWith(view as View, brain));
+    return aiIntent(view as View, level as Level, ctx.random);
   },
 
   aiFallback(view, _seat, ctx) {
