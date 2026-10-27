@@ -577,6 +577,8 @@ Records are history: an older record is not edited when a newer one changes it. 
   *Why:* the own AI is rule-conforming but weak; wildbg is stronger. In 400 single cubeless games each (points per game,
   gammons counting; about ±0.07): strong against average +0.13 (55 % of games), wildbg club against strong +0.24 (54 %),
   wildbg expert against strong +0.55 (64 %); in 60 matches to 7 with the cube, wildbg expert won 80 % against strong.
+  In 120 games each, wildbg master scored +0.81 against strong (72 %) and +0.40 against wildbg expert (60 %): the
+  strengths are in order, beginner < average < strong < wildbg club < wildbg expert < wildbg master.
   *How (Claude):* `games/backgammon/wildbg/` ports wildbg's Rust code (inputs, contact/race phases, evaluation, best
   play, cube) to TypeScript, under its MIT licence; the networks of its "nets" branch (CC0-1.0, about 0.75 MB each) are
   base64 modules made by `scripts/wildbg-nets.py`, loaded only when a wildbg level first plays. On 89 self-play
