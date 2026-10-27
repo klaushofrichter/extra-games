@@ -638,3 +638,14 @@ Records are history: an older record is not edited when a newer one changes it. 
   *Why:* with E-040's fallback the engine changes from move to move; the panel line (E-041) shows only the last one.
   *How (Claude):* the rules keep `engines`, one entry per move beside `sans` (null for a person's move), from the same
   checked note as E-041; games from before have none and show no tags. The Game Viewer's move details name the engine.
+- **E-044 · 2026-10-27 · Klaus** — Backgammon: while auto-roll (E-031) waits for the player's chance to double
+  (E-032), the board's roll button says **Auto-Roll** instead of *Tap to roll*; a tap still rolls at once.
+  *Why:* "Tap to roll" suggested the player had to roll although the dice roll by themselves.
+- **E-045 · 2026-10-27 · Klaus** — Backgammon: any of the mover's checkers on the bar can be picked up, by tap or
+  drag: the one nearest the finger, and all of them show they can move. A drag carries that checker, under the
+  finger; a tap on the picked one puts it down, a tap on another picks that one.
+  *Why:* a drag from the bar always carried the top checker, wherever the finger was, so it followed at a distance
+  and the player couldn't choose which one to take.
+  *How (Claude):* the board keeps the picked bar checker (`pickK`); the drag, the drop that holds the checker where it
+  was let go (E-035) and the flight of a tapped move start from it. Points still give their top checker. Checked in
+  the browser with three checkers on the bar: the bottom one follows the pointer exactly and is the one that moves.

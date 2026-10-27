@@ -173,9 +173,10 @@ export function mount(root, ctx) {
     const seat = view?.seats?.[color];
     return `<div class="bg-ck ${color ? "b" : "w"} ${cls}" style="left:${x - D / 2}px;top:${y - D / 2}px;--ring:${playerColor(info, seat)}${shift}" ${attrs}></div>`;
   }
-  /** A dropped checker stays where it was let go until its move is shown (E-035): no jump back to its point first. */
-  const held = (spot, color) =>
-    dropAt && String(dropAt.from) === String(spot) && view?.turn === color ? `;transform:translate(${dropAt.shift.x}px,${dropAt.shift.y}px)` : "";
+  /** A dropped checker stays where it was let go until its move is shown (E-035): no jump back to its point first. On
+   *  the bar it is the one picked (`k`, E-045); on a point the top one. */
+  const held = (spot, color, k) =>
+    dropAt && String(dropAt.from) === String(spot) && view?.turn === color && (dropAt.k ?? k) === k ? `;transform:translate(${dropAt.shift.x}px,${dropAt.shift.y}px)` : "";
   function offHtml(color, x, y) {
     return `<div class="bg-off ${color ? "b" : "w"}" style="left:${x - 28}px;top:${y - 6}px"></div>`;
   }
@@ -198,7 +199,7 @@ export function mount(root, ctx) {
         const { x, y } = slot(p, color, k, n);
         const top = k === n - 1;
         const cls = top && movable.has(String(p)) ? (String(p) === String(selected) ? "movable lifted" : "movable") : "";
-        m += checkerHtml(color, x, y, cls, `data-spot="${p}" data-k="${k}"`, top ? held(p, color) : "");
+        m += checkerHtml(color, x, y, cls, `data-spot="${p}" data-k="${k}"`, top ? held(p, color, k) : "");
       }
       // A tall stack shows its count on the top checker.
       if (n > 5) {
@@ -210,9 +211,10 @@ export function mount(root, ctx) {
       const n = b.bar[color];
       for (let k = 0; k < n; k++) {
         const { x, y } = slot("bar", color, k, n);
-        const top = k === n - 1;
-        const cls = top && movable.has("bar") && view.turn === color ? (selected === "bar" ? "movable lifted" : "movable") : "";
-        m += checkerHtml(color, x, y, cls, `data-spot="bar" data-color="${color}" data-k="${k}"`, top ? held("bar", color) : "");
+        // Any of the mover's checkers on the bar can be picked up (E-045): the one under the finger, not always the top one.
+        const picked = k === (pickK ?? n - 1);
+        const cls = movable.has("bar") && view.turn === color ? (selected === "bar" && picked ? "movable lifted" : "movable") : "";
+        m += checkerHtml(color, x, y, cls, `data-spot="bar" data-color="${color}" data-k="${k}"`, (dropAt?.k ?? n - 1) === k ? held("bar", color, k) : "");
       }
       for (let k = 0; k < b.off[color]; k++) {
         const { x, y } = slot("off", color, k, b.off[color]);
@@ -279,8 +281,11 @@ export function mount(root, ctx) {
     const rollHere = v.phase === "roll" && !v.result && !info.over && ctx?.act && (info.controlSeats ?? []).includes(v.turnSeat);
     let inner;
     if (v.phase === "roll" || v.phase === "double") {
+      // With auto-roll on, the dice roll by themselves (after the chance to double, E-032): the button says so, and a
+      // tap still rolls at once.
+      const auto = !!v.options?.[v.turn]?.autoRoll;
       inner = rollHere
-        ? `<button type="button" class="bg-roll" data-roll aria-label="Roll the dice"><span class="bg-roll-dice">${dieHtml(0, { size: 56, cls: "blank" })}${dieHtml(0, { size: 56, cls: "blank" })}</span><span class="bg-roll-text">Tap to roll</span></button>`
+        ? `<button type="button" class="bg-roll" data-roll aria-label="${auto ? "Auto-roll: the dice roll by themselves, or tap to roll now" : "Roll the dice"}"><span class="bg-roll-dice">${dieHtml(0, { size: 56, cls: "blank" })}${dieHtml(0, { size: 56, cls: "blank" })}</span><span class="bg-roll-text">${auto ? "Auto-Roll" : "Tap to roll"}</span></button>`
         : `<div class="bg-wait">${v.phase === "double" ? "" : `${esc(nameOf(v.turn))} to roll`}</div>`;
     } else if (pending()) {
       // A roll is on its way, after the moves before it: no numbers yet, and no tumble before those moves are shown.
@@ -453,8 +458,11 @@ export function mount(root, ctx) {
     const c = e.color;
     const src = stackOf(b, e.from, c);
     // A dropped checker goes on from where it was let go (E-034), not from its point again.
-    const fromXY = dropAt && String(dropAt.from) === String(e.from) ? dropAt.xy : slot(e.from, c, src.n - 1, src.n);
+    // A checker picked on the bar and moved with a tap flies from where it stood (E-045).
+    const k = e.from === "bar" && pickK !== null && pickK < src.n ? pickK : src.n - 1;
+    const fromXY = dropAt && String(dropAt.from) === String(e.from) ? dropAt.xy : slot(e.from, c, k, src.n);
     dropAt = null;
+    if (e.from === "bar") pickK = null;
     let hitFrom = null;
     if (e.from === "bar") b.bar[c]--;
     else b.pts[e.from] -= c === 0 ? 1 : -1;
@@ -616,7 +624,15 @@ export function mount(root, ctx) {
       if (t) return void act("move", { from: selected, to: s });
     }
     const can = view.targets.some((x) => String(x.from) === String(s));
-    selected = can && s !== selected ? s : null;
+    // On the bar, the checker nearest the finger is the one picked up (E-045): tapping another one picks that instead,
+    // tapping the picked one again puts it down.
+    let again = s === selected;
+    if (can && s === "bar") {
+      const k = nearestOnBar(toSurface(e));
+      again = again && k === pickK;
+      pickK = k;
+    }
+    selected = can && !again ? s : null;
     drawCheckers(shown);
     drawMarks();
     if (can) startDrag(e, s);
@@ -626,6 +642,7 @@ export function mount(root, ctx) {
   // else it slides back with a "not a good move" sound. A tap without moving stays a tap (pick up, then tap a target).
   let drag = null; // { id, from, el, origin, start, startClient, moved }
   let dropAt = null; // where a dropped checker lies, so its move starts there instead of flying from its point again
+  let pickK = null; // which of the mover's bar checkers is picked up (E-045); null: the top one
   /** A pointer's position in the board's own 1920 × 1080 coordinates, whatever the platform's turning and scaling. */
   function toSurface(e) {
     const r = box.getBoundingClientRect();
@@ -636,18 +653,35 @@ export function mount(root, ctx) {
     const scale = r.width / (deg % 180 === 0 ? W : H);
     return { x: W / 2 + (dx * Math.cos(a) + dy * Math.sin(a)) / scale, y: H / 2 + (-dx * Math.sin(a) + dy * Math.cos(a)) / scale };
   }
+  /** The checker a drag from `spot` carries: on the bar the picked one (E-045), elsewhere the top one. */
   function topChecker(spot, c) {
     // A point holds one colour, so only the bar's checkers say theirs.
     const all = [...checkers.querySelectorAll(spot === "bar" ? `.bg-ck[data-spot="bar"][data-color="${c}"]` : `.bg-ck[data-spot="${spot}"]`)];
+    const picked = spot === "bar" && pickK !== null ? all.find((x) => Number(x.dataset.k) === pickK) : null;
+    if (picked) return picked;
     return all.sort((a, b) => Number(b.dataset.k) - Number(a.dataset.k))[0] ?? null;
+  }
+  /** Which of the mover's bar checkers is nearest a point of the board. */
+  function nearestOnBar(p) {
+    const c = view.turn;
+    const n = shown.bar[c];
+    let best = n - 1;
+    let bestD = Infinity;
+    for (let k = 0; k < n; k++) {
+      const s = slot("bar", c, k, n);
+      const d = Math.hypot(s.x - p.x, s.y - p.y);
+      if (d < bestD) (best = k), (bestD = d);
+    }
+    return best;
   }
   function startDrag(e, from) {
     const c = view.turn;
     const el = topChecker(from, c);
     if (!el) return;
     const st = stackOf(shown, from, c);
+    const k = from === "bar" && pickK !== null ? pickK : st.n - 1;
     e.preventDefault(); // no text selection or native drag, which would cancel this one
-    drag = { id: e.pointerId, from, el, origin: slot(from, c, st.n - 1, st.n), start: toSurface(e), startClient: { x: e.clientX, y: e.clientY }, moved: false };
+    drag = { id: e.pointerId, from, k, el, origin: slot(from, c, k, st.n), start: toSurface(e), startClient: { x: e.clientX, y: e.clientY }, moved: false };
     try {
       box.setPointerCapture(e.pointerId);
     } catch {
@@ -693,7 +727,7 @@ export function mount(root, ctx) {
     }
     // The checker stays where it was dropped, through the redraws before its move comes back, and flies on from there.
     const shift = { x: p.x - d.start.x, y: p.y - d.start.y };
-    dropAt = { from: d.from, shift, xy: { x: d.origin.x + shift.x, y: d.origin.y + shift.y } };
+    dropAt = { from: d.from, k: d.from === "bar" ? d.k : undefined, shift, xy: { x: d.origin.x + shift.x, y: d.origin.y + shift.y } };
     const r = await act("move", { from: d.from, to });
     if (!r?.ok && dropAt?.from === d.from) {
       dropAt = null;
