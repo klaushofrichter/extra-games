@@ -20,7 +20,7 @@ import {
   type Color,
   type Sub,
 } from "../games/backgammon/bg.ts";
-import { choosePlay, evaluate, shouldDouble, shouldTake } from "../games/backgammon/ai.ts";
+import { ROLLS, choosePlay, evaluate, shouldDouble, shouldTake } from "../games/backgammon/ai.ts";
 import def, { AUTO_ROLL_MS, aiIntent, canDouble, NEXT_MS, type State, type View } from "../games/backgammon/rules.ts";
 import { loadGame, replaysExactly, seats, start } from "./harness.ts";
 
@@ -540,5 +540,23 @@ describe("on the runtime", () => {
     ({ s } = step(s, w, "move", { from: 8, to: 5 }));
     const d = def.describe!({ kind: "intent", seat: w, intent: { name: "move", payload: { from: 8, to: 5 } }, accepted: true, events: [], names: {}, before, after: s } as never);
     expect(d).toMatchObject({ text: "moves 8/5", columns: { dice: "3-1", score: "0–0" } });
+  });
+});
+
+describe("the cube's chances (E-038)", () => {
+  it("nobody doubles on their second turn: after every opening move and every reply", () => {
+    // Uncalibrated, 98 of these 315 positions were doubled and 40 of those passed: a game decided after two rolls.
+    const cube = { need: [7, 7] as [number, number], value: 1, freeDrop: false };
+    const doubled: string[] = [];
+    for (let a = 2; a <= 6; a++)
+      for (let b = 1; b < a; b++) {
+        const opening = absolute(choosePlay(persp(startBoard(), 0), [a, b], "average", () => 0.5).play.pos, 0);
+        for (const r of ROLLS) {
+          const reply = choosePlay(persp(opening, 1), diceOf(r.a, r.b), "average", () => 0.5).play;
+          const white = persp(absolute(reply.pos, 1), 0); // White to roll, their second turn
+          if (shouldDouble(white, "average", cube)) doubled.push(`${a}-${b} then ${r.a}-${r.b}`);
+        }
+      }
+    expect(doubled).toEqual([]);
   });
 });

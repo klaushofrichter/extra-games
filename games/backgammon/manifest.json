@@ -1,7 +1,7 @@
 {
   "id": "backgammon",
   "name": "Backgammon",
-  "version": "2026.10.27.1",
+  "version": "2026.10.27.3",
   "sdk": "^0.1",
   "description": "The classic race for two: roll, move your checkers on the board, hit blots and bear off first. Matches to 1–100 points with the doubling cube and the Crawford rule, AI players at three strengths.",
   "players": [2],
@@ -22,8 +22,9 @@
   "ai": {
     "supported": true,
     "options": [
-      { "key": "level", "type": "enum", "values": ["beginner", "average", "strong"], "default": "average", "label": "Strength" }
+      { "key": "level", "type": "enum", "values": ["beginner", "average", "strong", "wildbg club", "wildbg expert", "wildbg master"], "default": "average", "label": "Strength" }
     ],
+    "notice": "The wildbg strengths use wildbg, the neural-network backgammon engine by Carsten Wenderdel (https://github.com/carsten-wenderdel/wildbg), ported to TypeScript under its MIT licence; its trained networks are in the public domain (CC0-1.0, https://github.com/carsten-wenderdel/wildbg-training). Beginner, average and strong are this game's own AI.",
     "hostConfig": [],
     "timeoutSeconds": 20,
     "worker": true

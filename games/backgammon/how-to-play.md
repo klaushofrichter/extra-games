@@ -56,7 +56,7 @@ With the **Doubling cube** on, before rolling you may double (on your phone, **D
 
 ## Time and changing players
 
-**Seconds per turn (0 = no limit)** gives each turn a time limit; when it runs out, the table plays the turn for the player (and takes a double for them; it never doubles for them). An AI player's **Strength** is beginner, average or strong, set in its settings on the board.
+**Seconds per turn (0 = no limit)** gives each turn a time limit; when it runs out, the table plays the turn for the player (and takes a double for them; it never doubles for them). An AI player's **Strength** is set in its settings on the board: beginner, average or strong (this game's own AI), or wildbg club, wildbg expert or wildbg master, the stronger players of wildbg, a neural-network engine (master looks a roll ahead, so it takes a moment to move).
 
 A match keeps its two players. If someone has to go, the board can exchange them for another person or an AI player (tap their name in the board's settings, or **Exchange** at their seat when their phone is away): the newcomer plays on with the same colour, score and cube.
 

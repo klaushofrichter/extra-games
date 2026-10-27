@@ -551,3 +551,35 @@ Records are history: an older record is not edited when a newer one changes it. 
   answers such a roll with *Done*: it answered within its thinking delay, so the throw was gone before it could be
   seen. The stand-in for an away player still ends such a turn after its 0.8 s, since its timer is part of the
   logs that replay.
+
+## Backgammon: the AI's chances for the cube, calibrated (27 Oct 2026)
+
+- **E-038 · 2026-10-27 · Klaus** — The AI's chances for its cube decisions are calibrated, so a game is no longer
+  decided by a double offered and passed after a few rolls. *Why:* in AI-only matches to 15, 75 of 110 games
+  (average) and 32 of 35 (strong) ended with a passed double, many after one or two rolls. The AI read its position
+  scores as chances as they were, and they were far too sure: positions rated 75 % won 60 % in self-play, rated 85 %
+  won 69 %, so the taker passed what it still won about 40 % of the time.
+  *How (Claude):* the score is scaled by 0.4 before it becomes a chance (`CALIBRATION` in `ai.ts`), fitted by log-loss
+  on 400 seeded self-play games (flat from 0.38 to 0.42); rated chances now match the wins (75 % → 74.5 %). In the same
+  matches 40 % (average) and 28 % (strong) of the games end with a passed double, after a median of 18 and 50 rolls,
+  and gammons happen. Moves are unchanged (the order of plays follows the plain score). A test plays every opening
+  move and every reply: uncalibrated, 98 of those 315 positions were doubled and 40 passed; now none is doubled. A
+  stronger engine as an extra AI level is being looked into separately.
+
+## Backgammon: wildbg's AI players beside the game's own (27 Oct 2026)
+
+- **E-039 · 2026-10-27 · Klaus** — Backgammon gets three more AI strengths from wildbg, the open-source neural-network
+  engine by Carsten Wenderdel (https://github.com/carsten-wenderdel/wildbg), beside its own beginner, average and
+  strong: *wildbg club* (its best play by the networks, with some noise), *wildbg expert* (its best play) and *wildbg
+  master* (looks one roll ahead among its five best plays). The cube follows wildbg's money-game rule (Janowski, cube
+  efficiency 2/3) with the match cases the own AI knows (a dead cube, a free drop). The AI options window shows the
+  credit and licence (games-service D-224). The game's own AI stays: it is the stand-in and the out-of-time fallback.
+  *Why:* the own AI is rule-conforming but weak; wildbg is stronger. In 400 single cubeless games each (points per game,
+  gammons counting; about ±0.07): strong against average +0.13 (55 % of games), wildbg club against strong +0.24 (54 %),
+  wildbg expert against strong +0.55 (64 %); in 60 matches to 7 with the cube, wildbg expert won 80 % against strong.
+  *How (Claude):* `games/backgammon/wildbg/` ports wildbg's Rust code (inputs, contact/race phases, evaluation, best
+  play, cube) to TypeScript, under its MIT licence; the networks of its "nets" branch (CC0-1.0, about 0.75 MB each) are
+  base64 modules made by `scripts/wildbg-nets.py`, loaded only when a wildbg level first plays. On 89 self-play
+  positions the port's chances match wildbg's Rust engine to 3e-7 and its best plays in 265 of 267 cases (the other two
+  are ties in a lost position); `tests/wildbg.test.ts` keeps reference values. A move takes about 2 ms (club, expert)
+  and 0.3 s on average for master. `scripts/backgammon-tournament.ts` plays one level against another.

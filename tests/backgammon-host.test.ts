@@ -32,9 +32,9 @@ describe("backgammon on a table host", () => {
     const g = (await t.ok("GET", "/games")).find((x: { id: string }) => x.id === "backgammon");
     expect(g).toMatchObject({ name: "Backgammon", players: [2], ai: true, simulation: true, seatLayouts: [2] });
     expect(g.settings.map((s: { key: string }) => s.key)).toEqual(["matchLength", "cube", "turnSeconds", "undo", "autoRoll"]);
-    expect(g.aiOptions[0]).toMatchObject({ key: "level", values: ["beginner", "average", "strong"] });
+    expect(g.aiOptions[0]).toMatchObject({ key: "level", values: ["beginner", "average", "strong", "wildbg club", "wildbg expert", "wildbg master"] });
     for (const f of ["board.js", "board.css", "deck.js", "assets/bg-ui.js", "assets/board.svg", "how-to-play.md"]) expect((await fetch(`${t.base}/games/backgammon/${f}`)).status, f).toBe(200);
-    for (const f of ["rules.ts", "bg.ts", "ai.ts", "manifest.json"]) expect((await fetch(`${t.base}/games/backgammon/${f}`)).status, f).toBe(404);
+    for (const f of ["rules.ts", "bg.ts", "ai.ts", "manifest.json", "wildbg/engine.ts", "wildbg/contact.ts"]) expect((await fetch(`${t.base}/games/backgammon/${f}`)).status, f).toBe(404);
   });
 
   it("two players: moves from the board and a phone, Undo and Done, the cube on the board and the phones, an exact replay", async () => {
