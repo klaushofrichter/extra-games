@@ -551,3 +551,17 @@ Records are history: an older record is not edited when a newer one changes it. 
   answers such a roll with *Done*: it answered within its thinking delay, so the throw was gone before it could be
   seen. The stand-in for an away player still ends such a turn after its 0.8 s, since its timer is part of the
   logs that replay.
+
+## Backgammon: the AI's chances for the cube, calibrated (27 Oct 2026)
+
+- **E-038 · 2026-10-27 · Klaus** — The AI's chances for its cube decisions are calibrated, so a game is no longer
+  decided by a double offered and passed after a few rolls. *Why:* in AI-only matches to 15, 75 of 110 games
+  (average) and 32 of 35 (strong) ended with a passed double, many after one or two rolls. The AI read its position
+  scores as chances as they were, and they were far too sure: positions rated 75 % won 60 % in self-play, rated 85 %
+  won 69 %, so the taker passed what it still won about 40 % of the time.
+  *How (Claude):* the score is scaled by 0.4 before it becomes a chance (`CALIBRATION` in `ai.ts`), fitted by log-loss
+  on 400 seeded self-play games (flat from 0.38 to 0.42); rated chances now match the wins (75 % → 74.5 %). In the same
+  matches 40 % (average) and 28 % (strong) of the games end with a passed double, after a median of 18 and 50 rolls,
+  and gammons happen. Moves are unchanged (the order of plays follows the plain score). A test plays every opening
+  move and every reply: uncalibrated, 98 of those 315 positions were doubled and 40 passed; now none is doubled. A
+  stronger engine as an extra AI level is being looked into separately.

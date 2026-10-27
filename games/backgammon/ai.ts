@@ -170,14 +170,22 @@ function gauss(random: () => number) {
   return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
 }
 
+/**
+ * The scores, made into chances for the cube (E-038). Read as chances as they are, they were far too sure: in AI
+ * self-play, positions rated 75 % won 60 %, so the taker passed what it still won 40 % of the time and most games ended
+ * with a passed double after a few rolls. Scaled by this factor, fitted by log-loss on seeded self-play (flat from 0.38
+ * to 0.42), rated chances match the wins. Moves still follow the plain score: the order of plays is the same.
+ */
+const CALIBRATION = 0.4;
+
 /** The chance the side to roll in `p` wins, by its best play over all 21 rolls (average) or the static score. */
 export function chanceOnRoll(p: Persp, level: Level): number {
-  if (level === "beginner") return winChance(-evaluate(flip(p)));
+  if (level === "beginner") return winChance(-evaluate(flip(p)) * CALIBRATION);
   let sum = 0;
   for (const r of ROLLS) {
     let best = -Infinity;
     for (const q of plays(p, diceOf(r.a, r.b))) best = Math.max(best, evaluate(q.pos));
-    sum += r.w * winChance(best);
+    sum += r.w * winChance(best * CALIBRATION);
   }
   return sum / 36;
 }
