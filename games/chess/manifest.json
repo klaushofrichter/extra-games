@@ -1,7 +1,7 @@
 {
   "id": "chess",
   "name": "Chess",
-  "version": "2026.10.27.1",
+  "version": "2026.10.27.2",
   "sdk": "^0.1",
   "description": "Classic chess for two, played on the board: tap a piece, then its square, or drag it there. Chess clocks from bullet to classical, or none. AI players at a strength you choose, with the game's own engine, Stockfish or the Lichess cloud.",
   "players": [2],
@@ -23,7 +23,7 @@
       { "key": "engine", "type": "enum", "values": ["own engine", "Stockfish (stockfish.online)", "Lichess cloud"], "default": "own engine", "label": "Engine (online ones fall back to the own engine)" },
       { "key": "elo", "type": "int", "min": 400, "max": 2200, "step": 100, "default": 1200, "label": "Strength (Elo, approximate)" }
     ],
-    "notice": "Online engines need the table host on the internet; without an answer in 10 s the own engine moves. Stockfish (GPL-3.0, https://stockfishchess.org) runs at https://stockfish.online, free for non-commercial use (https://stockfish.online/LICENSE); its search depth (6–15) follows the Elo, and even 6 is strong. Lichess cloud gives the evaluations of positions players have analysed on https://lichess.org (free, open source, AGPL-3.0); in new positions the own engine plays at the Elo chosen.",
+    "notice": "Online engines need the table host on the internet; without an answer in 10 s the own engine moves. Stockfish (GPL-3.0, https://stockfishchess.org) runs at https://stockfish.online, free for non-commercial use (https://stockfish.online/LICENSE); its search depth (6–15) follows the Elo, and even 6 is strong. Lichess cloud gives the evaluations of positions players have analysed on https://lichess.org (free, open source, AGPL-3.0), and perfect moves from its tablebase with 7 pieces or fewer; in other positions the own engine plays at the Elo chosen.",
     "hostConfig": [],
     "timeoutSeconds": 30,
     "worker": true

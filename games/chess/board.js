@@ -123,7 +123,7 @@ export function mount(root, ctx) {
   }
 
   // ----- the panels: one per colour, at that player's right hand, facing them -----
-  const ENGINE_NAME = { own: "Own engine", stockfish: "Stockfish", lichess: "Lichess cloud" };
+  const ENGINE_NAME = { own: "Own engine", stockfish: "Stockfish", lichess: "Lichess cloud", tablebase: "Lichess tablebase" };
   /** An evaluation from White's side: "+0.46", "−1.20", "#3" (White mates in 3), "#−3". */
   const evalText = (e) => ("mate" in e ? `#${e.mate < 0 ? "−" : ""}${Math.abs(e.mate)}` : `${e.cp < 0 ? "−" : "+"}${(Math.abs(e.cp) / 100).toFixed(2)}`);
   /** Which engine made an AI player's last move (E-041), with its depth, and its evaluation when the setting is on. */

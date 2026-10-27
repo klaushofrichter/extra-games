@@ -9,7 +9,7 @@
 import { count, defineGame, type GameContext, type StepInfo } from "@game-table/sdk";
 import { BLACK, F_CAPTURE, F_CASTLE, Position, WHITE, moveFlags, moveFrom, movePromo, moveTo, sqName, uci } from "./chess.ts";
 import { ELO_MAX, ELO_MIN, Engine, MATE, level, pickMove } from "./engine.ts";
-import { ONLINE_MS, askOnline, serviceOf, type Eval, type Service } from "./online.ts";
+import { ONLINE_MS, askOnline, serviceOf, type Eval, type Source } from "./online.ts";
 import { chessAwards } from "./stats.ts";
 
 /** How long the stand-in waits before moving, so a move on the board can be followed. */
@@ -60,18 +60,18 @@ export interface State {
 /** Which engine made an AI player's move, with the search depth and the evaluation (from White's side) when the engine
  *  gives them. */
 export interface EngineNote {
-  engine: "own" | Service;
+  engine: "own" | Source;
   depth?: number;
   eval?: Eval;
 }
 
-const SERVICES: readonly string[] = ["stockfish", "lichess"];
+const SOURCES: readonly string[] = ["stockfish", "lichess", "tablebase"];
 const int = (x: unknown, max: number) => (typeof x === "number" && Number.isInteger(x) && Math.abs(x) <= max ? x : undefined);
 
 /** The engine note in an AI's move payload, checked: the payload is the AI's, but the rules trust only its shape. */
 function noteOf(payload: unknown): EngineNote | null {
   const o = (payload ?? {}) as { engine?: unknown; depth?: unknown; eval?: { cp?: unknown; mate?: unknown } };
-  if (o.engine !== "own" && !SERVICES.includes(o.engine as string)) return null;
+  if (o.engine !== "own" && !SOURCES.includes(o.engine as string)) return null;
   const note: EngineNote = { engine: o.engine as EngineNote["engine"] };
   const depth = int(o.depth, 999);
   if (depth !== undefined && depth > 0) note.depth = depth;
@@ -506,7 +506,7 @@ export default defineGame<State>({
     if (!service || wait < 300) return own();
     return askOnline(service, v.fen, elo, wait).then((a) => {
       const m = onlineMove(v, a?.uci ?? null);
-      return m ? { name: "move", payload: { uci: m, engine: service, ...(a!.depth ? { depth: a!.depth } : {}), ...(a!.eval ? { eval: a!.eval } : {}) } } : own();
+      return m ? { name: "move", payload: { uci: m, engine: a!.source ?? service, ...(a!.depth ? { depth: a!.depth } : {}), ...(a!.eval ? { eval: a!.eval } : {}) } } : own();
     });
   },
 
