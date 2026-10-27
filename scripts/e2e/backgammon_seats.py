@@ -20,17 +20,16 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
 sys.path.insert(0, os.path.join(ROOT, ".games-service", "scripts", "e2e"))
 from playwright.sync_api import sync_playwright  # noqa: E402
-from common import api, call, errors, join_deck, pick_game, start_cloud, start_table, wait, watch  # noqa: E402
+from common import call, errors, join_deck, pick_game, start_cloud, start_table, wait, watch  # noqa: E402
+from game_check import TableCheck  # noqa: E402
 
 OUT = sys.argv[1] if len(sys.argv) > 1 else "e2e-out"
 os.makedirs(OUT, exist_ok=True)
 ADMIN = "admin-token-for-e2e-0001"
 CLOUD, BASE = "http://127.0.0.1:8098", "http://127.0.0.1:8099"
 KEY = "e2ekey"
-
-
-def a(method, path, body=None):
-    return api(method, path, body, base=BASE, key=KEY)
+T = TableCheck(BASE, KEY, OUT, "backgammon-seats")
+a, shot = T.a, T.shot
 
 
 def game():
@@ -43,10 +42,6 @@ def player(name):
 
 def color_of(name):
     return game()["seats"].index(player(name)["seat"])
-
-
-def shot(page, name):
-    page.screenshot(path=os.path.join(OUT, f"backgammon-seats-{name}.png"))
 
 
 def top_checker(surface, spot, color):

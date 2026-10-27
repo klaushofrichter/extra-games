@@ -32,8 +32,6 @@ export interface Sub {
 /** An absolute point for the board and the intents: 1–24, or "bar" / "off". */
 export type Spot = number | "bar" | "off";
 
-export const CHECKERS = 15;
-
 export function startBoard(): Board {
   const pts = new Array(25).fill(0);
   // White: 2 on 24, 5 on 13, 3 on 8, 5 on 6. Black mirrored.
@@ -302,11 +300,6 @@ export function winKind(p: Persp): 1 | 2 | 3 {
   if (p.o[0] > 0) return 3;
   for (let i = 1; i <= 6; i++) if (p.o[i]) return 3;
   return 2;
-}
-
-/** "13/7*", "bar/22", "6/off" in the mover's own numbering, as backgammon notation writes it. */
-export function subText(s: Sub): string {
-  return `${s.from === 25 ? "bar" : s.from}/${s.to === 0 ? "off" : s.to}${s.hit ? "*" : ""}`;
 }
 
 /** A turn's moves in notation, joining a checker's steps (13/7/2*) and counting repeats (8/5(2)). */

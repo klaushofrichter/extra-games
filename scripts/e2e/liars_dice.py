@@ -18,35 +18,16 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
 sys.path.insert(0, os.path.join(ROOT, ".games-service", "scripts", "e2e"))
 from playwright.sync_api import sync_playwright  # noqa: E402
-from common import api, errors, join_deck, pick_game, start_table, watch, wait  # noqa: E402
+from common import errors, pick_game, start_table, watch, wait  # noqa: E402
+from game_check import CHECK, TableCheck  # noqa: E402
 
 OUT = sys.argv[1] if len(sys.argv) > 1 else "e2e-out"
 os.makedirs(OUT, exist_ok=True)
 PORT = 8095
 BASE = f"http://127.0.0.1:{PORT}"
 KEY = "e2ekey"
-problems = []
-
-CHECK = """() => {
-  const w = innerWidth, h = innerHeight, out = [];
-  if (document.documentElement.scrollWidth > w + 1) out.push(`page is ${document.documentElement.scrollWidth}px wide in a ${w}px window`);
-  for (const b of document.querySelectorAll('button')) {
-    const r = b.getBoundingClientRect(), cs = getComputedStyle(b);
-    if (!r.width || !r.height || cs.visibility === 'hidden' || b.closest('[hidden]')) continue;
-    if (r.right > w + 1) out.push(`"${(b.textContent || b.className).trim().slice(0, 30)}" sticks out to ${Math.round(r.right)}px`);
-    if (r.height < 40) out.push(`"${(b.textContent || b.getAttribute('aria-label') || b.className).trim().slice(0, 30)}" is only ${Math.round(r.height)}px high`);
-  }
-  for (const card of document.querySelectorAll('.card')) {
-    const c = card.getBoundingClientRect();
-    if (!c.width) continue;
-    for (const el of card.querySelectorAll('*')) {
-      const r = el.getBoundingClientRect();
-      if (!r.width || !r.height) continue;
-      if (r.left < c.left - 1 || r.right > c.right + 1) out.push(`${el.tagName.toLowerCase()}.${String(el.getAttribute('class') || '').split(' ')[0]} sticks out of its card by ${Math.round(Math.max(c.left - r.left, r.right - c.right))}px`);
-    }
-  }
-  return out;
-}"""
+T = TableCheck(BASE, KEY, OUT, "liars-dice", CHECK)
+a, shot, check, phone, problems = T.a, T.shot, T.check, T.phone, T.problems
 
 # The phone's own action buttons must be on screen on its turn (after the page scrolls them into view, which a
 # player would do too: the builder sits below the cup).
@@ -60,28 +41,6 @@ ON_SCREEN = """() => {
   }
   return out;
 }"""
-
-
-def a(method, path, body=None):
-    return api(method, path, body, base=BASE, key=KEY)
-
-
-def shot(page, name):
-    page.screenshot(path=os.path.join(OUT, f"liars-dice-{name}.png"))
-
-
-def check(page, where):
-    for p in page.evaluate(CHECK):
-        problems.append(f"{where}: {p}")
-
-
-def phone(browser, name, w, h):
-    ctx = browser.new_context(viewport={"width": w, "height": h}, device_scale_factor=2, has_touch=True)
-    d = ctx.new_page()
-    watch(d, name)
-    join_deck(d, a("GET", "/join")["url"], name)
-    d.label = name
-    return d
 
 
 def main():

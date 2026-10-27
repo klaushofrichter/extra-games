@@ -128,10 +128,9 @@ export function mount(root, ctx) {
   async function send(name) {
     busy = true;
     drawActions();
-    const r = await ctx.send(name);
+    await ctx.send(name);
     busy = false;
     if (gone) return;
-    if (!r.ok) ctx.toast?.(r.reason ?? "That didn't work");
     if (view) drawActions();
   }
 

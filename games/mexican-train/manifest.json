@@ -1,7 +1,7 @@
 {
   "id": "mexican-train",
   "name": "Mexican Train",
-  "version": "2026.10.23.1",
+  "version": "2026.10.26.1",
   "sdk": "^0.1",
   "description": "Dominoes for 2 to 8 players. Build your own train of matching tiles from the double in the middle, help yourself to the shared Mexican train, and get rid of your tiles first. The fewest points after the last round wins.",
   "players": {

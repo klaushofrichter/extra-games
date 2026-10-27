@@ -92,6 +92,7 @@ export function mount(root, ctx = {}) {
     music.start(p.music);
   }
 
+  let drawnSvg = "";
   function draw(animate) {
     const p = prefOf(info);
     const st = STYLE[background()];
@@ -144,7 +145,12 @@ export function mount(root, ctx = {}) {
     // The hub with the round's engine.
     s += `<circle cx="${C.x}" cy="${C.y}" r="${HUB_R}" fill="${st.felt}" stroke="${st.hub}" stroke-width="6" opacity=".92"/>
       <g transform="translate(${C.x},${C.y}) rotate(${info.rotation ?? 0}) translate(0,-8)">${tileSvg(view.engine, view.engine, 27, { faces: p.faces })}</g>`;
-    svg.innerHTML = s;
+    // Only when it changed: most updates (a draw, a pass, a seat) leave the trains as they were, and a rewrite restarts
+    // the pulses and the running light.
+    if (s !== drawnSvg) {
+      drawnSvg = s;
+      svg.innerHTML = s;
+    }
     if (animate) slideIn(animate);
     hub();
     plates();
@@ -160,11 +166,13 @@ export function mount(root, ctx = {}) {
     busyUntil = Math.max(busyUntil, performance.now() + 700);
   }
 
+  let hubHtml = "";
   /** Round, tiles to draw, the turn's countdown, and a banner while a double waits; facing the board's front. */
   function hub() {
     const turnMs = view.phase === "playing" && view.turnMs ? remainingMs(info, "turn") : null;
     hubText.style.transform = `translate(-50%,-50%) rotate(${info.rotation ?? 0}deg)`;
-    hubText.innerHTML = `<b>${view.round} / ${view.rounds}</b><span>${view.boneyard} to draw</span>${turnMs === null ? "" : `<span class="mt-clock${turnMs < 10000 ? " low" : ""}">${Math.ceil(turnMs / 1000)} s</span>`}`;
+    const html = `<b>${view.round} / ${view.rounds}</b><span>${view.boneyard} to draw</span>${turnMs === null ? "" : `<span class="mt-clock${turnMs < 10000 ? " low" : ""}">${Math.ceil(turnMs / 1000)} s</span>`}`;
+    if (html !== hubHtml) hubText.innerHTML = hubHtml = html; // also called twice a second for the countdown
     const pend = view.pending && view.trains.find((t) => t.id === view.pending);
     banner.hidden = !pend;
     if (pend) {

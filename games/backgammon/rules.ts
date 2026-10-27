@@ -125,6 +125,8 @@ const COLOR_NAME = ["White", "Black"];
 const colorOf = (s: State, seat: number): Color | null => (s.seats[0] === seat ? 0 : s.seats[1] === seat ? 1 : null);
 const seatName = (s: State, c: Color) => s.names[s.seats[c]] ?? COLOR_NAME[c];
 const emptyStats = (): SideStats => ({ hits: 0, doubles: 0, pipsRolled: 0, rolls: 0, entered: 0, gamesWon: 0, gammons: 0, cubes: 0 });
+/** Both sides' statistics, copied so a step can change them. */
+const copyStats = (s: State) => s.stats.map((x) => ({ ...x })) as [SideStats, SideStats];
 const NO_RULE: TurnRule = { max: 0, larger: null };
 const optionsOf = (s: State, c: Color): Options => s.options?.[c] ?? DEFAULT_OPTIONS;
 
@@ -182,7 +184,7 @@ function startGame(s: State, ctx: GameContext): Out {
     if (w === b) rerolls++;
   } while (w === b);
   const turn: Color = w > b ? 0 : 1;
-  const stats = s.stats.map((x) => ({ ...x })) as [SideStats, SideStats];
+  const stats = copyStats(s);
   stats[turn].rolls++;
   stats[turn].pipsRolled += w + b;
   const base: State = {
@@ -203,7 +205,7 @@ function roll(s: State, ctx: GameContext): Out {
   ctx.clearTimer("autoroll");
   const a = ctx.randomInt(1, 6);
   const b = ctx.randomInt(1, 6);
-  const stats = s.stats.map((x) => ({ ...x })) as [SideStats, SideStats];
+  const stats = copyStats(s);
   const st = stats[s.turn];
   st.rolls++;
   st.pipsRolled += a === b ? 4 * a : a + b;
@@ -219,7 +221,7 @@ function move(s: State, subs: Sub[], ctx: GameContext, by: "player" | "auto"): O
   const c = s.turn;
   let p = persp(s.board, c);
   let remaining = s.remaining;
-  const stats = s.stats.map((x) => ({ ...x })) as [SideStats, SideStats];
+  const stats = copyStats(s);
   const events: Ev[] = [];
   for (const sub of subs) {
     p = apply(p, sub);
@@ -295,7 +297,7 @@ function endGame(s: State, winner: Color, points: number, kind: Kind, ctx: GameC
   ctx.clearTimer("pass");
   const score: [number, number] = [s.match.score[0], s.match.score[1]];
   score[winner] = Math.min(s.match.length, score[winner] + points);
-  const stats = s.stats.map((x) => ({ ...x })) as [SideStats, SideStats];
+  const stats = copyStats(s);
   stats[winner].gamesWon++;
   if (kind === "gammon" || kind === "backgammon") stats[winner].gammons++;
   const rec: GameRecord = { game: s.match.game, winner, points, kind, cube: s.cube.value, score };
@@ -361,7 +363,7 @@ function autoStep(s: State, ctx: GameContext, whole: boolean): Out {
 
 function offer(s: State, ctx: GameContext): Out {
   ctx.clearTimer("autoroll");
-  const stats = s.stats.map((x) => ({ ...x })) as [SideStats, SideStats];
+  const stats = copyStats(s);
   stats[s.turn].cubes++;
   const next: State = { ...s, phase: "double", stats };
   arm(next, ctx);
@@ -601,7 +603,7 @@ export default defineGame<State>({
         // The doubler takes an unanswered double back (E-034): a tap on the cube by mistake, or by someone else at the
         // board. The roll is theirs again, the cube as it was.
         if (s.phase !== "double" || !mover) return { reject: "There is no double of yours to withdraw" };
-        const stats = s.stats.map((x) => ({ ...x })) as [SideStats, SideStats];
+        const stats = copyStats(s);
         stats[color].cubes = Math.max(0, stats[color].cubes - 1);
         const next: State = { ...s, phase: "roll", stats };
         arm(next, ctx);
@@ -756,11 +758,11 @@ export default defineGame<State>({
       if (name === "move") return { text: `moves ${added ?? finished?.text ?? "?"}${ending}${finished && !ending ? " and the turn ends" : ""}${autoRolled}`, columns };
       if (name === "undo") return { text: "takes back a move", columns };
       if (name === "done") return { text: `ends the turn: ${finished?.text ?? ""}${autoRolled}`, columns };
-      if (name === "undoMode") return { text: `Undo for both players: ${a.options?.[0]?.undo === "none" ? "off" : "all moves"}${finished && a.plays.length > b.plays.length ? `; ends the turn: ${finished.text}` : ""}${autoRolled}`, columns };
+      if (name === "undoMode") return { text: `Undo for both players: ${a.options?.[0]?.undo === "none" ? "off" : "all moves"}${finished ? `; ends the turn: ${finished.text}` : ""}${autoRolled}`, columns };
       if (name === "options") {
         const c = colorOf(a, step.seat ?? -1);
         const o = c === null ? DEFAULT_OPTIONS : optionsOf(a, c);
-        return { text: `options: Undo ${o.undo === "all" ? "all moves" : "off"}, auto-roll ${o.autoRoll ? "on" : "off"}${finished && a.plays.length > b.plays.length ? `; ends the turn: ${finished.text}` : ""}${autoRolled}`, columns };
+        return { text: `options: Undo ${o.undo === "all" ? "all moves" : "off"}, auto-roll ${o.autoRoll ? "on" : "off"}${finished ? `; ends the turn: ${finished.text}` : ""}${autoRolled}`, columns };
       }
       if (name === "double") return { text: `doubles to ${b.cube.value * 2}`, columns };
       if (name === "withdraw") return { text: `withdraws the double to ${b.cube.value * 2}`, columns };

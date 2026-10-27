@@ -21,50 +21,17 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
 sys.path.insert(0, os.path.join(ROOT, ".games-service", "scripts", "e2e"))
 from playwright.sync_api import sync_playwright  # noqa: E402
-from common import api, errors, join_deck, pick_game, start_table, watch, wait  # noqa: E402
+from common import errors, pick_game, start_table, watch, wait  # noqa: E402
+from game_check import TableCheck, layout_check  # noqa: E402
 
 OUT = sys.argv[1] if len(sys.argv) > 1 else "e2e-out"
 os.makedirs(OUT, exist_ok=True)
 PORT = 8098
 BASE = f"http://127.0.0.1:{PORT}"
 KEY = "e2ekey"
-problems = []
+T = TableCheck(BASE, KEY, OUT, "last-card", layout_check(cards=None))
+a, shot, check, phone, problems = T.a, T.shot, T.check, T.phone, T.problems
 CHROMIUM = os.environ.get("CHROMIUM_PATH")
-
-CHECK = """() => {
-  const w = innerWidth, out = [];
-  if (document.documentElement.scrollWidth > w + 1) out.push(`page is ${document.documentElement.scrollWidth}px wide in a ${w}px window`);
-  for (const b of document.querySelectorAll('button')) {
-    const r = b.getBoundingClientRect(), cs = getComputedStyle(b);
-    if (!r.width || !r.height || cs.visibility === 'hidden' || b.closest('[hidden]')) continue;
-    if (r.right > w + 1) out.push(`"${(b.textContent || b.className).trim().slice(0, 30)}" sticks out to ${Math.round(r.right)}px`);
-    if (r.height < 40) out.push(`"${(b.textContent || b.className).trim().slice(0, 30)}" is only ${Math.round(r.height)}px high`);
-  }
-  return out;
-}"""
-
-
-def a(method, path, body=None):
-    return api(method, path, body, base=BASE, key=KEY)
-
-
-def shot(page, name):
-    page.screenshot(path=os.path.join(OUT, f"last-card-{name}.png"))
-
-
-def check(page, where):
-    for p in page.evaluate(CHECK):
-        problems.append(f"{where}: {p}")
-
-
-def phone(browser, name, w, h):
-    ctx = browser.new_context(viewport={"width": w, "height": h}, device_scale_factor=2, has_touch=True)
-    d = ctx.new_page()
-    watch(d, name)
-    join_deck(d, a("GET", "/join")["url"], name)
-    d.label = name
-    return d
-
 
 # A point of a card that no other card covers (the hand overlaps): a finger there touches this card, not its neighbour.
 VISIBLE = """e => { const r = e.getBoundingClientRect();
