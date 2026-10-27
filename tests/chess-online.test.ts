@@ -63,6 +63,23 @@ describe("the AI's online engines (E-040)", () => {
     expect(new URL(String(net.mock.calls[0][0])).pathname).toBe("/api/cloud-eval");
   });
 
+  it("plays Lichess's tablebase move with 7 pieces or fewer (E-042)", async () => {
+    // Answers as tablebase.lichess.org gave them: best move first, dtm in plies for the side to move.
+    const kpk = "4k3/6KP/8/8/8/8/7p/8 w - - 0 1";
+    expect(answerIn("tablebase", { category: "win", dtm: 17, dtz: 1, moves: [{ uci: "h7h8q", category: "loss", dtm: -16 }, { uci: "g7g8", category: "draw" }] }, kpk)).toEqual({ uci: "h7h8q", eval: { mate: 9 } });
+    expect(answerIn("tablebase", { category: "loss", dtm: -14, moves: [{ uci: "e1d1", category: "win" }] }, "8/8/8/4k3/8/8/2r5/4K3 w - - 0 1")).toEqual({ uci: "e1d1", eval: { mate: -7 } });
+    expect(answerIn("tablebase", { category: "loss", dtm: -14, moves: [{ uci: "e8d8" }] }, "4k3/8/8/8/8/8/2R5/4K3 b - - 0 1")).toEqual({ uci: "e8d8", eval: { mate: 7 } });
+    expect(answerIn("tablebase", { category: "win", dtm: null, moves: [{ uci: "d5d1" }] }, "8/5pk1/6p1/3R4/8/6P1/5PK1/3r4 w - - 0 40")).toEqual({ uci: "d5d1" });
+    expect(answerIn("tablebase", { category: "cursed-win", dtm: null, moves: [{ uci: "a1a2" }] }, kpk)).toEqual({ uci: "a1a2", eval: { cp: 0 } });
+    expect(answerIn("tablebase", { category: "unknown", moves: [{ uci: "a1a2" }] }, kpk)).toBeNull();
+
+    net.mockResolvedValue(json({ category: "win", dtm: 17, moves: [{ uci: "h7h8q", category: "loss", dtm: -16 }] }));
+    expect(await ask(view(kpk), LICHESS)).toEqual({ name: "move", payload: { uci: "h7h8q", engine: "tablebase", eval: { mate: 9 } } });
+    expect(String(net.mock.calls[0][0])).toMatch(/^https:\/\/tablebase\.lichess\.org\/standard\?fen=/);
+    await ask(view(START_FEN), LICHESS); // 32 pieces: the cloud
+    expect(new URL(String(net.mock.calls[1][0])).host).toBe("lichess.org");
+  });
+
   it("plays with its own engine when the service fails, is slow, or answers wrongly", async () => {
     const mate = view("6k1/5ppp/8/8/8/8/5PPP/R5K1 w - - 0 1"); // the own engine finds a1a8
     const own = { name: "move", payload: expect.objectContaining({ uci: "a1a8", engine: "own", eval: { mate: 1 } }) };
@@ -134,7 +151,10 @@ describe("the note of the engine that made an AI player's move (E-041)", () => {
     expect(rt.submit(1, { name: "move", payload: { uci: "b8c6", engine: "lichess", depth: "deep", eval: { cp: "lots", mate: 2.5 } } } as never, "ai")).toMatchObject({ ok: true });
     expect(state().notes).toEqual({ 1: { engine: "lichess" } });
     rt.submit(0, { name: "move", payload: { uci: "f1c4" } } as never, "human");
-    rt.submit(1, { name: "move", payload: { uci: "g8f6", engine: "chatgpt" } } as never, "ai");
+    rt.submit(1, { name: "move", payload: { uci: "g8f6", engine: "tablebase", eval: { mate: -3 } } } as never, "ai");
+    expect(state().notes).toEqual({ 1: { engine: "tablebase", eval: { mate: -3 } } });
+    rt.submit(0, { name: "move", payload: { uci: "d2d3" } } as never, "human");
+    rt.submit(1, { name: "move", payload: { uci: "f8c5", engine: "chatgpt" } } as never, "ai");
     expect(state().notes).toEqual({});
     expect((rt.view(0) as { showEval: boolean }).showEval).toBe(true);
     rt.submit(0, { name: "resign" } as never, "human");

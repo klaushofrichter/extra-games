@@ -618,3 +618,16 @@ Records are history: an older record is not edited when a newer one changes it. 
   *How (Claude):* the AI puts `engine`, `depth` and `eval` in its move's payload; the rules keep them in
   `notes[seat]` only when `ctx.seats` says the seat is an AI player, checked field by field, so a person's payload
   can't fake a note; the move log replays them. The own engine's score becomes an evaluation by `ownEval`.
+
+- **E-042 · 2026-10-27 · Klaus** — Lichess as an engine: the **Lichess cloud** AI also plays from Lichess's endgame
+  tablebase, perfectly, once 7 pieces or fewer are left; the panel says **Lichess tablebase** for those moves.
+  *Why:* Klaus asked to look at Lichess as an engine. What Lichess offers without an account: the cloud evaluations
+  (E-040; about 320 million analysed positions, mostly openings) and the tablebase (`tablebase.lichess.org`, every
+  position with up to 7 pieces, best move first, distance to mate up to 6 pieces). Not used: the opening explorer
+  (`explorer.lichess.org`) now answers 401 without a login; `POST /api/challenge/ai` (Lichess's Stockfish, levels
+  1–8, from any FEN) needs a personal OAuth token and starts a real game on that Lichess account for every move, which
+  would fill the account with aborted games and isn't what the API is for; the external-engine API is for bringing
+  one's own engine to Lichess, not for using Lichess's.
+  *How (Claude):* `askOnline` sends Lichess requests with 7 pieces or fewer to the tablebase, otherwise to the cloud;
+  both share the 429 back-off. The tablebase's `dtm` (plies, the side to move's) becomes a mate in moves from White's
+  side; draws, cursed wins and blessed losses read 0.00; an unknown result, or none, leaves the move to the own engine.
