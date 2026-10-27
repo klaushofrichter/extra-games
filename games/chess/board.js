@@ -4,7 +4,7 @@
 // yours, then its square, or drag it there; a promotion asks which piece. The phones only show clocks and moves and offer a draw or
 // resignation.
 import { W, H, ROT, esc, html, ping, playerColor, playSound, remainingMs, seatPlates, useStyles } from "/shared/board-kit.js";
-import { badSound, clockLeft, clockText, materialEdge, movePairs, moveSound, pieceSvg } from "/games/chess/assets/pieces.js";
+import { badSound, clockLeft, clockText, materialEdge, movePairs, moveSound, pieceSvg, sourceTag } from "/games/chess/assets/pieces.js";
 
 const S = 92; // square size
 const LEFT = (W - 8 * S) / 2;
@@ -156,9 +156,9 @@ export function mount(root, ctx) {
       status = `<span class="muted">${v.standIn.includes(mover) ? `The stand-in for ${esc(v.names[mover] ?? "")}` : esc(v.names[mover] ?? "")} to move</span>`;
     }
     const offer = v.drawOffer === null || v.result ? "" : v.drawOffer === seat ? `<div class="ch-offer">You offered a draw</div>` : `<div class="ch-offer">${esc(v.names[v.drawOffer] ?? "")} offers a draw: answer on your phone</div>`;
-    const pairs = movePairs(v.sans).slice(-4);
+    const pairs = movePairs(v.sans, v.engines).slice(-4);
     const moves = pairs.length
-      ? pairs.map((p) => `<span class="n">${p.n}.</span><span>${esc(p.w)}</span><span>${esc(p.b)}</span>`).join("")
+      ? pairs.map((p) => `<span class="n">${p.n}.</span><span>${esc(p.w)}${sourceTag(p.we)}</span><span>${esc(p.b)}${sourceTag(p.be)}</span>`).join("")
       : `<span class="muted" style="grid-column:1/-1">No moves yet</span>`;
     return `<div class="ch-who"><span class="ch-dot" style="background:${playerColor(info, seat)}"></span>
         <span class="ch-name">${esc(name)}</span><span class="ch-color ${color ? "b" : "w"}">${color ? "Black" : "White"}</span></div>

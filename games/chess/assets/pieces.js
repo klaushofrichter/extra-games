@@ -56,11 +56,15 @@ export function clockLeft(view, info, color, remainingMs) {
 }
 
 /** Moves as numbered pairs: [{ n: 1, w: "e4", b: "e5" }, ...]. */
-export function movePairs(sans) {
+export function movePairs(sans, engines = []) {
   const out = [];
-  for (let i = 0; i < sans.length; i += 2) out.push({ n: i / 2 + 1, w: sans[i], b: sans[i + 1] ?? "" });
+  for (let i = 0; i < sans.length; i += 2) out.push({ n: i / 2 + 1, w: sans[i], b: sans[i + 1] ?? "", we: engines[i] ?? null, be: engines[i + 1] ?? null });
   return out;
 }
+
+const SOURCE = { own: ["own", "Own engine"], stockfish: ["SF", "Stockfish"], lichess: ["LC", "Lichess cloud"], tablebase: ["TB", "Lichess tablebase"] };
+/** The tag after an AI player's move in a move list: the engine that made it (E-043), or nothing. */
+export const sourceTag = (engine) => (SOURCE[engine] ? ` <small class="ch-src" title="${SOURCE[engine][1]}">${SOURCE[engine][0]}</small>` : "");
 
 /** Material the colour is up, from the captured pieces ("QRP" white lost, "nb" black lost). */
 export function materialEdge(captured, color) {
