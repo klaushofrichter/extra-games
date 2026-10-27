@@ -8,7 +8,8 @@
 // began, then adds the increment; a timer per turn makes the flag fall. A pause on the table stops both.
 import { count, defineGame, type GameContext, type StepInfo } from "@game-table/sdk";
 import { BLACK, F_CAPTURE, F_CASTLE, Position, WHITE, moveFlags, moveFrom, movePromo, moveTo, sqName, uci } from "./chess.ts";
-import { ELO_MAX, ELO_MIN, Engine, level, pickMove } from "./engine.ts";
+import { ELO_MAX, ELO_MIN, Engine, MATE, level, pickMove } from "./engine.ts";
+import { ONLINE_MS, askOnline, serviceOf, type Eval, type Service } from "./online.ts";
 import { chessAwards } from "./stats.ts";
 
 /** How long the stand-in waits before moving, so a move on the board can be followed. */
@@ -50,6 +51,35 @@ export interface State {
   /** The stand-in's strength: the setting old logs have, else 1200. */
   standInElo: number;
   result: null | { winner: Color | null; reason: Reason; by?: number };
+  /** Per AI seat, the engine of its last move (E-041); absent in logs from before it. */
+  notes?: Record<number, EngineNote>;
+  /** The "AI's evaluation" setting: the panels show the evaluation with the engine. */
+  showEval?: boolean;
+}
+
+/** Which engine made an AI player's move, with the search depth and the evaluation (from White's side) when the engine
+ *  gives them. */
+export interface EngineNote {
+  engine: "own" | Service;
+  depth?: number;
+  eval?: Eval;
+}
+
+const SERVICES: readonly string[] = ["stockfish", "lichess"];
+const int = (x: unknown, max: number) => (typeof x === "number" && Number.isInteger(x) && Math.abs(x) <= max ? x : undefined);
+
+/** The engine note in an AI's move payload, checked: the payload is the AI's, but the rules trust only its shape. */
+function noteOf(payload: unknown): EngineNote | null {
+  const o = (payload ?? {}) as { engine?: unknown; depth?: unknown; eval?: { cp?: unknown; mate?: unknown } };
+  if (o.engine !== "own" && !SERVICES.includes(o.engine as string)) return null;
+  const note: EngineNote = { engine: o.engine as EngineNote["engine"] };
+  const depth = int(o.depth, 999);
+  if (depth !== undefined && depth > 0) note.depth = depth;
+  const mate = int(o.eval?.mate, 999);
+  const cp = int(o.eval?.cp, 100_000);
+  if (mate) note.eval = { mate };
+  else if (cp !== undefined) note.eval = { cp };
+  return note;
 }
 
 const colorOf = (s: State, seat: number): Color | null => (s.seats[WHITE] === seat ? WHITE : s.seats[BLACK] === seat ? BLACK : null);
@@ -237,6 +267,8 @@ function publicView(s: State) {
     standIn: s.standIn,
     standInElo: s.standInElo,
     captured: captured(p),
+    notes: s.notes ?? {},
+    showEval: !!s.showEval,
     result: s.result ? { ...s.result, text: resultText(s) } : null,
   };
 }
@@ -265,6 +297,24 @@ const aiEngine = new Engine();
 function aiElo(options: Record<string, unknown>) {
   const e = Number(options?.elo);
   return Number.isFinite(e) ? Math.max(ELO_MIN, Math.min(ELO_MAX, e)) : 1200;
+}
+
+/** The own engine's score (centipawns for the side to move, MATE − plies for a mate) from White's side. */
+export function ownEval(score: number, color: Color): Eval {
+  const sign = color === WHITE ? 1 : -1;
+  if (Math.abs(score) > MATE - 500) return { mate: sign * Math.sign(score) * Math.ceil((MATE - Math.abs(score)) / 2) };
+  return { cp: sign * Math.round(score) };
+}
+
+/** A service's move as a legal move here (Lichess may write castling as the king taking its rook: e1h1), or null. A
+ *  move that would repeat the position a third time is left to the own engine, which knows the game's history. */
+export function onlineMove(v: View, text: string | null): string | null {
+  if (!text) return null;
+  const p = positionOf(v.fen, v.keys);
+  const castle: Record<string, string> = { e1h1: "e1g1", e1a1: "e1c1", e8h8: "e8g8", e8a8: "e8c8" };
+  const m = p.findUci(text) ?? (castle[text] ? p.findUci(castle[text]) : null);
+  if (m === null || !p.make(m)) return null;
+  return p.repetitions() >= 2 ? null : uci(m);
 }
 
 /** How long the AI may think about this move (ms): its level's time, but no more than the clock can spare. */
@@ -301,6 +351,8 @@ export default defineGame<State>({
       standIn: [],
       standInElo: Math.max(ELO_MIN, Math.min(ELO_MAX, Number(settings.standInElo) || 1200)),
       result: null,
+      notes: {},
+      showEval: settings.aiEval === "on",
     };
     startFlag(s, ctx);
     return s;
@@ -317,7 +369,14 @@ export default defineGame<State>({
         const p = Position.fromFen(s.fen);
         const m = moveFromPayload(p, intent.payload);
         if (m === null) return { reject: "That move isn't legal" };
-        return play(s, m, ctx, "player");
+        const r = play(s, m, ctx, "player");
+        // An AI player's move says which engine made it (E-041); a person's move clears an old note for the seat.
+        const note = ctx.seats.find((x) => x.seat === seat)?.kind === "ai" ? noteOf(intent.payload) : null;
+        if (!note && !s.notes?.[seat]) return r;
+        const notes = { ...s.notes };
+        if (note) notes[seat] = note;
+        else delete notes[seat];
+        return { ...r, state: { ...r.state, notes } };
       }
       case "resign": {
         const result = { winner: (color ^ 1) as Color, reason: "resignation" as const, by: seat };
@@ -433,9 +492,22 @@ export default defineGame<State>({
       return { name: r.score <= 30 ? "acceptDraw" : "declineDraw" };
     }
     if (!v.myTurn) return null;
-    const budget = Math.min(thinkBudget(v, level(elo).thinkMs), Math.max(100, ctx.deadline - Date.now() - 1500));
-    const r = pickMove(positionOf(v.fen, v.keys), { elo, random: ctx.random, until: Date.now() + budget, signal: ctx.signal, engine: aiEngine });
-    return r.move ? { name: "move", payload: { uci: uci(r.move) } } : null;
+    // An engine on the internet (E-040), with the own engine when it has no move in time. The move says which engine
+    // made it, with its depth and evaluation (E-041).
+    const service = serviceOf(options);
+    const own = () => {
+      const budget = Math.min(thinkBudget(v, level(elo).thinkMs), Math.max(100, ctx.deadline - Date.now() - 1500));
+      const r = pickMove(positionOf(v.fen, v.keys), { elo, random: ctx.random, until: Date.now() + budget, signal: ctx.signal, engine: aiEngine });
+      if (!r.move) return null;
+      const ev = r.depth ? ownEval(r.score, v.color!) : undefined;
+      return { name: "move", payload: { uci: uci(r.move), engine: "own", ...(r.depth ? { depth: r.depth } : {}), ...(ev ? { eval: ev } : {}) } };
+    };
+    const wait = Math.min(thinkBudget(v, ONLINE_MS), ctx.deadline - Date.now() - 3000);
+    if (!service || wait < 300) return own();
+    return askOnline(service, v.fen, elo, wait).then((a) => {
+      const m = onlineMove(v, a?.uci ?? null);
+      return m ? { name: "move", payload: { uci: m, engine: service, ...(a!.depth ? { depth: a!.depth } : {}), ...(a!.eval ? { eval: a!.eval } : {}) } } : own();
+    });
   },
 
   aiFallback(view, _seat, ctx, options) {

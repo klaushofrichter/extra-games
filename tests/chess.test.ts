@@ -312,7 +312,7 @@ describe("the AI", () => {
   it("takes a mate in one at every level, and plays only legal moves", async () => {
     for (const elo of [400, 400, 400, 400, 400, 1200, 2200]) {
       const v = view("6k1/5ppp/8/8/8/8/5PPP/R5K1 w - - 0 1");
-      expect(await game.def.ai!(v, 0, ctx(), { elo }), String(elo)).toEqual({ name: "move", payload: { uci: "a1a8" } });
+      expect(await game.def.ai!(v, 0, ctx(), { elo }), String(elo)).toEqual({ name: "move", payload: expect.objectContaining({ uci: "a1a8", engine: "own" }) });
     }
   });
 
