@@ -487,6 +487,24 @@ describe("options: Undo all or none, and Roll for me (E-031)", () => {
   });
 });
 
+describe("withdrawing a double (E-034)", () => {
+  it("the doubler takes an unanswered double back: the roll is theirs again, the cube as it was", () => {
+    let s = at(board({ 13: 5, 6: 5, 8: 5 }, { 12: 5, 19: 10 }), 0);
+    const [w, b] = s.seats;
+    ({ s } = step(s, w, "double"));
+    expect(s.phase).toBe("double");
+    expect(refuse(s, b, "withdraw")).toMatch(/no double of yours/);
+    const r = step(s, w, "withdraw");
+    expect(r.s).toMatchObject({ phase: "roll", turn: 0, cube: { value: 1, owner: null } });
+    expect(r.events).toEqual([{ name: "withdrawn", data: { by: 0, value: 2 } }]);
+    expect(r.s.stats[0].cubes).toBe(0); // the double doesn't count
+    expect(refuse(r.s, w, "withdraw")).toMatch(/no double of yours/);
+    expect(refuse(r.s, b, "take")).toMatch(/no double/);
+    // and it can double again
+    expect(step(r.s, w, "double").s.phase).toBe("double");
+  });
+});
+
 describe("on the runtime", () => {
   it("a whole match of AI players finishes and replays exactly, with a move list", async () => {
     const game = await loadGame("backgammon");

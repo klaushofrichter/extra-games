@@ -5,7 +5,7 @@ Be the first to bring all fifteen of your checkers home and bear them off the bo
 ## In short
 
 - Roll two dice; each die moves one checker that many points. Doubles count four times.
-- On the board: tap the dice to roll, tap a checker, then where it goes, then **Done**.
+- On the board: tap the dice to roll, tap or drag a checker to its point, then **Done**.
 - A lone checker that is hit goes to the bar and must come in again first.
 - With all your checkers home, bear them off. First to bear off all fifteen wins.
 
@@ -23,7 +23,7 @@ The game starts with two checkers on your 24-point, five on your 13, three on yo
 2. **Move.** Each die moves one checker that many points, to a point that is empty, holds your own checkers, or holds a single opposing checker. Two or more opposing checkers block a point. Doubles move four times.
 3. **Done.** Tap **Done** on the board or the phone. Until then, **Undo** takes back your moves one at a time, all of them if you like. With Undo turned off for the match, the turn ends by itself as soon as your dice are played. A move that hits a lone opposing checker shows a larger white ring with marks around that checker.
 
-You must use both dice if you can, and if only one can be played, the larger one. If no move is possible, the turn passes by itself. The board lights up only the moves that are allowed; a checker can also go several dice at once (tap the far point). The phone lists the single moves too, as buttons, in your own numbering.
+You must use both dice if you can, and if only one can be played, the larger one. If no move is possible, the turn passes by itself. The board lights up only the moves that are allowed; a checker can also go several dice at once (tap the far point). You can also drag a checker to where it goes: dropped anywhere else, it slides back with a low "not a good move" sound. Each board moves only the checkers of its own players, in their turn: the table's board those of the players at the table, a remote player's board only theirs; an AI player's checkers only the AI moves. The phone lists the single moves too, as buttons, in your own numbering.
 
 ## Options
 
@@ -52,7 +52,7 @@ Each player's panel on the board shows their points so far and their **pips**: h
 
 ## The doubling cube
 
-With the **Doubling cube** on, before rolling you may double (on your phone, or **Double** on the board, tapped twice to be sure): the other player either **takes**, plays on for twice the points and gets the cube, or **passes** and loses this game at the cube's value before the double. **Take** and **Pass** are on the phone and on the board, under the double in that player's box, so the whole match can be played on the board. Only the player holding the cube may double again; a cube in the middle belongs to both. In the **Crawford game**, the first game after a player gets within one point of winning the match, nobody may double. A double that could not change the match any more is not offered.
+With the **Doubling cube** on, before rolling you may double (on your phone, **Double** on the board, tapped twice to be sure, or a tap on the cube itself, on the table's board or your own remote one; it is ringed in gold when you may): the other player either **takes**, plays on for twice the points and gets the cube, or **passes** and loses this game at the cube's value before the double. **Take** and **Pass** are on the phone and on the board, under the double in that player's box, so the whole match can be played on the board. Only the player holding the cube may double again; a cube in the middle belongs to both. Doubled by mistake, or someone else touched your cube? **Withdraw the double** on your phone takes it back, until the other player has answered. In the **Crawford game**, the first game after a player gets within one point of winning the match, nobody may double. A double that could not change the match any more is not offered.
 
 ## Time and changing players
 

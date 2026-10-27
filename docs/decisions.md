@@ -481,3 +481,24 @@ Records are history: an older record is not edited when a newer one changes it. 
     by itself shows its last move first, then the next player's Roll for me roll tumbles; the turn timer's roll
     comes before its moves. Until its turn the roll shows blank dice, and the box says "Rolling…". The 3 s to
     double before an automatic roll stay.
+
+## Backgammon: drag and drop, the cube to tap, a double withdrawn (27 Oct 2026)
+
+- **E-034 · 2026-10-27 · Klaus** — Backgammon checkers can be dragged as well as tapped, and the cube tapped to double:
+  - **Drag:** a checker that may move follows the finger; its targets light up. Dropped on one, it moves from where it
+    was dropped; dropped anywhere else, it slides back and a low two-note "not a good move" sound plays (`bg-bad`).
+    Put back on its own point, it just slides back. A tap without moving stays the tap of before.
+  - **Whose checkers:** the board's existing rule, now for drags too: the table's board moves only the checkers of
+    the player at the table whose turn it is; a remote player's board only that player's, in their turn; an AI's
+    never. The host refuses any other board intent anyway (games-service `controlSeats`).
+  - **The cube:** while the player to roll may double, the cube on a board that may act for them is ringed in gold;
+    a tap doubles at once, without the board's *Double to n?* second tap.
+  - **Withdraw:** while the double waits for the answer, the doubler's phone offers *Withdraw the double*: back to the
+    roll, the cube as it was. For a double by mistake, or a cube touched by someone else at the table. A deck intent
+    only (not in `boardIntents`), so only the doubler can do it.
+  *Why (Claude, implementation):* the drop finds the point under the finger beneath the carried checker
+  (`elementsFromPoint`), and the board takes no text selection or touch panning, either of which cancelled a drag.
+  Checked by `scripts/e2e/backgammon.py` (a bad drop slides back with the sound, a good one moves; the cube tapped
+  and the double withdrawn) and the new `scripts/e2e/backgammon_seats.py` (a local player, a remote player through an
+  invite, then an AI: which board drags whose checkers and taps the cube; it fails when the board's seat check is
+  removed). A game needs a player at the table, so the AI plays the local player, not the remote one.
