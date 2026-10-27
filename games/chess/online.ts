@@ -13,13 +13,14 @@ export function serviceOf(options: Record<string, unknown>): Service | null {
 }
 
 /** How long the AI waits for a service before it plays with its own engine (ms). */
-export const ONLINE_MS = 4000;
+export const ONLINE_MS = 10_000; // stockfish.online's free queue answered in 1–9 s at depth 15, about 1 s at depth 6
 /** After a refusal for too many requests (429), the AI leaves the service alone this long (ms), as Lichess asks. */
 const BACK_OFF_MS = 60_000;
 const resting: Partial<Record<Service, number>> = {};
 
-/** Stockfish's search depth for an Elo: 1 at 400, 15 (stockfish.online's most) at 2200. */
-export const depthFor = (elo: number) => Math.max(1, Math.min(15, Math.round(1 + ((elo - 400) / 1800) * 14)));
+/** Stockfish's search depth for an Elo: 6 at 400 to 15 at 2200, the depths stockfish.online accepts. Even 6 is a
+ *  strong player: the Elo only makes Stockfish deeper. */
+export const depthFor = (elo: number) => Math.max(6, Math.min(15, Math.round(6 + ((elo - 400) / 1800) * 9)));
 
 const HEADERS = { Accept: "application/json", "User-Agent": "extra-games chess (https://github.com/klaushofrichter/extra-games)" };
 

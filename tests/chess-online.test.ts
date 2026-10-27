@@ -31,7 +31,8 @@ describe("the AI's online engines (E-040)", () => {
   it("reads each service's answer", () => {
     expect(moveIn("stockfish", { success: true, evaluation: 0.3, mate: null, bestmove: "bestmove e2e4 ponder e7e5", continuation: "e2e4 e7e5" })).toBe("e2e4");
     expect(moveIn("stockfish", { success: true, bestmove: "bestmove e7e8q" })).toBe("e7e8q");
-    expect(moveIn("stockfish", { success: false, data: "Invalid FEN" })).toBeNull();
+    expect(moveIn("stockfish", { success: false, error: "Invalid FEN" })).toBeNull();
+    expect(moveIn("stockfish", { success: false, error: "Depth must be greater than 5" })).toBeNull();
     expect(moveIn("stockfish", { success: true, bestmove: "bestmove (none)" })).toBeNull();
     expect(moveIn("lichess", { fen: START_FEN, depth: 40, pvs: [{ moves: "e2e4 c7c5 g1f3", cp: 30 }] })).toBe("e2e4");
     expect(moveIn("lichess", { error: "Not found" })).toBeNull();
@@ -45,7 +46,7 @@ describe("the AI's online engines (E-040)", () => {
     expect(url.host).toBe("stockfish.online");
     expect(url.searchParams.get("fen")).toBe(START_FEN);
     expect(url.searchParams.get("depth")).toBe("15");
-    expect([depthFor(400), depthFor(1300), depthFor(2200)]).toEqual([1, 8, 15]);
+    expect([depthFor(400), depthFor(1300), depthFor(2200)]).toEqual([6, 11, 15]);
   });
 
   it("plays the Lichess cloud's move, castling written as the king taking its rook too", async () => {
@@ -71,7 +72,7 @@ describe("the AI's online engines (E-040)", () => {
     try {
       net.mockImplementationOnce((_url: string, init: RequestInit) => new Promise((_, reject) => init.signal!.addEventListener("abort", () => reject(new Error("aborted")))));
       const answer = ask(mate, STOCKFISH);
-      await vi.advanceTimersByTimeAsync(4000);
+      await vi.advanceTimersByTimeAsync(10_000);
       expect(await answer).toEqual(own);
     } finally {
       vi.useRealTimers();

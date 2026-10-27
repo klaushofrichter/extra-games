@@ -588,17 +588,21 @@ Records are history: an older record is not edited when a newer one changes it. 
 
 - **E-040 · 2026-10-27 · Klaus** — Chess's AI players can use an engine on the internet: a new AI option **Engine**
   offers the game's own engine (the default), Stockfish at stockfish.online, or the Lichess cloud. When the service
-  doesn't answer within 4 s (less on a short clock), answers with an error, or with a move that isn't legal, the own
+  doesn't answer within 10 s (less on a short clock), answers with an error, or with a move that isn't legal, the own
   engine moves at the Elo chosen. The notice under the AI options credits both services and their licences
   (games-service D-224).
   *Why:* stronger and more varied opponents without shipping an engine; the own engine keeps every game playable
   offline.
   *How (Claude):* `games/chess/online.ts` asks only from `ai()` (in the AI's worker), never from the rules: the move is
   logged, so games replay without the network. stockfish.online's free REST API (`/api/s/v2.php?fen=…&depth=…`, the
-  move in `bestmove`) has its depth follow the Elo, 1 at 400 to 15 (its most) at 2200. Lichess's
+  move in `bestmove`) has its depth follow the Elo, 6 at 400 to 15 at 2200 (it refuses depths outside 6–15; even 6 plays well above
+  400, so the Elo only makes Stockfish deeper). Lichess's
   `/api/cloud-eval` has evaluations only for positions players have analysed (mostly openings) and answers 404
   elsewhere, so the own engine plays most middlegames; Lichess's castling as king-takes-rook (e1h1) is read too. After
   a 429 the AI leaves that service alone for a minute, as Lichess asks. A service's move that would repeat the
   position a third time is left to the own engine, which knows the game's history; draw offers are always answered by
-  the own engine. Neither host was reachable from the build environment, so the answers' shapes follow the services'
-  documentation and the tests use a stand-in network.
+  the own engine. Checked against both services: stockfish.online's free queue answered in about 1 s at depth 6 and
+  in 1–9 s at depth 15 (hence 10 s; it documents no quota, and says API keys will be required some day); its terms
+  allow non-commercial use without attribution (the notice names them anyway); errors come as
+  `{ success: false, error }`; Lichess writes castling as e1h1 and answers 404 for positions it hasn't analysed. The
+  tests use a stand-in network with these answers.
