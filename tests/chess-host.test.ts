@@ -28,7 +28,7 @@ describe("chess on a table host", () => {
   it("is listed with its manifest's facts and serves only the board's and phones' files", async () => {
     const g = (await t.ok("GET", "/games")).find((x: { id: string }) => x.id === "chess");
     expect(g).toMatchObject({ name: "Chess", players: [2], ai: true, simulation: true, seatLayouts: [2] });
-    expect(g.settings.map((s: { key: string }) => s.key)).toEqual(["timeControl", "whiteSeat"]);
+    expect(g.settings.map((s: { key: string }) => s.key)).toEqual(["timeControl", "whiteSeat", "aiEval"]);
     expect(g.aiOptions.map((o: { key: string }) => o.key)).toEqual(["engine", "elo"]);
     expect(g.aiNotice).toMatch(/stockfish.online/);
     expect(g.aiOptions[1]).toMatchObject({ key: "elo", min: 400, max: 2200 });

@@ -51,7 +51,9 @@ With one player at the table and the other remote or an AI, the player at the ta
 
 ## AI players and changing players
 
-An AI player's strength is set as an approximate Elo rating (400 for a beginner, 2200 for a strong club player) in its settings on the board. Its **Engine** is the game's own (the default), Stockfish at stockfish.online, or the Lichess cloud: the online ones need the table on the internet, and when they don't answer within a few seconds, or know nothing about the position (Lichess knows mostly openings), the game's own engine moves at the Elo chosen. Stockfish's search depth follows the Elo, from 6 to 15; even at 6 it is a strong player.
+An AI player's strength is set as an approximate Elo rating (400 for a beginner, 2200 for a strong club player) in its settings on the board. Its **Engine** is the game's own (the default), Stockfish at stockfish.online, or the Lichess cloud: the online ones need the table on the internet, and when they don't answer within a few seconds, or know nothing about the position (Lichess knows mostly openings), the game's own engine moves at the Elo chosen. Stockfish searches as deep as the Elo asks (6 to 15; even at 6 it is a strong player) but no deeper than the clock allows: in a fast game it searches less deep, so it answers in time.
+
+An AI player's panel beside the board says which engine made its last move, with the depth of its search: **Stockfish**, **Lichess cloud**, or **Own engine** (also when it stood in for a service). With **Show the AI's evaluation of its moves** on (off by default), it also shows how the AI rates the position after its move, from White's side: +1.00 is about a pawn better for White, −0.50 half a pawn better for Black, #3 White mates in three moves, #−3 Black does.
 
 A game keeps its two players. If someone has to go, the board can exchange them for another person or an AI player (tap their name in the board's settings, or **Exchange** at their seat when their phone is away): the newcomer plays on with the same colour, position and clock. While a phone is away, that player's clock keeps running.
 

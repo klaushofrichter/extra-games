@@ -606,3 +606,15 @@ Records are history: an older record is not edited when a newer one changes it. 
   allow non-commercial use without attribution (the notice names them anyway); errors come as
   `{ success: false, error }`; Lichess writes castling as e1h1 and answers 404 for positions it hasn't analysed. The
   tests use a stand-in network with these answers.
+
+- **E-041 · 2026-10-27 · Klaus** — An AI player's panel beside the chess board says which engine made its last move
+  (Own engine, Stockfish or Lichess cloud) with the depth of its search; a game setting **Show the AI's evaluation of
+  its moves** (off by default) adds the evaluation after the move, from White's side (+0.46, −1.20, #3, #−3).
+  Stockfish's depth is the lower of what the Elo asks (6–15) and what the clock allows (about 1 s at depth 6, up to
+  9 s at 15): a fast game gets a quicker, shallower Stockfish instead of one that runs out of time and falls back;
+  with under 1.5 s to spend it isn't asked at all.
+  *Why:* with E-040's fallback, the engine can change from move to move; players should see where a move came from.
+  The evaluation is interesting but can distract, so it is opt-in.
+  *How (Claude):* the AI puts `engine`, `depth` and `eval` in its move's payload; the rules keep them in
+  `notes[seat]` only when `ctx.seats` says the seat is an AI player, checked field by field, so a person's payload
+  can't fake a note; the move log replays them. The own engine's score becomes an evaluation by `ownEval`.
