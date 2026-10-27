@@ -22,7 +22,7 @@
   "ai": {
     "supported": true,
     "options": [
-      { "key": "level", "type": "enum", "values": ["beginner", "average", "strong"], "default": "average", "label": "Strength" }
+      { "key": "level", "type": "enum", "values": ["beginner", "average", "strong", "wildbg club", "wildbg expert", "wildbg master"], "default": "average", "label": "Strength" }
     ],
     "hostConfig": [],
     "timeoutSeconds": 20,
