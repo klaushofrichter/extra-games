@@ -543,3 +543,11 @@ Records are history: an older record is not edited when a newer one changes it. 
   Backgammon's search and Chess's engine (their tie-breaks decide the stand-in's moves), and platform helpers the
   review suggested (resolving an intent after its update, an idle tracker, a confirm dialog, `settings()` with the
   view), which need a games-service release first.
+
+## Backgammon: an AI's roll with no move stays on the board (27 Oct 2026)
+
+- **E-037 · 2026-10-27 · Klaus** — When an AI player rolls and no move is possible, its dice stay on the board until
+  the turn passes by itself, as a person's do (2.6 s from the roll, of which 1.3 s the dice tumble). The AI no longer
+  answers such a roll with *Done*: it answered within its thinking delay, so the throw was gone before it could be
+  seen. The stand-in for an away player still ends such a turn after its 0.8 s, since its timer is part of the
+  logs that replay.

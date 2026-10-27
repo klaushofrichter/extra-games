@@ -534,6 +534,9 @@ export function aiIntent(v: View, level: Level, random: () => number) {
   if (!v.myTurn) return null;
   if (v.phase === "roll") return { name: v.canDouble && shouldDouble(persp(board, me), level, situation) ? "double" : "roll" };
   if (v.phase === "move") {
+    // A roll with no move: no Done, the turn passes by itself after a moment (PASS_MS), as a person's does, so the
+    // throw can be seen on the board (E-037).
+    if (v.blocked) return null;
     if (!v.legal.length) return { name: "done" };
     const first = choosePlay(persp(board, me), v.remaining, level, random).play.moves[0];
     if (!first) return { name: "done" };
