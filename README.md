@@ -23,7 +23,8 @@ Games here:
 
 - **Liar's Dice** (2–6 players, hidden dice on every phone, bids and calls, wild ones, two AI styles).
 - **Chess** (2 players, moves made on the board, chess clocks from bullet to classical or none, draw offers and
-  resignation on the phones, AI players at an approximate Elo from 400 to 2200). A player can be exchanged during a game on the board, like in
+  resignation on the phones, AI players at an approximate Elo from 400 to 2200, with the game's own engine, Stockfish at stockfish.online or the Lichess
+  cloud). A player can be exchanged during a game on the board, like in
   every game (games-service D-159). Its clocks need games-service with game time (`ctx.now()`, D-126); on an older table
   it plays without a clock and says so.
 - **Backgammon** (2 players, checkers moved on the board by tapping, rolls, doubles and Done on the phones too, matches

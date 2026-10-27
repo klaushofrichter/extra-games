@@ -123,6 +123,18 @@ export function mount(root, ctx) {
   }
 
   // ----- the panels: one per colour, at that player's right hand, facing them -----
+  const ENGINE_NAME = { own: "Own engine", stockfish: "Stockfish", lichess: "Lichess cloud", tablebase: "Lichess tablebase" };
+  /** An evaluation from White's side: "+0.46", "−1.20", "#3" (White mates in 3), "#−3". */
+  const evalText = (e) => ("mate" in e ? `#${e.mate < 0 ? "−" : ""}${Math.abs(e.mate)}` : `${e.cp < 0 ? "−" : "+"}${(Math.abs(e.cp) / 100).toFixed(2)}`);
+  /** Which engine made an AI player's last move (E-041), with its depth, and its evaluation when the setting is on. */
+  function engineLine(note) {
+    if (!note) return "";
+    const parts = [ENGINE_NAME[note.engine] ?? ""];
+    if (note.depth) parts.push(`depth ${note.depth}`);
+    if (view.showEval && note.eval) parts.push(`<b title="From White's side">${evalText(note.eval)}</b>`);
+    return `<div class="ch-engine">${parts.join(" · ")}</div>`;
+  }
+
   function panelHtml(color) {
     const v = view;
     const seat = v.seats[color];
@@ -152,7 +164,7 @@ export function mount(root, ctx) {
         <span class="ch-name">${esc(name)}</span><span class="ch-color ${color ? "b" : "w"}">${color ? "Black" : "White"}</span></div>
       ${away ? `<div class="ch-standin">Stand-in (Elo ${esc(v.standInElo ?? "")}) plays for ${esc(name)}</div>` : ""}
       <div class="ch-clock ${running ? "running" : ""} ${low ? "low" : ""}">${left === null ? (v.clockMissing ? "<small>no clock on this table</small>" : "<small>no clock</small>") : clockText(left)}</div>
-      <div class="ch-status">${status}</div>${offer}
+      <div class="ch-status">${status}</div>${ai ? engineLine(v.notes?.[seat]) : ""}${offer}
       <div class="ch-took">${took}${edge > 0 ? `<span class="ch-edge">+${edge}</span>` : ""}</div>
       <div class="ch-moves">${moves}</div>`;
   }

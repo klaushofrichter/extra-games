@@ -577,9 +577,57 @@ Records are history: an older record is not edited when a newer one changes it. 
   *Why:* the own AI is rule-conforming but weak; wildbg is stronger. In 400 single cubeless games each (points per game,
   gammons counting; about ±0.07): strong against average +0.13 (55 % of games), wildbg club against strong +0.24 (54 %),
   wildbg expert against strong +0.55 (64 %); in 60 matches to 7 with the cube, wildbg expert won 80 % against strong.
+  In 120 games each, wildbg master scored +0.81 against strong (72 %) and +0.40 against wildbg expert (60 %): the
+  strengths are in order, beginner < average < strong < wildbg club < wildbg expert < wildbg master.
   *How (Claude):* `games/backgammon/wildbg/` ports wildbg's Rust code (inputs, contact/race phases, evaluation, best
   play, cube) to TypeScript, under its MIT licence; the networks of its "nets" branch (CC0-1.0, about 0.75 MB each) are
   base64 modules made by `scripts/wildbg-nets.py`, loaded only when a wildbg level first plays. On 89 self-play
   positions the port's chances match wildbg's Rust engine to 3e-7 and its best plays in 265 of 267 cases (the other two
   are ties in a lost position); `tests/wildbg.test.ts` keeps reference values. A move takes about 2 ms (club, expert)
   and 0.3 s on average for master. `scripts/backgammon-tournament.ts` plays one level against another.
+
+- **E-040 · 2026-10-27 · Klaus** — Chess's AI players can use an engine on the internet: a new AI option **Engine**
+  offers the game's own engine (the default), Stockfish at stockfish.online, or the Lichess cloud. When the service
+  doesn't answer within 10 s (less on a short clock), answers with an error, or with a move that isn't legal, the own
+  engine moves at the Elo chosen. The notice under the AI options credits both services and their licences
+  (games-service D-224).
+  *Why:* stronger and more varied opponents without shipping an engine; the own engine keeps every game playable
+  offline.
+  *How (Claude):* `games/chess/online.ts` asks only from `ai()` (in the AI's worker), never from the rules: the move is
+  logged, so games replay without the network. stockfish.online's free REST API (`/api/s/v2.php?fen=…&depth=…`, the
+  move in `bestmove`) has its depth follow the Elo, 6 at 400 to 15 at 2200 (it refuses depths outside 6–15; even 6 plays well above
+  400, so the Elo only makes Stockfish deeper). Lichess's
+  `/api/cloud-eval` has evaluations only for positions players have analysed (mostly openings) and answers 404
+  elsewhere, so the own engine plays most middlegames; Lichess's castling as king-takes-rook (e1h1) is read too. After
+  a 429 the AI leaves that service alone for a minute, as Lichess asks. A service's move that would repeat the
+  position a third time is left to the own engine, which knows the game's history; draw offers are always answered by
+  the own engine. Checked against both services: stockfish.online's free queue answered in about 1 s at depth 6 and
+  in 1–9 s at depth 15 (hence 10 s; it documents no quota, and says API keys will be required some day); its terms
+  allow non-commercial use without attribution (the notice names them anyway); errors come as
+  `{ success: false, error }`; Lichess writes castling as e1h1 and answers 404 for positions it hasn't analysed. The
+  tests use a stand-in network with these answers.
+
+- **E-041 · 2026-10-27 · Klaus** — An AI player's panel beside the chess board says which engine made its last move
+  (Own engine, Stockfish or Lichess cloud) with the depth of its search; a game setting **Show the AI's evaluation of
+  its moves** (off by default) adds the evaluation after the move, from White's side (+0.46, −1.20, #3, #−3).
+  Stockfish's depth is the lower of what the Elo asks (6–15) and what the clock allows (about 1 s at depth 6, up to
+  9 s at 15): a fast game gets a quicker, shallower Stockfish instead of one that runs out of time and falls back;
+  with under 1.5 s to spend it isn't asked at all.
+  *Why:* with E-040's fallback, the engine can change from move to move; players should see where a move came from.
+  The evaluation is interesting but can distract, so it is opt-in.
+  *How (Claude):* the AI puts `engine`, `depth` and `eval` in its move's payload; the rules keep them in
+  `notes[seat]` only when `ctx.seats` says the seat is an AI player, checked field by field, so a person's payload
+  can't fake a note; the move log replays them. The own engine's score becomes an evaluation by `ownEval`.
+
+- **E-042 · 2026-10-27 · Klaus** — Lichess as an engine: the **Lichess cloud** AI also plays from Lichess's endgame
+  tablebase, perfectly, once 7 pieces or fewer are left; the panel says **Lichess tablebase** for those moves.
+  *Why:* Klaus asked to look at Lichess as an engine. What Lichess offers without an account: the cloud evaluations
+  (E-040; about 320 million analysed positions, mostly openings) and the tablebase (`tablebase.lichess.org`, every
+  position with up to 7 pieces, best move first, distance to mate up to 6 pieces). Not used: the opening explorer
+  (`explorer.lichess.org`) now answers 401 without a login; `POST /api/challenge/ai` (Lichess's Stockfish, levels
+  1–8, from any FEN) needs a personal OAuth token and starts a real game on that Lichess account for every move, which
+  would fill the account with aborted games and isn't what the API is for; the external-engine API is for bringing
+  one's own engine to Lichess, not for using Lichess's.
+  *How (Claude):* `askOnline` sends Lichess requests with 7 pieces or fewer to the tablebase, otherwise to the cloud;
+  both share the 429 back-off. The tablebase's `dtm` (plies, the side to move's) becomes a mate in moves from White's
+  side; draws, cursed wins and blessed losses read 0.00; an unknown result, or none, leaves the move to the own engine.
