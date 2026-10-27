@@ -10,6 +10,7 @@
 //
 // Rules are pure and replayable (D-032 in games-service): all randomness goes through ctx.
 import { count, defineGame, list, mostAward, type GameAward, type GameContext, type SeatInfo, type StepInfo } from "@game-table/sdk";
+import { shuffle } from "@game-table/sdk/cards";
 
 /** A tile as [low, high]. */
 export type Tile = [number, number];
@@ -140,11 +141,7 @@ export function legalMoves(s: Pick<State, "trains" | "pending" | "engine"> & Par
 function shuffledSet(engine: number, random: () => number): Tile[] {
   const tiles: Tile[] = [];
   for (let a = 0; a <= HIGH; a++) for (let b = a; b <= HIGH; b++) if (!(a === engine && b === engine)) tiles.push([a, b]);
-  for (let i = tiles.length - 1; i > 0; i--) {
-    const j = Math.floor(random() * (i + 1));
-    [tiles[i], tiles[j]] = [tiles[j], tiles[i]];
-  }
-  return tiles;
+  return shuffle(tiles, random);
 }
 
 const sortHand = (hand: Tile[]) => [...hand].sort((a, b) => a[1] - b[1] || a[0] - b[0]);

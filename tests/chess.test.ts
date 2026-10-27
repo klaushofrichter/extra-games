@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { Position, START_FEN, perft, uci } from "../games/chess/chess.ts";
 import { Engine, level, pickMove } from "../games/chess/engine.ts";
 import { clockText, parseTimeControl, positionOf, thinkBudget, type State } from "../games/chess/rules.ts";
-import { GameRuntime, VirtualClock, loadGame, replay, seats, settingsWithDefaults, type Game, type SeatInfo } from "./harness.ts";
+import { GameRuntime, VirtualClock, loadGame, replaysExactly, seats, settingsWithDefaults, type Game, type SeatInfo } from "./harness.ts";
 
 const game = await loadGame("chess");
 
@@ -36,7 +36,7 @@ function begin(settings: Record<string, unknown> = {}, o: { seats?: SeatInfo[]; 
 
 function endHash(g: Game, rt: GameRuntime) {
   if (!rt.over) rt.finish("terminated", null);
-  return replay(g.manifest, g.def, rt.log) === (rt.log.at(-1) as { stateHash: string }).stateHash;
+  return replaysExactly(g, rt);
 }
 
 describe("move generation", () => {

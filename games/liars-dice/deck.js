@@ -71,10 +71,9 @@ export function mount(root, ctx) {
   async function send(name, payload) {
     busy = true;
     drawBuilder();
-    const r = await ctx.send(name, payload);
+    await ctx.send(name, payload);
     busy = false;
     if (gone) return;
-    if (!r.ok) ctx.toast?.(r.reason ?? "That didn't work");
     if (view?.myTurn) drawBuilder();
   }
 

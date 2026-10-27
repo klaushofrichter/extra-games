@@ -4,6 +4,7 @@
 // both. Whoever plays their last card first wins the round and scores what the others still hold; the first to the
 // target wins the game. When a player is down to one card, the board calls it for them: "Last card!".
 import { count, defineGame, leastAward, list, mostAward, type GameAward, type GameContext, type SeatInfo, type StepInfo } from "@game-table/sdk";
+import { shuffle } from "@game-table/sdk/cards";
 
 export const COLORS = ["r", "y", "g", "b"] as const;
 export type Color = (typeof COLORS)[number];
@@ -94,15 +95,6 @@ export function fullDeck(): Card[] {
   return cards;
 }
 
-function shuffle<T>(xs: T[], ctx: GameContext): T[] {
-  const a = [...xs];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = ctx.randomInt(0, i);
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
-
 /** May `card` go on a pile whose top is `top` and whose colour is `color`? */
 export const fits = (card: Pick<Card, "c" | "k">, top: Pick<Card, "k"> | null, color: Color) => card.c === "w" || card.c === color || (!!top && top.k === card.k && top.k !== "wild" && top.k !== "+4");
 
@@ -148,7 +140,7 @@ function take(s: State, n: number, ctx: GameContext, events: Events): Card[] {
     if (!s.drawPile.length && s.discard.length > 1) {
       const keep = s.discard.at(-1)!;
       const back = s.discard.slice(0, -1).map(({ id, c, k }) => ({ id, c, k }));
-      s.drawPile = shuffle(back, ctx);
+      s.drawPile = shuffle(back, ctx.random);
       s.discard = [keep];
       events.push({ name: "reshuffled", data: { cards: s.drawPile.length } });
     }
@@ -161,7 +153,7 @@ function take(s: State, n: number, ctx: GameContext, events: Events): Card[] {
 
 function deal(s0: State, round: number, ctx: GameContext): State {
   const s: State = { ...s0, round, phase: "playing", dir: 1, drewId: null, players: { ...s0.players } };
-  s.drawPile = shuffle(fullDeck(), ctx);
+  s.drawPile = shuffle(fullDeck(), ctx.random);
   for (const seat of s.order) s.players[seat] = { ...s.players[seat], hand: s.drawPile.splice(-HAND) };
   // The first card of the pile is a number: action cards and wilds go back into the pile.
   let first = s.drawPile.pop()!;

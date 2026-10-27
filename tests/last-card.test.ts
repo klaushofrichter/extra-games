@@ -7,7 +7,7 @@ import { chooseMove, fits, fullDeck, points, type Card, type Color, type Discard
 import { cardBack, cardFace } from "../games/last-card/assets/cards.js";
 // @ts-ignore: a plain browser module of the game, with no types
 import { clockwise, upsideDownAmbiguous } from "../games/last-card/assets/table.js";
-import { loadGame, replaysExactly, seats, start, type Game } from "./harness.ts";
+import { loadGame, playOut as playAll, replaysExactly, seats, start, type Game } from "./harness.ts";
 
 let game: Game;
 beforeAll(async () => {
@@ -27,20 +27,7 @@ function position(st: State, o: { hands?: Record<number, Card[]>; top?: Card; co
   return { ...st, players, discard, color: o.color ?? (o.top ? (o.top.c as Color) : st.color), turn: o.turn ?? st.turn, drawPile: o.drawPile ?? st.drawPile, dir: o.dir ?? st.dir, drewId: null };
 }
 
-/** Play AI moves (and fire timers between rounds) until the game ends. */
-function playOut(rt: any, clock: any) {
-  for (let guard = 0; !rt.over && guard < 60000; guard++) {
-    const st = rt.state as State;
-    if (st.phase !== "playing") {
-      clock.advance();
-      continue;
-    }
-    const m = chooseMove(rt.view(st.turn));
-    if (!m) throw new Error("the AI found no move");
-    const r = rt.submit(st.turn, m, "ai");
-    if (r && r.ok === false) throw new Error(`the AI's move was refused: ${r.reason}`);
-  }
-}
+const playOut = (rt: any, clock: any) => playAll(rt, clock, chooseMove, 60000);
 
 describe("the cards", () => {
   it("has 108: per colour one 0, two of each 1–9, Skip, Reverse and Draw Two; four Wilds and four Wild Draw Fours", () => {

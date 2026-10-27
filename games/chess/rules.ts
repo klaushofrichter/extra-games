@@ -11,7 +11,6 @@ import { BLACK, F_CAPTURE, F_CASTLE, Position, WHITE, moveFlags, moveFrom, moveP
 import { ELO_MAX, ELO_MIN, Engine, level, pickMove } from "./engine.ts";
 import { chessAwards } from "./stats.ts";
 
-export const TIME_CONTROLS = ["no clock", "1+0", "3+2", "5+3", "10+0", "10+5", "15+10", "30+0"] as const;
 /** How long the stand-in waits before moving, so a move on the board can be followed. */
 const STAND_IN_MS = 900;
 /** The stand-in plays inside the rules, so it must be quick and deterministic: a node budget, no clock. */
@@ -325,14 +324,14 @@ export default defineGame<State>({
         return { state: { ...s, result }, events: [{ name: "over", data: result }] };
       }
       case "offerDraw": {
-        if (s.drawOffer === other) return agree(s, seat); // both want it
+        if (s.drawOffer === other) return agree(s); // both want it
         if (s.drawOffer === seat) return { reject: "You already offered a draw" };
         if (s.sans.length < 2) return { reject: "A draw can be offered once both sides have moved" };
         return { state: { ...s, drawOffer: seat }, events: [{ name: "drawOffered", data: { by: seat } }] };
       }
       case "acceptDraw":
         if (s.drawOffer !== other) return { reject: "There is no draw offer to accept" };
-        return agree(s, seat);
+        return agree(s);
       case "declineDraw":
         if (s.drawOffer !== other) return { reject: "There is no draw offer to decline" };
         return { state: { ...s, drawOffer: null }, events: [{ name: "drawDeclined", data: { by: seat } }] };
@@ -475,7 +474,7 @@ export default defineGame<State>({
   },
 });
 
-function agree(s: State, _seat: number) {
+function agree(s: State) {
   const result = { winner: null, reason: "agreement" as const };
   return { state: { ...s, drawOffer: null, result }, events: [{ name: "over", data: result }] };
 }

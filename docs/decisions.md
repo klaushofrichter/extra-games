@@ -524,3 +524,22 @@ Records are history: an older record is not edited when a newer one changes it. 
   400 ms on the socket, as a slow link would, follow the dropped piece frame by frame and require that it only comes
   closer to where it ends and never shows where it started; both fail on the earlier boards. They also count the lit
   targets mid-drag.
+
+## A cleanup pass over the whole repository (27 Oct 2026)
+
+- **E-036 · 2026-10-27 · Claude** — Reuse and simplification without a change in behaviour:
+  - **Rules:** Mexican Train and Last Card shuffle with the SDK's `shuffle` (`@game-table/sdk/cards`), the same
+    Fisher–Yates with the same random numbers in the same order. Unused code is removed (Backgammon `CHECKERS` and
+    `subText`, Chess `pieceColor`, `pieceType` and `TIME_CONTROLS`), and Backgammon copies its statistics in one place.
+  - **Boards and phones:** the Backgammon, Chess and Liar's Dice phones no longer toast a refusal themselves; the
+    phone page already does (games-service, "so games need not toast it themselves"), so it showed twice. Mexican
+    Train rewrites its trains and its hub only when they change, which also stops its pulses restarting. Backgammon's
+    cube placement is one branch.
+  - **Checks:** the browser checks share `scripts/e2e/game_check.py` (the table's API, screenshots, phones, the phone
+    layout rules, and E-035's drag checks); the unit tests share `playOut` in `tests/harness.ts`.
+  *Why:* fewer copies to keep in step. *How it was checked:* seeded AI-only simulations of every game (each player
+  count, 6 games) give the same final state hashes before and after; the unit tests and every browser check pass.
+  Left for later, with the reason: caching a view per state (an AI in the same thread gets the shared object),
+  Backgammon's search and Chess's engine (their tie-breaks decide the stand-in's moves), and platform helpers the
+  review suggested (resolving an intent after its update, an idle tracker, a confirm dialog, `settings()` with the
+  view), which need a games-service release first.

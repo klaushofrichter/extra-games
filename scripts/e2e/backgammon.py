@@ -25,37 +25,16 @@ ROOT = os.path.dirname(os.path.dirname(HERE))
 sys.path.insert(0, os.path.join(ROOT, ".games-service", "scripts", "e2e"))
 sys.path.insert(0, HERE)
 from playwright.sync_api import sync_playwright  # noqa: E402
-from common import api, errors, join_deck, pick_game, start_table, watch, wait  # noqa: E402
-from liars_dice import CHECK  # noqa: E402  the same phone layout rules
+from common import errors, pick_game, start_table, watch, wait  # noqa: E402
+from game_check import CHECK, PATH_WATCH, SLOW_INTENTS, TableCheck, settles_smoothly  # noqa: E402
 
 OUT = sys.argv[1] if len(sys.argv) > 1 else "e2e-out"
 os.makedirs(OUT, exist_ok=True)
 PORT = 8097
 BASE = f"http://127.0.0.1:{PORT}"
 KEY = "e2ekey"
-problems = []
-
-
-def a(method, path, body=None):
-    return api(method, path, body, base=BASE, key=KEY)
-
-
-def shot(page, name):
-    page.screenshot(path=os.path.join(OUT, f"backgammon-{name}.png"))
-
-
-def check(page, where):
-    for p in page.evaluate(CHECK):
-        problems.append(f"{where}: {p}")
-
-
-def phone(browser, name, w, h):
-    ctx = browser.new_context(viewport={"width": w, "height": h}, device_scale_factor=2, has_touch=True)
-    d = ctx.new_page()
-    watch(d, name)
-    join_deck(d, a("GET", "/join")["url"], name)
-    d.label = name
-    return d
+T = TableCheck(BASE, KEY, OUT, "backgammon", CHECK)
+a, shot, check, phone, problems = T.a, T.shot, T.check, T.phone, T.problems
 
 
 def tap(board, selector):
@@ -111,36 +90,6 @@ def board_tap(board, act, cond, what):
     board.wait_for_selector(sel, timeout=3000)
     tap(board, sel)
     wait(cond, 4, what)
-
-
-# A slow link for the board's intents (held 400 ms on the socket): what a dropped piece does while it waits shows.
-SLOW_INTENTS = """(on) => { const ws = WebSocket.prototype; ws.__send ??= ws.send;
-  ws.send = on ? function (d) { if (typeof d === "string" && d.includes('"intent"')) return void setTimeout(() => ws.__send.call(this, d), 400);
-    return ws.__send.call(this, d); } : ws.__send; }"""
-
-
-# Follows a dropped piece frame by frame (the piece nearest to where it was last seen, starting at the drop): it must
-# only ever come closer to where it ends, never slide back toward where it came from first; and no piece may show where
-# the dragged one started, which is a jump back (E-035).
-PATH_WATCH = """([sel, x, y, ox, oy]) => { const path = (window.__path = []); window.__home = 0; let p = { x, y };
-  const until = performance.now() + 1200;
-  const look = () => { let best = null, bd = Infinity;
-    for (const e of document.querySelectorAll(sel)) { const r = e.getBoundingClientRect(), c = { x: r.x + r.width / 2, y: r.y + r.height / 2 };
-      if (Math.hypot(c.x - ox, c.y - oy) < 6) window.__home++;
-      const d = Math.hypot(c.x - p.x, c.y - p.y); if (d < bd) { bd = d; best = c; } }
-    if (best) path.push((p = best));
-    if (performance.now() < until) requestAnimationFrame(look); };
-  requestAnimationFrame(look); }"""
-
-
-def settles_smoothly(board, what):
-    time.sleep(1.3)
-    path = board.evaluate("() => window.__path")
-    end = path[-1]
-    d = [((q["x"] - end["x"]) ** 2 + (q["y"] - end["y"]) ** 2) ** 0.5 for q in path]
-    back = max((b - a for a, b in zip(d, d[1:])), default=0)
-    assert back <= 3, f"{what}: moved {back:.0f}px away from where it ends, after the drop"
-    assert board.evaluate("() => window.__home") == 0, f"{what}: jumped back to where it started"
 
 
 def drag(board, frm, to, legal=False):

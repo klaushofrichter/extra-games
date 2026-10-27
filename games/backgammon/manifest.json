@@ -1,7 +1,7 @@
 {
   "id": "backgammon",
   "name": "Backgammon",
-  "version": "2026.10.26.3",
+  "version": "2026.10.26.4",
   "sdk": "^0.1",
   "description": "The classic race for two: roll, move your checkers on the board, hit blots and bear off first. Matches to 1–100 points with the doubling cube and the Crawford rule, AI players at three strengths.",
   "players": [2],
