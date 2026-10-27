@@ -7,7 +7,7 @@
 // Static and moving parts are separate layers (the points are drawn once; checkers have their own layer), and a move
 // plays as one animation per checker, so the board stays smooth on a 4K table (games-service's developer guide, section 9).
 import { W, H, esc, html, playerColor, playSound, remainingMs, seatPlates, useStyles } from "/shared/board-kit.js";
-import { COLOR_NAME, ROLL_MS, badSound, checkerSound, cubeSound, diceState, dieHtml, hitSound, offSound, ownNumber, rollSound, setFace, winSound } from "/games/backgammon/assets/bg-ui.js";
+import { COLOR_NAME, ROLL_MS, badSound, checkerSound, cubeSound, diceState, dieHtml, hitSound, offSound, rollSound, setFace, winSound } from "/games/backgammon/assets/bg-ui.js";
 
 // ----- geometry (1920 × 1080 surface, White south) -----
 const FX = 440; // frame
@@ -305,13 +305,10 @@ export function mount(root, ctx) {
     let x = BAR_CX;
     let y = MID;
     let rot = 0;
-    if (v.cube.owner !== null && v.phase !== "double") {
-      const south = edgeOf(v.cube.owner) !== "north";
-      y = south ? Y1 - 34 : Y0 + 34;
-      rot = south ? 0 : 180;
-    } else if (v.phase === "double") {
-      // Offered: it stands before the player who has to answer.
-      const south = edgeOf(v.turn ^ 1) !== "north";
+    // Before its owner, or, offered, before the player who has to answer; in the middle it faces the board's front.
+    const side = v.phase === "double" ? v.turn ^ 1 : v.cube.owner;
+    if (side !== null) {
+      const south = edgeOf(side) !== "north";
       y = south ? Y1 - 34 : Y0 + 34;
       rot = south ? 0 : 180;
     } else rot = info?.rotation ?? 0;

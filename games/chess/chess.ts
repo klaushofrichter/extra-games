@@ -13,8 +13,6 @@ const CASTLE_WK = 1, CASTLE_WQ = 2, CASTLE_BK = 4, CASTLE_BQ = 8;
 
 export const START_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
-export const pieceColor = (p: number) => p >> 3;
-export const pieceType = (p: number) => p & 7;
 export const moveFrom = (m: number) => m & 127;
 export const moveTo = (m: number) => (m >> 7) & 127;
 export const movePromo = (m: number) => (m >> 14) & 7;

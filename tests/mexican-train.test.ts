@@ -8,7 +8,7 @@ import { chooseMove, engineOf, handSize, legalMoves, longestChain, openEnd, pips
 import { FIELD, HALF, layout, MAX_SCALE, MIN_SCALE } from "../games/mexican-train/assets/layout.js";
 // @ts-ignore: a plain browser module of the game, with no types
 import { tileSvg } from "../games/mexican-train/assets/tiles.js";
-import { loadGame, replaysExactly, seats, start, type Game } from "./harness.ts";
+import { loadGame, playOut as playAll, replaysExactly, seats, start, type Game } from "./harness.ts";
 
 let game: Game;
 beforeAll(async () => {
@@ -25,20 +25,7 @@ function position(st: State, o: { hands?: Record<number, Tile[]>; trains?: Recor
   return { ...st, players, trains, turn: o.turn ?? st.turn, boneyard: o.boneyard ?? st.boneyard, pending: o.pending ?? null, drew: false, turnPlays: 0 };
 }
 
-/** Play AI moves (and fire timers between rounds) until the game ends. */
-function playOut(rt: any, clock: any, style: "planner" | "steady" = "planner") {
-  for (let guard = 0; !rt.over && guard < 40000; guard++) {
-    const st = rt.state as State;
-    if (st.phase !== "playing") {
-      clock.advance();
-      continue;
-    }
-    const m = chooseMove(rt.view(st.turn), style);
-    if (!m) throw new Error("the AI found no move");
-    const r = rt.submit(st.turn, m, "ai");
-    if (r && r.ok === false) throw new Error(`the AI's move was refused: ${r.reason}`);
-  }
-}
+const playOut = (rt: any, clock: any, style: "planner" | "steady" = "planner") => playAll(rt, clock, (v) => chooseMove(v, style));
 
 describe("dealing", () => {
   it("deals 15, 12 or 10 tiles by player count, and the rest is the boneyard", () => {
