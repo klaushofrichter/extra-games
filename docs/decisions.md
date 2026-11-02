@@ -649,3 +649,8 @@ Records are history: an older record is not edited when a newer one changes it. 
   *How (Claude):* the board keeps the picked bar checker (`pickK`); the drag, the drop that holds the checker where it
   was let go (E-035) and the flight of a tapped move start from it. Points still give their top checker. Checked in
   the browser with three checkers on the bar: the bottom one follows the pointer exactly and is the one that moves.
+- **E-046 · 2026-11-02 · Klaus** — Mexican Train: the seat plate of the player whose turn it is reads *Now playing*,
+  not *Their turn*.
+  *Why:* the board is shared, so *Their turn* on Klaus's own plate read as someone else's turn while his phone said
+  "Now tap a train" (noticed while taking the website's screenshots, games-service D-262).
+  *How (Claude):* the text in `plates()` in `games/mexican-train/board.js`; the plate's highlight is unchanged.

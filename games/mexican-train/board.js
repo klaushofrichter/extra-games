@@ -190,7 +190,8 @@ export function mount(root, ctx = {}) {
       // Points are scored only at the end of a round (the pips left in hand): until the first round is over there are
       // none to show, and "0 pts" read as if nobody were scoring (E-022).
       const score = view.last ? ` · ${pl.total} ${pl.total === 1 ? "pt" : "pts"}${view.phase === "over" ? "" : " so far"}` : "";
-      return `${seat === active ? `<b class="mt-turn">Their turn</b> · ` : ""}${pl.tiles} ${pl.tiles === 1 ? "tile" : "tiles"}${score}`;
+      // The board is shared: "Their turn" read wrong to the player whose turn it is (E-046), so the plate says "Now playing".
+      return `${seat === active ? `<b class="mt-turn">Now playing</b> · ` : ""}${pl.tiles} ${pl.tiles === 1 ? "tile" : "tiles"}${score}`;
     };
     const key = JSON.stringify([active, view.phase, !!view.last, view.players.map((x) => [x.seat, x.tiles, x.total]), info.players.map((x) => [x.seat, x.name, x.connected, x.color])]);
     if (key === platesKey) return;
