@@ -654,3 +654,8 @@ Records are history: an older record is not edited when a newer one changes it. 
   *Why:* the board is shared, so *Their turn* on Klaus's own plate read as someone else's turn while his phone said
   "Now tap a train" (noticed while taking the website's screenshots, games-service D-262).
   *How (Claude):* the text in `plates()` in `games/mexican-train/board.js`; the plate's highlight is unchanged.
+- **E-047 · 2026-11-02 · Klaus** — Backgammon's description says what the game has: AI players at six strengths,
+  three of its own (beginner, average, strong) and three from wildbg (club, expert, master).
+  *Why:* the macOS install test (games-service v2026.11.02.10) found the board's game text saying "three strengths"
+  while the website says six; the description dates from before the wildbg strengths (E-039) were added.
+  *How (Claude):* `description` in `games/backgammon/manifest.json`; the rules for players already listed all six.
