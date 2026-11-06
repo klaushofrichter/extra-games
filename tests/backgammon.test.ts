@@ -310,6 +310,40 @@ describe("the doubling cube and the match", () => {
     expect(refuse(r.s, s.seats[1], "roll")).toMatch(/match is over/);
   });
 
+  it("counts takes, 6-6 and rolls without a move, and awards them with the biggest win (E-048)", () => {
+    let s = at(startBoard(), 0);
+    const [w, b] = s.seats;
+    ({ s } = step(s, w, "double"));
+    ({ s } = step(s, b, "take"));
+    expect(s.stats[1].takes).toBe(1);
+    ({ s } = step(s, w, "roll", undefined, fakeCtx([6, 6])));
+    expect(s.stats[0]).toMatchObject({ boxcars: 1, doubles: 1 });
+    // White on the bar against Black's closed home board: the roll has no move.
+    const closed = at(board({ 1: 14 }, { 19: 2, 20: 2, 21: 2, 22: 2, 23: 2, 24: 2 }, { bar: [1, 0] }), 0);
+    const r = step(closed, w, "roll", undefined, fakeCtx([3, 1]));
+    expect(r.events.map((e) => e.name)).toContain("blocked");
+    expect(r.s.stats[0].danced).toBe(1);
+    // Stats saved before E-048 lack the new fields: they count from 0.
+    const old = { hits: 0, doubles: 0, pipsRolled: 0, rolls: 0, entered: 0, gamesWon: 0, gammons: 0, cubes: 0 };
+    expect(step({ ...closed, stats: [old, old] }, w, "roll", undefined, fakeCtx([3, 1])).s.stats[0].danced).toBe(1);
+
+    let end = at(board({ 1: 1 }, { 24: 14 }, { off: [14, 1] }), 0, { match: { length: 5, score: [4, 4], game: 4, crawford: false, postCrawford: true } });
+    const zero = { ...old, takes: 0, danced: 0, boxcars: 0 };
+    end = {
+      ...end,
+      stats: [{ ...zero, takes: 2, boxcars: 1 }, { ...zero, danced: 3 }],
+      games: [{ game: 1, winner: 1, points: 4, kind: "gammon", cube: 2, score: [0, 4] }, { game: 2, winner: 0, points: 2, kind: "single", cube: 2, score: [2, 4] }, { game: 3, winner: 0, points: 2, kind: "gammon", cube: 1, score: [4, 4] }],
+    };
+    ({ s: end } = step(end, w, "roll", undefined, fakeCtx([1, 2])));
+    end = step(end, w, "move", { from: 1, to: "off" }).s;
+    expect(end.phase).toBe("over");
+    const awards = Object.fromEntries((def.isOver(end) as { awards: { id: string; seats: number[]; value: string }[] }).awards.map((a) => [a.id, a]));
+    expect(awards.brave).toMatchObject({ seats: [w], value: "two takes" });
+    expect(awards.dancer).toMatchObject({ seats: [b], value: "three rolls" });
+    expect(awards.boxcars).toMatchObject({ seats: [w], value: "one time" });
+    expect(awards["big-game"]).toMatchObject({ seats: [b], value: "four points" }); // Black's doubled gammon beats White's 2
+  });
+
   it("a one-point match has no cube to offer and ends after one game", () => {
     const { s } = newMatch({ matchLength: 1 }, [2, 1]);
     expect(canDouble({ ...s, phase: "roll" })).toBe(false);
