@@ -659,3 +659,11 @@ Records are history: an older record is not edited when a newer one changes it. 
   *Why:* the macOS install test (games-service v2026.11.02.10) found the board's game text saying "three strengths"
   while the website says six; the description dates from before the wildbg strengths (E-039) were added.
   *How (Claude):* `description` in `games/backgammon/manifest.json`; the rules for players already listed all six.
+- **E-048 · 2026-11-06 · Klaus** — Backgammon offers **twelve awards** with the platform's two pace awards (*Quick
+  Draw*, *Deep Thinker*): "invent more Awards, so that we reach a total of 12, including the lobby awards". Four new
+  ones beside the six of E-013 (*Hitman*, *Doublets*, *High Roller*, *Back from the Bar*, *Gammon Maker*,
+  *Cube Handler*): *Brave Heart* (took the most doubles), *Dancing on the Bar* (most rolls without a move),
+  *Boxcars* (rolled 6-6 the most) and *Big Win* (the most points won in one game, cube and gammon counted).
+  As before, an award shows only when one player stands out. *Implementation (Claude):* three counters in each side's
+  statistics (`takes`, `danced`, `boxcars`), optional so states saved before read them as 0; *Big Win* reads the
+  match's game records. `tests/backgammon.test.ts` counts each and checks who gets the awards.

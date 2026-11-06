@@ -72,6 +72,12 @@ export interface SideStats {
   gamesWon: number;
   gammons: number;
   cubes: number;
+  /** Doubles taken (E-048); missing in states saved before, read as 0. */
+  takes?: number;
+  /** Rolls with no legal move (E-048). */
+  danced?: number;
+  /** 6-6 rolled (E-048). */
+  boxcars?: number;
 }
 
 /** A player's own options (E-031): taking moves back, and rolling for them. */
@@ -126,9 +132,9 @@ export interface State {
 const COLOR_NAME = ["White", "Black"];
 const colorOf = (s: State, seat: number): Color | null => (s.seats[0] === seat ? 0 : s.seats[1] === seat ? 1 : null);
 const seatName = (s: State, c: Color) => s.names[s.seats[c]] ?? COLOR_NAME[c];
-const emptyStats = (): SideStats => ({ hits: 0, doubles: 0, pipsRolled: 0, rolls: 0, entered: 0, gamesWon: 0, gammons: 0, cubes: 0 });
-/** Both sides' statistics, copied so a step can change them. */
-const copyStats = (s: State) => s.stats.map((x) => ({ ...x })) as [SideStats, SideStats];
+const emptyStats = (): Required<SideStats> => ({ hits: 0, doubles: 0, pipsRolled: 0, rolls: 0, entered: 0, gamesWon: 0, gammons: 0, cubes: 0, takes: 0, danced: 0, boxcars: 0 });
+/** Both sides' statistics, copied so a step can change them; fields added later start at 0 (E-048). */
+const copyStats = (s: State) => s.stats.map((x) => ({ ...emptyStats(), ...x })) as [Required<SideStats>, Required<SideStats>];
 const NO_RULE: TurnRule = { max: 0, larger: null };
 const optionsOf = (s: State, c: Color): Options => s.options?.[c] ?? DEFAULT_OPTIONS;
 
@@ -212,9 +218,13 @@ function roll(s: State, ctx: GameContext): Out {
   st.rolls++;
   st.pipsRolled += a === b ? 4 * a : a + b;
   if (a === b) st.doubles++;
+  if (a === 6 && b === 6) st.boxcars++;
   const next = beginMoves({ ...s, dice: [a, b], opening: null, stats }, ctx);
   const events: Ev[] = [{ name: "rolled", data: { color: s.turn, dice: [a, b] } }];
-  if (next.rule.max === 0) events.push({ name: "blocked", data: { color: s.turn } });
+  if (next.rule.max === 0) {
+    st.danced++; // next carries this step's copy of the stats
+    events.push({ name: "blocked", data: { color: s.turn } });
+  }
   return { state: next, events };
 }
 
@@ -374,7 +384,9 @@ function offer(s: State, ctx: GameContext): Out {
 
 function takeCube(s: State): Out {
   const taker = (s.turn ^ 1) as Color;
-  const next: State = { ...s, phase: "roll", cube: { ...s.cube, value: s.cube.value * 2, owner: taker } };
+  const stats = copyStats(s);
+  stats[taker].takes++;
+  const next: State = { ...s, phase: "roll", cube: { ...s.cube, value: s.cube.value * 2, owner: taker }, stats };
   return { state: next, events: [{ name: "took", data: { by: taker, value: next.cube.value } }] };
 }
 
@@ -510,8 +522,8 @@ interface Award {
   seats: number[];
   value?: string;
 }
-function most(id: string, icon: string, title: string, blurb: string, s: State, score: (st: SideStats) => number, value: (n: number) => string): Award | null {
-  const v = s.stats.map(score);
+function most(id: string, icon: string, title: string, blurb: string, s: State, score: (st: SideStats, c: Color) => number, value: (n: number) => string): Award | null {
+  const v = s.stats.map((st, c) => score(st, c as Color));
   const best = Math.max(...v);
   if (best <= 0 || v[0] === v[1]) return null;
   const c = v.indexOf(best);
@@ -747,6 +759,11 @@ export default defineGame<State>({
       most("comeback", "🚪", "Back from the Bar", "Came in from the bar most often.", s, (x) => x.entered, (n) => count(n, "time")),
       most("gammon", "🏆", "Gammon Maker", "Won the most gammons.", s, (x) => x.gammons, (n) => count(n, "gammon")),
       most("cube", "🧊", "Cube Handler", "Doubled the most.", s, (x) => x.cubes, (n) => count(n, "double", "doubles")),
+      // E-048: four more, so with the platform's two pace awards a match offers twelve.
+      most("brave", "🦁", "Brave Heart", "Took the most doubles.", s, (x) => x.takes ?? 0, (n) => count(n, "take")),
+      most("dancer", "💃", "Dancing on the Bar", "Rolled the most times without a move.", s, (x) => x.danced ?? 0, (n) => count(n, "roll")),
+      most("boxcars", "🚂", "Boxcars", "Rolled double six the most.", s, (x) => x.boxcars ?? 0, (n) => count(n, "time")),
+      most("big-game", "💰", "Big Win", "Won the most points in one game.", s, (_, c) => Math.max(0, ...s.games.filter((g) => g.winner === c).map((g) => g.points)), (n) => count(n, "point")),
     ].filter((a): a is Award => a !== null);
     return {
       text: resultText(s),
