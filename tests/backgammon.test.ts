@@ -220,6 +220,28 @@ describe("a turn", () => {
     expect(r.events).toContainEqual({ name: "moved", data: { color: 0, from: 13, to: 9, die: 4, hit: true, auto: false } });
   });
 
+  it("Undo takes back a move's hit and entry in the statistics too (E-049)", () => {
+    // White enters from the bar with the 3 onto Black's blot on 22, undoes, and enters again.
+    let s = at(board({ 13: 5, 6: 5, 8: 4 }, { 22: 1, 19: 14 }, { bar: [1, 0] }), 0);
+    const w = s.seats[0];
+    ({ s } = step(s, w, "roll", undefined, fakeCtx([3, 1])));
+    const rolls = s.stats[0].rolls;
+    for (let k = 0; k < 3; k++) {
+      ({ s } = step(s, w, "move", { from: "bar", to: 22, die: 3 }));
+      expect(s.stats[0]).toMatchObject({ hits: 1, entered: 1 });
+      ({ s } = step(s, w, "undo"));
+      expect(s.stats[0]).toMatchObject({ hits: 0, entered: 0, rolls });
+      expect(s.board.bar).toEqual([1, 0]);
+    }
+    ({ s } = step(s, w, "move", { from: "bar", to: 22, die: 3 }));
+    ({ s } = step(s, w, "move", { from: 22, to: 21 }));
+    ({ s } = step(s, w, "undo"));
+    expect(s.stats[0]).toMatchObject({ hits: 1, entered: 1 }); // the second move's undo keeps the first's
+    // A state saved before E-049 has undo records without the counts: Undo still works and leaves them.
+    const old = { ...s, undo: s.undo.map(({ hits, entered, ...u }) => u) };
+    expect(step(old, w, "undo").s.stats[0]).toMatchObject({ hits: 1, entered: 1 });
+  });
+
   it("with no legal move the turn passes by itself after a moment", () => {
     let s = at(board({ 13: 14 }, { 19: 2, 20: 2, 21: 2, 22: 2, 23: 2, 24: 2, 1: 3 }, { bar: [1, 0] }), 0);
     const ctx = fakeCtx([6, 5]);
@@ -538,6 +560,27 @@ describe("withdrawing a double (E-034)", () => {
     expect(refuse(r.s, b, "take")).toMatch(/no double/);
     // and it can double again
     expect(step(r.s, w, "double").s.phase).toBe("double");
+  });
+});
+
+describe("Roll for me after the cube (E-049)", () => {
+  it("rolls after the doubler withdraws a double", () => {
+    let s = at(board({ 13: 5, 6: 5, 8: 5 }, { 12: 5, 19: 10 }), 0, { options: [{ undo: "all", autoRoll: true }, { undo: "all", autoRoll: false }] });
+    const w = s.seats[0];
+    ({ s } = step(s, w, "double"));
+    const ctx = fakeCtx();
+    const r = step(s, w, "withdraw", undefined, ctx);
+    // White could double again, so the roll waits for that, as at the start of a turn (E-032).
+    expect(r.s).toMatchObject({ phase: "roll", turn: 0 });
+    expect(ctx.timers.get("autoroll")).toBe(AUTO_ROLL_MS);
+  });
+
+  it("rolls for the doubler after the turn timer took the double", () => {
+    const s = at(board({ 13: 5, 6: 5, 8: 5 }, { 12: 5, 19: 10 }), 0, { phase: "double", turnMs: 30_000, options: [{ undo: "all", autoRoll: true }, { undo: "all", autoRoll: false }] });
+    const r = def.onTimer!(s, "turn", fakeCtx([5, 2]) as never) as { state: State; events: { name: string; data?: unknown }[] };
+    expect(r.state).toMatchObject({ phase: "move", turn: 0, dice: [5, 2], cube: { value: 2, owner: 1 } });
+    expect(r.events.map((e) => e.name)).toEqual(["timeout", "took", "rolled"]);
+    expect(r.events.at(-1)!.data).toMatchObject({ auto: true });
   });
 });
 
