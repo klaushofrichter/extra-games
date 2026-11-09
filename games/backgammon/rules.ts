@@ -111,8 +111,11 @@ export interface State {
   played: number;
   /** This turn's moves so far, in the mover's numbering. */
   turnMoves: Sub[];
-  /** What each move of this turn changed, for Undo: the board and dice before it, and how many moves it made. */
-  undo: { board: Board; remaining: number[]; played: number; moves: number }[];
+  /**
+   * What each move of this turn changed, for Undo: the board and dice before it, how many moves it made, and the
+   * mover's per-move counts before it (E-049; optional, so states saved before still undo).
+   */
+  undo: { board: Board; remaining: number[]; played: number; moves: number; hits?: number; entered?: number }[];
   /** The opening roll of this game: white's die and black's die. */
   opening: [number, number] | null;
   cube: { enabled: boolean; value: number; owner: Color | null };
@@ -249,7 +252,7 @@ function move(s: State, subs: Sub[], ctx: GameContext, by: "player" | "auto"): O
     remaining,
     played: s.played + subs.length,
     turnMoves: [...s.turnMoves, ...subs],
-    undo: [...s.undo, { board: s.board, remaining: s.remaining, played: s.played, moves: subs.length }],
+    undo: [...s.undo, { board: s.board, remaining: s.remaining, played: s.played, moves: subs.length, hits: s.stats[c].hits, entered: s.stats[c].entered }],
     stats,
   };
   if (p.m[0] === 15) {
@@ -353,7 +356,7 @@ function autoStep(s: State, ctx: GameContext, whole: boolean): Out {
   const standIn = s.standIn.includes(s.seats[who]);
   if (s.phase === "double") {
     const take = !standIn || shouldTake(persp(s.board, who), level, cubeSituation(s, who));
-    return take ? takeCube(s) : passCube(s, ctx);
+    return take ? autoRoll(takeCube(s), ctx) : passCube(s, ctx); // the doubler's Roll for me rolls, as after a take (E-049)
   }
   if (s.phase === "roll") {
     if (standIn && canDouble(s) && shouldDouble(persp(s.board, who), level, cubeSituation(s, who))) return offer(s, ctx);
@@ -641,7 +644,7 @@ export default defineGame<State>({
         stats[color].cubes = Math.max(0, stats[color].cubes - 1);
         const next: State = { ...s, phase: "roll", stats };
         arm(next, ctx);
-        return { state: next, events: [{ name: "withdrawn", data: { by: color, value: s.cube.value * 2 } }] };
+        return autoRoll({ state: next, events: [{ name: "withdrawn", data: { by: color, value: s.cube.value * 2 } }] }, ctx); // E-049
       }
       case "take":
       case "pass":
@@ -667,6 +670,10 @@ export default defineGame<State>({
         if (optionsOf(s, color).undo === "none") return { reject: "Undo is off: change it in your options" };
         const last = s.undo.at(-1);
         if (!last) return { reject: "Nothing to take back" };
+        // The move's hits and entries are taken back too (E-049); rolls, takes and the like count outside moves.
+        const stats = copyStats(s);
+        if (last.hits !== undefined) stats[color].hits = last.hits;
+        if (last.entered !== undefined) stats[color].entered = last.entered;
         const next: State = {
           ...s,
           board: cloneBoard(last.board),
@@ -674,6 +681,7 @@ export default defineGame<State>({
           played: last.played,
           turnMoves: s.turnMoves.slice(0, s.turnMoves.length - last.moves),
           undo: s.undo.slice(0, -1),
+          stats,
         };
         return { state: next, events: [{ name: "undone", data: { color } }] };
       }

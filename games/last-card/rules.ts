@@ -222,7 +222,7 @@ function play(s0: State, seat: number, id: number, chosen: unknown, ctx: GameCon
   const changed = color !== s0.color;
   s.players[seat] = { ...p, hand, played: p.played + 1, actions: p.actions + (action ? 1 : 0), wilds: p.wilds + (card.c === "w" ? 1 : 0), lastCalls: p.lastCalls + (hand.length === 1 ? 1 : 0), changes: p.changes + (changed ? 1 : 0) };
   const landed: Discard = { ...card, color, angle: ctx.randomInt(-28, 28), dx: ctx.randomInt(-22, 22), dy: ctx.randomInt(-22, 22), seat };
-  s.discard = [...s.discard, landed].slice(-60); // older cards stay for reshuffling; the board shows the last few
+  s.discard = [...s.discard, landed]; // every card stays for reshuffling; only the view caps the pile (PILE_SHOWN)
   s.color = color;
   s.drewId = null;
   const events: Events = [{ name: "played", data: { seat, card: landed, auto } }];
