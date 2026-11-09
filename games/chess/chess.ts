@@ -463,21 +463,35 @@ export class Position {
     return false;
   }
 
-  /** Can `side` still mate at all (for a flag fall: losing on time against a lone king is a draw)? */
+  /**
+   * Can `side` still mate by some series of legal moves (for a flag fall, FIDE 6.9, E-049)? The standard practical
+   * reading: it cannot with a lone king; with one minor piece against a bare king; or with only bishops, all on squares
+   * of one colour, against a bare king or a king with only bishops on that same colour. Anything else can mate (even
+   * K+B v K+R or K+N v K+N: the other side's pieces can block their own king).
+   */
   hasMatingMaterial(side: number): boolean {
-    let minors = 0;
+    const mine: { t: number; sq: number }[] = [];
+    const theirs: { t: number; sq: number }[] = [];
     for (let sq = 0; sq < 128; sq++) {
       if (sq & 0x88) {
         sq += 7;
         continue;
       }
       const pc = this.board[sq];
-      if (!pc || pc >> 3 !== side) continue;
       const t = pc & 7;
-      if (t === PAWN || t === ROOK || t === QUEEN) return true;
-      if (t === KNIGHT || t === BISHOP) minors++;
+      if (!t || t === KING) continue;
+      if (pc >> 3 === side) {
+        if (t === PAWN || t === ROOK || t === QUEEN) return true;
+        mine.push({ t, sq });
+      } else theirs.push({ t, sq });
     }
-    return minors >= 2;
+    if (!mine.length) return false;
+    const col = (sq: number) => ((sq >> 4) + (sq & 7)) & 1;
+    if (mine.length === 1 && !theirs.length) return false;
+    if (mine.every((m) => m.t === BISHOP && col(m.sq) === col(mine[0].sq))) {
+      return !theirs.every((m) => m.t === BISHOP && col(m.sq) === col(mine[0].sq));
+    }
+    return true;
   }
 
   /** Standard algebraic notation of a legal move, with + or #. */

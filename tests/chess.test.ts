@@ -216,6 +216,30 @@ describe("clocks", () => {
     expect(lone.rt.summary!.text).toMatch(/^Draw as the flag fell but the other side can't mate/);
   });
 
+  it("the flag follows FIDE 6.9: a win whenever some series of legal moves could mate (E-049)", () => {
+    // White's flag falls; can black (to win) still mate?
+    const flag = (fen: string) => {
+      const g = begin({ timeControl: "1+0" });
+      g.rt.state = { ...g.s(), fen, keys: [fen.split(" ").slice(0, 4).join(" ")] };
+      g.clock.t = 60_000;
+      g.rt.fireTimer("flag");
+      return (g.rt.state as State).result;
+    };
+    const wins = { winner: 1, reason: "time" };
+    const draw = { winner: null, reason: "timeVsMaterial" };
+    expect(flag("4k3/8/8/8/8/8/8/R3K3 w - - 0 1")).toEqual(draw); // a lone king
+    expect(flag("4kb2/8/8/8/8/8/8/4K3 w - - 0 1")).toEqual(draw); // K+B v K
+    expect(flag("4kn2/8/8/8/8/8/8/4K3 w - - 0 1")).toEqual(draw); // K+N v K
+    expect(flag("2b1kb2/8/8/8/8/8/8/4K3 w - - 0 1")).toEqual(wins); // two bishops of both colours
+    expect(flag("4kb2/6b1/8/8/8/8/8/4K3 w - - 0 1")).toEqual(draw); // two bishops on light squares v K
+    expect(flag("4kb2/8/8/8/8/8/8/2B1K3 w - - 0 1")).toEqual(draw); // bishops all on dark squares (f8, c1)
+    expect(flag("4kb2/8/8/8/8/8/8/4KB2 w - - 0 1")).toEqual(wins); // bishops on opposite colours (f8, f1)
+    expect(flag("4kb2/8/8/8/8/8/8/R3K3 w - - 0 1")).toEqual(wins); // K+B v K+R: the rook can block its own king
+    expect(flag("4kn2/8/8/8/8/8/8/3NK3 w - - 0 1")).toEqual(wins); // K+N v K+N
+    expect(flag("4kn2/8/8/8/8/8/P7/4K3 w - - 0 1")).toEqual(wins); // K+N v K+P
+    expect(flag("4kn2/7n/8/8/8/8/8/4K3 w - - 0 1")).toEqual(wins); // two knights: a helpmate exists
+  });
+
   it("a timer that fires early waits for the time really left; a move after the flag doesn't count", () => {
     const g = begin({ timeControl: "1+0" });
     g.clock.t = 30_000;
@@ -321,6 +345,15 @@ describe("the AI", () => {
     // Even: accepts. A queen up: declines.
     expect(await game.def.ai!(view(START_FEN, { drawOffer: 1 }), 0, ctx(), { elo: 1200 })).toEqual({ name: "acceptDraw" });
     expect(await game.def.ai!(view("rnb1kbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", { drawOffer: 1 }), 0, ctx(), { elo: 1200 })).toEqual({ name: "declineDraw" });
+  });
+
+  it("judges a draw offer made on the opponent's turn from its own side (E-049)", async () => {
+    // White (seat 0, the AI) a queen up, black to move: declines; a queen down, black to move: accepts.
+    const up = view("rnb1kbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR b KQkq - 0 1", { drawOffer: 1 });
+    expect(up.myTurn).toBe(false);
+    expect(await game.def.ai!(up, 0, ctx(), { elo: 1200 })).toEqual({ name: "declineDraw" });
+    const down = view("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNB1KBNR b KQkq - 0 1", { drawOffer: 1 });
+    expect(await game.def.ai!(down, 0, ctx(), { elo: 1200 })).toEqual({ name: "acceptDraw" });
   });
 
   it("has a quick fallback move", () => {

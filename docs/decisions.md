@@ -12,7 +12,7 @@ Records are history: an older record is not edited when a newer one changes it. 
 | --- | --- | --- |
 | E-001, E-004 | E-017 | The repository is public, an example for others |
 | E-005 | E-016 | A player who leaves no longer restarts the round |
-| E-006 | E-007, E-009, E-010, E-011, E-016, E-019 | Chess: pieces' facing, Resign, the end without a person, the default clock, the stand-in |
+| E-006 | E-007, E-009, E-010, E-011, E-016, E-019, E-049 | Chess: pieces' facing, Resign, the end without a person, the default clock, the stand-in, the flag fall (FIDE 6.9) |
 | E-010 | E-016, E-019 | Chess's stand-in |
 | E-013 | E-015, E-016, E-026 | Backgammon: match length up to 100, the stand-in, doubles answered on the board too |
 | E-020 | E-021, E-022 | Mexican Train: backgrounds each round, seat plate text |
@@ -667,3 +667,26 @@ Records are history: an older record is not edited when a newer one changes it. 
   As before, an award shows only when one player stands out. *Implementation (Claude):* three counters in each side's
   statistics (`takes`, `danced`, `boxcars`), optional so states saved before read them as 0; *Big Win* reads the
   match's game records. `tests/backgammon.test.ts` counts each and checks who gets the awards.
+- **E-049 · 2026-11-09 · Klaus** — "Fix all fixable issues" of a code review, five in all:
+  1. **Last Card** keeps every discard: the state's pile was cut to its last 60 cards, so cards were lost for the
+     reshuffle (40 of 60 simulated AI games ended with fewer than 108). Only the view caps the pile (`PILE_SHOWN`).
+  2. **Chess**: an AI answers a draw offer by how *it* stands. The search scores for the side to move, so an offer on
+     the other player's turn was judged from the wrong side (it accepted a queen up).
+  3. **Backgammon**: Undo takes back the move's hits and entries in the statistics as well (they inflated *Hitman*
+     and *Back from the Bar* when a player hit, undid and hit again). E-048's counters count on rolls and takes, not
+     moves, and stay.
+  4. **Chess**: a falling flag follows FIDE 6.9 instead of E-006's "a side that can't mate": the other side wins
+     unless no series of legal moves could mate. As a practical reading it cannot mate only with a lone king; with
+     K+one minor piece against a bare king; or with K+bishops all on one square colour against a bare king or a king
+     with only bishops on that same colour. So K+B v K+R now wins for the bishop (the rook can block its own king),
+     and two bishops on one colour against a bare king are a draw.
+  5. **Backgammon**: Roll for me (E-031) rolls after the doubler withdraws a double (E-034) and after the turn timer
+     took a double for the slow player, as it did after a take on the phone (with the pause of E-032 while the
+     player could still double).
+  *Why:* bugs found by the review; (1) and (2) confirmed by running the code.
+  *How (Claude):* (1) `play` in `games/last-card/rules.ts` no longer slices `discard`. (2) The AI's draw answer turns
+  the search score to its own colour. (3) Each undo record keeps the mover's `hits` and `entered` before the move
+  (optional, so states saved before still undo, without restoring them). (4) `Position.hasMatingMaterial` in
+  `games/chess/chess.ts`; the rules for players say it. (5) `autoRoll` after `withdraw` and in `autoStep`'s take.
+  Tests: the card total stays 108 after every move of 40 AI games; an offer on the opponent's turn either way; the
+  flag in eleven endings; hit, undo, hit again; both auto-rolls.

@@ -39,7 +39,7 @@ A king under attack is in **check**: you must get it out of check. No way out is
 - the side to move has no legal move but is not in check (**stalemate**: a draw),
 - the same position comes up for the third time, or fifty moves go by without a capture or pawn move (a draw),
 - neither side has enough pieces to mate (a draw),
-- a clock runs out: that player loses, unless the other has too little to ever mate (then a draw).
+- a clock runs out: that player loses, unless the other could not checkmate by any series of legal moves (then a draw): that is when it has only its king, a lone knight or bishop against a bare king, or only bishops on one square colour against a king with nothing but bishops on that colour. Anything more wins, even a bishop against a rook.
 
 ## Clocks
 

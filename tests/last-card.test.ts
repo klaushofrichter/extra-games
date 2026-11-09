@@ -277,6 +277,28 @@ describe("whole games", () => {
     }
   });
 
+  it("never loses a card: hands, draw pile and discards hold all 108 after every move of many games (E-049)", () => {
+    const total = (st: State) => Object.values(st.players).reduce((n, p) => n + p.hand.length, 0) + st.drawPile.length + st.discard.length;
+    let moves = 0;
+    for (let g = 0; g < 40; g++) {
+      const n = 2 + (g % 7);
+      const { rt, clock, state }: any = start(game, n, { ...quiet, target: 500 }, 1000 + g);
+      for (let guard = 0; !rt.over && guard < 60000; guard++) {
+        const st = state() as State;
+        if (st.phase !== "playing") {
+          clock.advance();
+          continue;
+        }
+        const r = rt.submit(st.turn, chooseMove(rt.view(st.turn)) as any, "ai");
+        expect(r).not.toMatchObject({ ok: false });
+        moves++;
+        if (state().phase === "playing") expect(total(state()), `game ${g}, move ${guard}`).toBe(108);
+      }
+      expect(rt.over, `game ${g}`).toBeTruthy();
+    }
+    expect(moves).toBeGreaterThan(10000);
+  });
+
   it("sums up: the winner, a table by points and awards", () => {
     const { rt, clock }: any = start(game, 4, { ...quiet, target: 150 }, 5);
     playOut(rt, clock);

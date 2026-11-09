@@ -495,9 +495,12 @@ export default defineGame<State>({
     const elo = aiElo(options);
     const opponent = v.seats[v.color ^ 1];
     if (v.drawOffer === opponent) {
-      // Take a draw unless clearly better.
-      const r = aiEngine.search(positionOf(v.fen, v.keys), { depth: 4, nodes: 30_000 });
-      return { name: r.score <= 30 ? "acceptDraw" : "declineDraw" };
+      // Take a draw unless clearly better. The search scores for the side to move; an offer can come on either turn,
+      // so turn the score to the AI's own side (E-049).
+      const p = positionOf(v.fen, v.keys);
+      const r = aiEngine.search(p, { depth: 4, nodes: 30_000 });
+      const mine = p.turn === v.color ? r.score : -r.score;
+      return { name: mine <= 30 ? "acceptDraw" : "declineDraw" };
     }
     if (!v.myTurn) return null;
     // An engine on the internet (E-040), with the own engine when it has no move in time. The move says which engine
