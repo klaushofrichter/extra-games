@@ -51,7 +51,7 @@ describe("on a table host", () => {
   it("needs two players", async () => {
     await t.joinDeck("Ann");
     await t.ok("POST", "/game/select", { gameId: "liars-dice" });
-    expect((await t.ok("GET", "/state")).game.needs[0]).toMatch(/needs 1 more player/);
+    expect((await t.ok("GET", "/state")).game.needs[0]).toMatch(/needs one more player/);
   });
 
   it("two phones play a round: each sees only its own cup, the bid goes round, a call reveals all", async () => {
