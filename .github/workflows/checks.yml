@@ -44,7 +44,8 @@ jobs:
       - run: npm run soak -- 200
       # Dependabot notices a vulnerable dependency; noticing is not blocking. `high`, so a moderate advisory whose
       # only fix is a major upgrade cannot wedge unrelated merges.
-      - run: npm audit --audit-level=high
+      # High-severity advisories stop the job, except the few games-service lets through for a while (its D-305).
+      - run: node .games-service/scripts/npm-audit.mjs
 
   e2e:
     runs-on: ubuntu-latest
