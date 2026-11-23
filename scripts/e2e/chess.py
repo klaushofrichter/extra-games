@@ -203,8 +203,9 @@ def main():
             wait(lambda: len(moves()) == 4, 10, "the dragged Nc6")
             play(board, "d1", "h5", 5)
             play(board, "g8", "f6", 6)
-            assert "Your move" in ann.inner_text(".ch-status")
-            assert "Qh5" in ann.inner_text(".ch-moves")
+            # The table has the move before the phone shows it: wait for the phone instead of reading it once.
+            ann.locator(".ch-status", has_text="Your move").wait_for()
+            ann.locator(".ch-moves", has_text="Qh5").wait_for()
             shot(board, "board-middle")
 
             # The rules on the smallest phone: title, this table's settings, the illustration.
