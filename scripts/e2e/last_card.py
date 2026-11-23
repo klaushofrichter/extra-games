@@ -252,7 +252,8 @@ def main():
                 st, bar = d.locator(".lcd-status").bounding_box(), d.locator(".lcd-actions").bounding_box()
                 assert bar["y"] - (st["y"] + st["height"]) < 80, f"{d.label}: the buttons are far from the status"
                 # The hand right under the buttons (E-050): a short way to push a card off the top.
-                hand = min(c.bounding_box()["y"] for c in d.locator(".lcd-card").all())
+                # (The hand's place, not its cards: at the start they are still coming in from the top.)
+                hand = d.locator(".lcd-hand").bounding_box()["y"]
                 assert 0 <= hand - (bar["y"] + bar["height"]) < 45, f"{d.label}: the hand is {hand - (bar['y'] + bar['height']):.0f} px under the buttons"
                 line = d.locator(".lcd-line").bounding_box()
                 assert 0 <= line["y"] - (st["y"] + st["height"]) < 20, f"{d.label}: the release line is not under the status"
