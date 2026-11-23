@@ -690,3 +690,9 @@ Records are history: an older record is not edited when a newer one changes it. 
   `games/chess/chess.ts`; the rules for players say it. (5) `autoRoll` after `withdraw` and in `autoStep`'s take.
   Tests: the card total stays 108 after every move of 40 AI games; an offer on the opponent's turn either way; the
   flag in eleven endings; hit, undo, hit again; both auto-rolls.
+- **E-050 · 2026-11-23 · Klaus** — Last Card's phone shows the **hand right under the buttons**, not at the bottom of
+  the screen. *Why:* Klaus: "show the hand closer to the top to reduce the distance for pushing a card." The hand was
+  at the bottom (E-024), a long push to the release line. The order is now status, release line, buttons (still right
+  under the status, E-024), hand, then the free space; with many cards the rows grow down into it.
+  *Implementation (Claude):* the order in `deck.js`. Check: `scripts/e2e/last_card.py` (the hand is within 45 px of
+  the buttons).

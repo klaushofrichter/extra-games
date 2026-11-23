@@ -19,8 +19,8 @@ export function mount(root, ctx) {
     <div class="lcd-line"><span class="lcd-hint">↑ Let go of a card above this line to play it</span></div>
     <div class="card lcd-result" hidden></div>
     <div class="lcd-actions"><span class="lcd-me"></span><button type="button" class="primary lcd-draw">Draw a card</button><button type="button" class="lcd-keep" hidden>Keep it</button></div>
-    <div class="lcd-space"></div>
     <div class="lcd-hand"></div>
+    <div class="lcd-space"></div>
     <div class="lcd-pick" hidden><div class="lcd-pick-box"><div class="eyebrow">Wild card: pick the colour</div>
       <div class="lcd-colors">${Object.entries(NAMES).map(([c, n]) => `<button type="button" data-color="${c}" style="--c:${FILL[c]}">${n}</button>`).join("")}</div>
       <button type="button" class="lcd-cancel">Cancel</button></div></div></div>`;
@@ -86,15 +86,16 @@ export function mount(root, ctx) {
   // ---------- drawing ----------
   /**
    * Where each card goes: rows of overlapping cards, at least 30 px of each showing (10 to a row on a 390 px phone, 8
-   * on 320 px), from the bottom up into the free space above; rows close up when there are many.
+   * on 320 px), right under the buttons (E-050), down into the free space below; rows close up when there are many.
    */
   function layout(hand) {
     const w = $(".lcd-hand").clientWidth - 16;
     const perMax = Math.max(1, Math.floor((w - CW) / 30) + 1);
     const rows = Math.max(1, Math.ceil(hand.length / perMax));
     const per = Math.ceil(hand.length / rows);
+    // The hand sits right under the buttons (E-050): a short way to push a card. Its rows may use all the space below.
     const bar = $(".lcd-actions");
-    const room = Math.max(CH, $(".lcd").clientHeight - (bar.offsetTop + bar.offsetHeight) - 24); // all the space below the buttons
+    const room = Math.max(CH, $(".lcd").clientHeight - (bar.offsetTop + bar.offsetHeight) - 24);
     const gap = rows > 1 ? Math.max(34, Math.min(64, (room - CH - 20) / (rows - 1))) : 0;
     return {
       gap,
