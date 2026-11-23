@@ -8,6 +8,10 @@
 <!-- The repo is public since 19 Oct 2026 (E-017), so these badges render. No release badge: this repo cuts no
      releases; tables run whatever the production branch holds. -->
 
+**New to Game Table?** The website shows what it is: [games.skylar.technology](https://games.skylar.technology).
+Questions and answers about getting started, building and changing games, and playing them:
+[games.skylar.technology/faq](https://games.skylar.technology/faq).
+
 Games for [Game Table](https://github.com/klaushofrichter/games-service), and **a public example of a game repository**:
 games that live outside the platform, written against its SDK, tested against it and delivered to tables by its cloud
 service. The games-service console fetches them from here and gives them to the tables an administrator ticks; remote
