@@ -696,3 +696,15 @@ Records are history: an older record is not edited when a newer one changes it. 
   under the status, E-024), hand, then the free space; with many cards the rows grow down into it.
   *Implementation (Claude):* the order in `deck.js`. Check: `scripts/e2e/last_card.py` (the hand is within 45 px of
   the buttons).
+- **E-051 · 2026-11-23 · Klaus** — **Chess: four more awards, twelve in all**, so the end of a game shows at least
+  two full rows (eight). "I would like to see at least 8 awards for every game, two full rows. The four ideas increase
+  the likelihood that that happens, it's not a guarantee. But OK, lets do these extra awards and see how it is
+  working." Chess had eight awards (E-012), but a game shows only those one side holds alone, three to seven.
+  - 🏰 **Castle Keeper**: castled first (or alone). 🐴 **Fork Master**: gave check with a knight most often (a knight's
+    check can't be blocked). 🛡️ **Last Pawn Standing**: the most pawns still on the board at the end. ♛ **Queen's
+    Gambit**: moved a queen most often (a promoted one counts from its promotion).
+  - **Measured** on twelve games of the own engine against itself (600 to 1700 Elo): before, 6.2 awards a game (5 at
+    the least); now 8.7 (8 at the least), every game two full rows. Games of people add the platform's *Quick Draw*
+    and *Deep Thinker*. Short games (a quick mate) can still show fewer: few things happened.
+  *Implementation (Claude):* `castledAt`, `knightChecks`, `queenMoves`, `pawnsLeft` in `chessStats()`
+  (`games/chess/stats.ts`). Checks: `tests/chess-stats.test.ts`, `tests/chess.test.ts`.
