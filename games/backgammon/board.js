@@ -40,25 +40,6 @@ function pointCol(p) {
 }
 const stepFor = (n, room) => (n <= 1 ? D : Math.min(D, (room - D) / (n - 1)));
 
-/** The mounted board, for the settings window (Undo for the match, E-032). */
-let live = null;
-
-/** The board's settings window: Undo for both players, changed by either of them during the match (E-032). */
-export function settings({ info }) {
-  const v = live?.view();
-  const seat = v && (info?.controlSeats ?? []).find((s) => v.seats.includes(s));
-  if (!v || seat === undefined || v.result) return [];
-  return [
-    {
-      type: "choice",
-      label: "Undo (both players)",
-      value: v.undoMode === "none" ? "none" : "all",
-      options: [{ value: "all", label: "All moves" }, { value: "none", label: "Off: the turn ends by itself" }],
-      onChange: (undo) => live?.act(seat, "undoMode", { undo }),
-    },
-  ];
-}
-
 export function mount(root, ctx) {
   useStyles("/games/backgammon/board.css");
   const box = html(`<div class="bg-board">
@@ -737,9 +718,6 @@ export function mount(root, ctx) {
   box.addEventListener("pointerup", endDrag);
   box.addEventListener("pointercancel", endDrag);
 
-  const currentView = () => view;
-  live = { view: currentView, act: (seat, name, payload) => ctx.act?.(seat, name, payload) };
-
   return {
     update(v, events, i) {
       info = i;
@@ -762,9 +740,31 @@ export function mount(root, ctx) {
     whenIdle() {
       return playing ?? Promise.resolve();
     },
+    /**
+     * The board's settings window during the match (the platform asks the game that runs here, games-service D-326):
+     * Undo for both players, changed by either of them (E-032). It is the manifest's `undo`, so the table begins the
+     * next match with it as it was left (games-service D-325).
+     */
+    settings({ info: i, remember }) {
+      const v = view;
+      const seat = v && (i?.controlSeats ?? []).find((s) => v.seats.includes(s));
+      if (!v || seat === undefined || v.result) return [];
+      return [
+        {
+          type: "choice",
+          setting: "undo",
+          label: "Undo (both players)",
+          value: v.undoMode === "none" ? "none" : "all",
+          options: [{ value: "all", label: "All moves" }, { value: "none", label: "Off: the turn ends by itself" }],
+          onChange: async (undo) => {
+            const r = await ctx.act?.(seat, "undoMode", { undo });
+            if (r?.ok) remember?.({ undo });
+          },
+        },
+      ];
+    },
     destroy() {
       gone = true;
-      if (live?.view === currentView) live = null;
       clearTimeout(confirmTimer);
       clearInterval(tumbleTimer);
     },

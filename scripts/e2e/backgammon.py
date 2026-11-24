@@ -339,6 +339,10 @@ def main():
             # ... and the open window shows it at once (games-service D-215: it redraws on game updates too).
             board.locator('.game-settings .row:has-text("Undo (both players)") button[data-val="1"].on').wait_for(timeout=3000)
             assert board.locator(".game-rules.locked").count() == 1, "the setup values are not shown as locked"
+            # The item is the setting `undo` itself (games-service D-326): no locked row of it beside, and the table
+            # keeps it for the next match (D-325).
+            assert board.locator('.game-rules .row:has-text("Undo at the start")').count() == 0, "Undo shows twice: as the game's item and as a locked row"
+            wait(lambda: (a("GET", "/game-data/backgammon").get("settings") or {}).get("undo") == "none", 5, "the table to keep Undo off")
             shot(board, "board-settings-undo")
             board.locator(".overlay [data-close-overlay]").first.click()
             # Ann's own option on her phone: Roll for me.
