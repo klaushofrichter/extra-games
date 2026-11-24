@@ -34,7 +34,15 @@ export interface SideStats {
   pawnMoves: number;
   checks: number;
   castled: boolean;
+  /** The move (counted from 0, both sides) on which it castled, or -1. */
+  castledAt: number;
   promotions: number;
+  /** Checks given by a knight's move (a knight's check can't be blocked: the heart of a fork). */
+  knightChecks: number;
+  /** Moves made with a queen (one promoted later counts from then on). */
+  queenMoves: number;
+  /** Pawns still on the board at the end (promoted ones are no longer pawns). */
+  pawnsLeft: number;
 }
 
 const file = (sq: string) => sq.charCodeAt(0) - 97;
@@ -53,7 +61,7 @@ export function chessStats(ucis: string[], sans: string[]) {
     });
   });
   const pieces = [...board.values()];
-  const sides: [SideStats, SideStats] = [0, 1].map(() => ({ captures: 0, material: 0, pawnMoves: 0, checks: 0, castled: false, promotions: 0 })) as [SideStats, SideStats];
+  const sides: [SideStats, SideStats] = [0, 1].map(() => ({ captures: 0, material: 0, pawnMoves: 0, checks: 0, castled: false, castledAt: -1, promotions: 0, knightChecks: 0, queenMoves: 0, pawnsLeft: 0 })) as [SideStats, SideStats];
   ucis.forEach((u, i) => {
     const from = u.slice(0, 2);
     const to = u.slice(2, 4);
@@ -77,6 +85,9 @@ export function chessStats(ucis: string[], sans: string[]) {
     p.moves++;
     p.distance += Math.max(Math.abs(file(to) - file(from)), Math.abs(rank(to) - rank(from)));
     if (p.now === "p") side.pawnMoves++;
+    if (p.now === "q") side.queenMoves++;
+    const checked = /[+#]/.test(sans[i] ?? "");
+    if (checked && p.now === "n") side.knightChecks++;
     if (promo) {
       p.now = promo;
       side.promotions++;
@@ -93,9 +104,11 @@ export function chessStats(ucis: string[], sans: string[]) {
         rook.distance += Math.abs(rt - rf);
       }
       side.castled = true;
+      if (side.castledAt < 0) side.castledAt = i;
     }
-    if (/[+#]/.test(sans[i] ?? "")) side.checks++;
+    if (checked) side.checks++;
   });
+  for (const p of board.values()) if (p.now === "p") sides[p.color].pawnsLeft++;
   return { sides, pieces };
 }
 
@@ -119,6 +132,12 @@ function topPiece(base: Omit<Award, "seats" | "value">, pieces: Piece[], score: 
   return { ...base, seats: [seats[top[0].color]], value: value(top[0], best) };
 }
 
+/** The side that castled first, or null when neither did. */
+function firstCastle(sides: [SideStats, SideStats]): SideStats | null {
+  const done = sides.filter((s) => s.castledAt >= 0).sort((a, b) => a.castledAt - b.castledAt);
+  return done[0] ?? null;
+}
+
 /** The statistics window's awards (games-service D-140) and extra table columns. */
 export function chessAwards(ucis: string[], sans: string[], seats: [number, number]) {
   const { sides, pieces } = chessStats(ucis, sans);
@@ -131,6 +150,11 @@ export function chessAwards(ucis: string[], sans: string[], seats: [number, numb
     most({ id: "treasure", icon: "💎", title: "Treasure Hunter", blurb: "Took the most material (pawn 1, knight and bishop 3, rook 5, queen 9)." }, pair((s) => s.material), seats, (n) => many(n, "point")),
     most({ id: "check", icon: "📣", title: "Check!", blurb: "Gave check most often." }, pair((s) => s.checks), seats, (n) => many(n, "check")),
     most({ id: "crowning", icon: "👑", title: "Crowning", blurb: "Promoted the most pawns." }, pair((s) => s.promotions), seats, (n) => many(n, "promotion")),
+    // (E-051) Four more, each often earned, so the end of a game shows more of them.
+    most({ id: "castle-keeper", icon: "🏰", title: "Castle Keeper", blurb: "Castled first, the king tucked away safely." }, pair((s) => (s.castledAt < 0 ? 0 : 1 + Number(firstCastle(sides) === s))), seats, () => "castled first"),
+    most({ id: "fork-master", icon: "🐴", title: "Fork Master", blurb: "Gave check with a knight most often: a knight's check can't be blocked." }, pair((s) => s.knightChecks), seats, (n) => many(n, "knight check")),
+    most({ id: "last-pawn", icon: "🛡️", title: "Last Pawn Standing", blurb: "Kept the most pawns on the board to the end." }, pair((s) => s.pawnsLeft), seats, (n) => many(n, "pawn") + " left"),
+    most({ id: "queens-gambit", icon: "♛", title: "Queen's Gambit", blurb: "Moved the queen most often." }, pair((s) => s.queenMoves), seats, (n) => many(n, "queen move")),
     topPiece({ id: "stay-home", icon: "🏠", title: "Homebody", blurb: "Owned the king that stayed put the longest — it never moved." }, pieces.filter((p) => p.kind === "k"), (p) => (p.moves === 0 ? 1 : 0), seats, () => "the king never moved"),
   ].filter((a): a is Award => a !== null);
   return { awards, sides };

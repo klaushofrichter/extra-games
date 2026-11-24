@@ -19,6 +19,26 @@ describe("chess statistics", () => {
     expect(a["stay-home"]).toBeUndefined(); // neither king moved
   });
 
+  it("the four awards added in E-051: castled first, knight checks, pawns left, queen moves", () => {
+    // White castles on move 7 (index 6), Black on move 8; White's knight gives check; Black's queen moves twice
+    const ucis = ["e2e4", "e7e5", "g1f3", "b8c6", "f1c4", "g8f6", "e1g1", "f8c5", "f3g5", "e8g8", "g5f7", "d8e7", "f7d8", "e7d8"];
+    const sans = ["e4", "e5", "Nf3", "Nc6", "Bc4", "Nf6", "O-O", "Bc5", "Ng5", "O-O", "Nxf7", "Qe7", "Nd8+", "Qxd8"];
+    const { sides } = chessStats(ucis, sans);
+    expect([sides[0].castledAt, sides[1].castledAt]).toEqual([6, 9]);
+    expect([sides[0].knightChecks, sides[1].knightChecks]).toEqual([1, 0]);
+    expect([sides[0].queenMoves, sides[1].queenMoves]).toEqual([0, 2]);
+    expect([sides[0].pawnsLeft, sides[1].pawnsLeft]).toEqual([8, 7]);
+    const a = Object.fromEntries(chessAwards(ucis, sans, SEATS).awards.map((x) => [x.id, x]));
+    expect(a["castle-keeper"]).toMatchObject({ seats: [0], value: "castled first" });
+    expect(a["fork-master"]).toMatchObject({ seats: [0], value: "1 knight check" });
+    expect(a["last-pawn"]).toMatchObject({ seats: [0], value: "8 pawns left" });
+    expect(a["queens-gambit"]).toMatchObject({ seats: [1], value: "2 queen moves" });
+    // nobody castled: no Castle Keeper; a promoted queen's moves count from its promotion
+    const none = chessAwards(["e2e4", "e7e5"], ["e4", "e5"], SEATS).awards.map((x) => x.id);
+    expect(none).not.toContain("castle-keeper");
+    expect(none).not.toContain("last-pawn"); // eight each
+  });
+
   it("castling moves the rook too; en passant takes the pawn beside; a promoted pawn keeps its history", () => {
     const castle = chessStats(["e2e4", "e7e5", "g1f3", "b8c6", "f1c4", "g8f6", "e1g1"], ["e4", "e5", "Nf3", "Nc6", "Bc4", "Nf6", "O-O"]);
     const rook = castle.pieces.find((p) => p.id === "w r h1")!;
