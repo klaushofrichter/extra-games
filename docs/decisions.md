@@ -708,3 +708,9 @@ Records are history: an older record is not edited when a newer one changes it. 
     and *Deep Thinker*. Short games (a quick mate) can still show fewer: few things happened.
   *Implementation (Claude):* `castledAt`, `knightChecks`, `queenMoves`, `pawnsLeft` in `chessStats()`
   (`games/chess/stats.ts`). Checks: `tests/chess-stats.test.ts`, `tests/chess.test.ts`.
+- **E-052 · 2026-11-24 · Klaus** — **Backgammon's settings item belongs to its running board** (games-service D-326,
+  "do this optimization, but for all games for consistency"). *Undo (both players)* moves from the module's exported
+  `settings()` to the object `mount` returns, and the file-level `live` goes. The item names its manifest setting
+  (`setting: "undo"`), so the locked *Undo at the start* row is not shown beside it, and a change is kept for the
+  next match (`remember`, games-service D-325). A table with a games-service from before D-326 shows no Undo item
+  during the match (the setting before the start is unchanged). Check: `scripts/e2e/backgammon.py`.
