@@ -714,3 +714,11 @@ Records are history: an older record is not edited when a newer one changes it. 
   (`setting: "undo"`), so the locked *Undo at the start* row is not shown beside it, and a change is kept for the
   next match (`remember`, games-service D-325). A table with a games-service from before D-326 shows no Undo item
   during the match (the setting before the start is unchanged). Check: `scripts/e2e/backgammon.py`.
+- **E-053 · 2026-11-28 · Klaus** — **Last Card's cards turn with the board and towards their player.** "When the board
+  is rotated, only the Lobby button rotates. We should also rotate the orientation of the cards", and "a card a player
+  plays should be oriented towards that player; right now it is always oriented towards south."
+  - A card on the discard pile faces the player who played it (their seat's angle, plus the small random angle it
+    landed at), in flight as well as on the pile. The first card of a round, and a card whose player has left, face
+    the way the board faces (`info.rotation`).
+  - The draw pile and its count turn with the board, and drawn cards start from it at that angle.
+  *Implementation (Claude):* `facing(seat)` in `games/last-card/board.js`; the pile already keeps each card's seat.
