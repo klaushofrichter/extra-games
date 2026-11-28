@@ -50,7 +50,7 @@ If **Seconds per turn** runs out:
 | Dice per player | 5 | Dice each player starts with (2 to 6) |
 | Ones are wild | On | Ones count toward every bid on another face |
 | Seconds per turn (0 = no limit) | 45 | Time to bid or call (up to 120) |
-| Seconds to show the dice after a call | 6 | How long the open cups stay up (2 to 20) |
+| Seconds to show the dice after a call (0 = until Next round) | 20 | How long the open cups stay up (up to 60); **Next round** on the board goes on at once |
 
 ## Changing players
 

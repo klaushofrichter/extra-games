@@ -722,3 +722,15 @@ Records are history: an older record is not edited when a newer one changes it. 
     the way the board faces (`info.rotation`).
   - The draw pile and its count turn with the board, and drawn cards start from it at that angle.
   *Implementation (Claude):* `facing(seat)` in `games/last-card/board.js`; the pile already keeps each card's seat.
+- **E-054 · 2026-11-28 · Klaus** — **Liar's Dice: Next round on the board after a call, and a longer look at the
+  dice.** "After a call to liar and the result is shown, we wait for a timeout to proceed. We should have a button on
+  the board to trigger the advance. There should be an indicator about the remaining time if there is an
+  auto-advance." "The default for seconds to show the dice after a call should be 20 seconds. When 0 is entered we
+  have no limit and the advance button has to be used."
+  - The board shows **Next round** during the reveal where it has board control (the table's board; a remote board
+    with control), and, when the wait has a limit, a bar running down with "Next round in N s".
+  - *Seconds to show the dice after a call*: default 20 (was 6), 0 to 60 in steps of 5; **0 = until Next round**.
+  - No limit is the same timer, set to the longest a timer can wait (about 24 days), so Next round is the platform's
+    skip of a listed timer (`skipTimers: ["next"]`, games-service D-136) and replays need nothing new.
+  *Implementation (Claude):* `HOLD_MS` and the reveal timer in `games/liars-dice/rules.ts`, `.ld-next` in
+  `board.js`/`board.css`. Checks: `tests/liars-dice.test.ts`, `tests/host.test.ts`.
