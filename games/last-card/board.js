@@ -38,11 +38,17 @@ export function mount(root, ctx) {
     speed,
   });
 
+  // Which way a card on the pile faces (E-053): towards the player who played it, as a card thrown at a real table
+  // lies; the first card, and a card whose player has left, face the way the board faces.
+  const facing = (seat) => (seat == null ? undefined : info?.seatPositions?.[seat]?.rot) ?? info?.rotation ?? 0;
+
   function renderPile() {
     const pile = (view?.pile ?? []).filter((c) => !landing.has(c.id));
     $(".lc-pile").innerHTML = pile
-      .map((c) => `<div style="transform:translate(${PILE.x + c.dx - CW / 2}px,${PILE.y + c.dy - CH / 2}px) rotate(${c.angle}deg)">${cardFace(c, CW, CH, { color: c.color })}</div>`)
+      .map((c) => `<div style="transform:translate(${PILE.x + c.dx - CW / 2}px,${PILE.y + c.dy - CH / 2}px) rotate(${facing(c.seat) + c.angle}deg)">${cardFace(c, CW, CH, { color: c.color })}</div>`)
       .join("");
+    // The draw pile and its count turn with the board.
+    $(".lc-draw").style.transform = `rotate(${info?.rotation ?? 0}deg)`;
     const shown = pile.at(-1);
     const color = shown ? shown.color : view?.color;
     $(".lc-ring").style.setProperty("--c", FILL[color] ?? "#fff");
@@ -136,7 +142,7 @@ export function mount(root, ctx) {
     landing.add(card.id);
     sound("throw");
     track(
-      sling.fly(seat, { id: String(card.id), item: card, to: { x: PILE.x + card.dx, y: PILE.y + card.dy, angle: card.angle } }).then(() => {
+      sling.fly(seat, { id: String(card.id), item: card, to: { x: PILE.x + card.dx, y: PILE.y + card.dy, angle: facing(seat) + card.angle } }).then(() => {
         landing.delete(card.id);
         renderPile();
         sound("land");
@@ -154,7 +160,7 @@ export function mount(root, ctx) {
         new Promise((r) => setTimeout(r, delay + i * 240 * speed())).then(() => {
           if (gone) return;
           sound("draw");
-          return sling.toSeat(seat, { from: { x: DRAW.x, y: DRAW.y, angle: 0 } });
+          return sling.toSeat(seat, { from: { x: DRAW.x, y: DRAW.y, angle: info?.rotation ?? 0 } });
         }),
       );
     }
