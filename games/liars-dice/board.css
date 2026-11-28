@@ -11,6 +11,9 @@
 .ld-clock { display: flex; align-items: center; justify-content: center; gap: 14px; min-height: 36px; font-family: var(--mono); font-size: 26px; }
 .ld-bar { width: 360px; height: 8px; border-radius: 4px; background: rgba(255,255,255,.12); overflow: hidden; }
 .ld-bar > div { height: 100%; transition: width .25s linear; }
+.ld-next { display: flex; align-items: center; justify-content: center; gap: 18px; min-height: 0; margin-top: 18px; font-size: 22px; color: rgba(255,255,255,.75); }
+.ld-next .ld-bar { width: 280px; }
+.ld-go { font: 700 22px var(--text, system-ui), sans-serif; padding: 12px 28px; border-radius: 999px; border: 0; background: var(--brass, #d6a94a); color: #1b1407; cursor: pointer; }
 .ld-history { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 12px; min-height: 40px; font-size: 20px; }
 .ld-verdict { font-size: 28px; margin-top: 6px; }
 .ld-verdict.held { color: var(--jade, #7fd18b); }
