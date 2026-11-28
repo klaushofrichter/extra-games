@@ -94,7 +94,7 @@ describe("setup", () => {
 
   it("uses the manifest defaults", () => {
     const { state } = start(game, 2);
-    expect(state()).toMatchObject({ startDice: 5, onesWild: true, turnMs: 45000, revealMs: 6000 });
+    expect(state()).toMatchObject({ startDice: 5, onesWild: true, turnMs: 45000, revealMs: 20000 });
   });
 
   it("picks different starting players and cups for different seeds", () => {
@@ -317,6 +317,17 @@ describe("timers", () => {
     rt.state = position(state(), {}, 1, { seat: 0, quantity: 2, face: 3 });
     rt.fireTimer("turn");
     expect(state().reveal).toMatchObject({ caller: 1, auto: true });
+  });
+
+  it("with no limit after a call, the cups stay up until the board's Next round (E-054)", () => {
+    const { rt, state, clock } = start(game, 2, { turnSeconds: 0, revealSeconds: 0 }, 4);
+    rt.submit(state().turn, bid(1, 2), "human");
+    rt.submit(state().turn, liar, "human");
+    expect(state().phase).toBe("reveal");
+    expect(rt.timerDeadlines().next - clock.now()).toBeGreaterThan(20 * 24 * 3600 * 1000);
+    const round = state().round;
+    expect(rt.skipTimer("next")).toBe(true);
+    expect(state()).toMatchObject({ phase: "bidding", round: round + 1, reveal: null });
   });
 
   it("arms a turn timer for every turn and none in the reveal", () => {

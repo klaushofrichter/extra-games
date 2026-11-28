@@ -158,9 +158,13 @@ function call(s: State, caller: number, ctx: GameContext, auto = false) {
     next = { ...next, phase: "over", winner: left[0] };
     return { state: next, events: [...events, { name: "won", data: { seat: left[0] } }] };
   }
-  ctx.setTimer("next", s.revealMs);
+  // 0 means no limit (E-054): the cups stay up until the board's Next round, as long as a timer can wait.
+  ctx.setTimer("next", s.revealMs > 0 ? s.revealMs : HOLD_MS);
   return { state: next, events };
 }
+
+/** The longest wait a timer can hold (a JavaScript timer's limit, about 24 days): the reveal with no limit (E-054). */
+export const HOLD_MS = 2 ** 31 - 1;
 
 /** What the turn timer does for a player who doesn't act: call if there is a bid, else open with one of
  *  their most common face (always true, so nobody is punished for being slow on the opening bid). */
@@ -184,7 +188,7 @@ export default defineGame<State>({
       startDice,
       onesWild: settings.onesWild !== false,
       turnMs: Number(settings.turnSeconds ?? 45) * 1000,
-      revealMs: Number(settings.revealSeconds ?? 6) * 1000,
+      revealMs: Number(settings.revealSeconds ?? 20) * 1000,
       order,
       players,
       round: 1,

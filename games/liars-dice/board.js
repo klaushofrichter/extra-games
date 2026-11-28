@@ -4,7 +4,7 @@
 import { esc, html, ping, playerColor, playSound, remainingMs, seatPlates, useStyles } from "/shared/board-kit.js";
 import { bidText, counts, die, revealSound, shakeSound } from "/games/liars-dice/assets/dice.js";
 
-export function mount(root) {
+export function mount(root, ctx) {
   useStyles("/games/liars-dice/board.css");
   const box = html(`<div class="ld-board"><div class="ld-felt"></div>
     <div class="ld-center">
@@ -14,6 +14,7 @@ export function mount(root) {
       <div class="ld-clock"></div>
       <div class="ld-history"></div>
       <div class="ld-reveal"></div>
+      <div class="ld-next"></div>
     </div></div>`);
   root.appendChild(box);
   const center = box.querySelector(".ld-center");
@@ -31,7 +32,24 @@ export function mount(root) {
     const color = s <= 5 ? "var(--ruby, #e8735f)" : "var(--brass)";
     el.innerHTML = `<div class="ld-bar"><div style="width:${(frac * 100).toFixed(1)}%;background:${color}"></div></div><span style="color:${color}">${s} s</span>`;
   };
-  const tick = setInterval(clock, 250);
+  // After a call (E-054): Next round on the board, and a bar running down to it when the wait has a limit.
+  const next = () => {
+    const el = center.querySelector(".ld-next");
+    if (view?.phase !== "reveal") return void (el.innerHTML = "", delete el.dataset.shape);
+    const timed = view.revealMs > 0, button = !!info?.boardControl;
+    const shape = `${timed}/${button}`;
+    // The button is drawn once per reveal (redrawing it every tick could swallow a tap); only the bar moves.
+    if (el.dataset.shape !== shape) {
+      el.dataset.shape = shape;
+      el.innerHTML = `${timed ? `<div class="ld-bar"><div style="background:var(--brass)"></div></div><span class="ld-left"></span>` : ""}${button ? `<button type="button" class="ld-go">Next round</button>` : ""}`;
+    }
+    if (!timed) return;
+    const ms = remainingMs(info, "next");
+    el.querySelector(".ld-bar > div").style.width = `${(Math.max(0, Math.min(1, (ms ?? 0) / view.revealMs)) * 100).toFixed(1)}%`;
+    el.querySelector(".ld-left").textContent = ms === null ? "Next round in a moment" : `Next round in ${Math.ceil(ms / 1000)} s`;
+  };
+  center.addEventListener("click", (e) => e.target.closest(".ld-go") && ctx?.skipTimer?.("next"));
+  const tick = setInterval(() => (clock(), next()), 250);
 
   function draw() {
     const v = view;
@@ -68,6 +86,7 @@ export function mount(root) {
           }).join("")}</span></div>`).join("")}</div>`
       : "";
     clock();
+    next();
 
     const bySeat = Object.fromEntries(v.players.map((p) => [p.seat, p]));
     seatPlates(

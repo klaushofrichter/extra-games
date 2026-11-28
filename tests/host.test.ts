@@ -43,7 +43,7 @@ describe("on a table host", () => {
   it("refuses settings outside the manifest's ranges", async () => {
     await t.joinDeck("Ann");
     await t.ok("POST", "/ai", {});
-    for (const settings of [{ startDice: 9 }, { startDice: 1 }, { turnSeconds: 500 }, { revealSeconds: 0 }]) {
+    for (const settings of [{ startDice: 9 }, { startDice: 1 }, { turnSeconds: 500 }, { revealSeconds: 90 }, { revealSeconds: -5 }]) {
       expect((await t.api("POST", "/game/select", { gameId: "liars-dice", settings })).status, JSON.stringify(settings)).toBe(400);
     }
   });
