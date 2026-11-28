@@ -11,6 +11,8 @@
 /* The colour to play: a glowing ring round the discard pile. */
 .lc-ring { position: absolute; left: 1030px; top: 530px; width: 330px; height: 330px; margin: -165px 0 0 -165px; border-radius: 50%;
   border: 10px solid var(--c, #fff); box-shadow: 0 0 40px var(--c, #fff), inset 0 0 30px color-mix(in srgb, var(--c, #fff) 45%, transparent); opacity: .85; transition: border-color .4s, box-shadow .4s; }
+/* The draw pile turns about its middle with the board (E-053). */
+.lc-draw { position: absolute; left: 0; top: 0; width: 0; height: 0; transform-origin: 810px 530px; }
 .lc-draw > .lc-stack { position: absolute; left: 0; top: 0; width: 128px; height: 192px; filter: drop-shadow(0 6px 10px rgba(0,0,0,.45)); }
 .lc-draw > .lc-stack:nth-child(1) { transform: translate(742px, 430px); }
 .lc-draw > .lc-stack:nth-child(2) { transform: translate(745px, 434px); }
